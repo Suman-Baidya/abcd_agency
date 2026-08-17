@@ -54,6 +54,7 @@ export function Sidebar() {
               width={140}
               height={40}
               className="h-10 w-auto object-contain block dark:hidden"
+              style={{ width: "auto" }}
             />
             <Image
               src="/images/White_Logo.png"
@@ -61,6 +62,7 @@ export function Sidebar() {
               width={140}
               height={40}
               className="h-10 w-auto object-contain hidden dark:block"
+              style={{ width: "auto" }}
             />
           </Link>
         </div>

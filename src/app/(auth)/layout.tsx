@@ -18,6 +18,7 @@ export default function AuthLayout({
             width={120}
             height={40}
             className="h-8 w-auto block dark:hidden transition-opacity group-hover:opacity-80"
+            style={{ width: "auto" }}
           />
           <Image
             src="/images/White_Logo.png"
@@ -25,6 +26,7 @@ export default function AuthLayout({
             width={120}
             height={40}
             className="h-8 w-auto hidden dark:block transition-opacity group-hover:opacity-80"
+            style={{ width: "auto" }}
           />
         </Link>
         <ThemeToggle />

@@ -17,6 +17,7 @@ export function Topbar() {
             width={120}
             height={36}
             className="h-7 w-auto block dark:hidden"
+            style={{ width: "auto" }}
           />
           <Image
             src="/images/White_Logo.png"
@@ -24,6 +25,7 @@ export function Topbar() {
             width={120}
             height={36}
             className="h-7 w-auto hidden dark:block"
+            style={{ width: "auto" }}
           />
         </Link>
       </div>

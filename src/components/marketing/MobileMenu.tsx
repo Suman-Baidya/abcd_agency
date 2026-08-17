@@ -18,11 +18,13 @@ export function MobileMenu() {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   // Close menu on route change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsOpen(false);
   }, [pathname]);
 
@@ -81,6 +83,7 @@ export function MobileMenu() {
               width={180}
               height={50}
               className="h-7 sm:h-10 w-auto object-contain"
+              style={{ width: "auto" }}
             />
           </Link>
           <button

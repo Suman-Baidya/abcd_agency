@@ -25,6 +25,7 @@ export function CTASection() {
             width={180}
             height={50}
             className="h-12 sm:h-14 w-auto object-contain"
+            style={{ width: "auto" }}
           />
         </div>
 

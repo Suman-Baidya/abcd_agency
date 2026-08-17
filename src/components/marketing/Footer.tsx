@@ -25,6 +25,7 @@ export function Footer() {
                 width={180}
                 height={50}
                 className="h-10 w-auto object-contain block dark:hidden"
+                style={{ width: "auto" }}
               />
               {/* Dark Mode Logo */}
               <Image
@@ -33,6 +34,7 @@ export function Footer() {
                 width={180}
                 height={50}
                 className="h-10 w-auto object-contain hidden dark:block"
+                style={{ width: "auto" }}
               />
             </Link>
             <p className="text-sm text-[#737373] max-w-sm leading-relaxed mb-6">

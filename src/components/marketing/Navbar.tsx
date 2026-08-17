@@ -27,6 +27,7 @@ export function Navbar() {
                 width={150}
                 height={40}
                 className="h-7 sm:h-10 w-auto object-contain block dark:hidden"
+                style={{ width: "auto" }}
                 priority
               />
               {/* Dark Mode Logo */}
@@ -36,6 +37,7 @@ export function Navbar() {
                 width={150}
                 height={40}
                 className="h-7 sm:h-10 w-auto object-contain hidden dark:block"
+                style={{ width: "auto" }}
                 priority
               />
             </Link>
