@@ -39,7 +39,7 @@ export default async function PricingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-          {packages.map((pkg, i) => {
+          {packages.map((pkg: any, i: number) => {
             const isMiddle = i === 1;
 
             // Use dynamic fields from DB, fallback to defaults if empty
@@ -123,7 +123,7 @@ export default async function PricingPage() {
                 {/* Features */}
                 <div className="px-8 pt-6 flex-1">
                   <ul className="space-y-3.5">
-                    {pkg.deliverables.map((item, idx) => (
+                    {pkg.deliverables.map((item: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-3">
                         <Check className={`w-[15px] h-[15px] shrink-0 mt-[3px] ${
                           isMiddle ? "text-white/60" : "text-[#0A0A0A] dark:text-white"
@@ -201,7 +201,7 @@ export default async function PricingPage() {
 
         {/* Service Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {services.map((srv, idx) => (
+          {services.map((srv: any, idx: number) => (
             <div
               key={srv.id}
               className="group rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] p-6 hover:shadow-lg hover:border-[#0A0A0A]/20 dark:hover:border-white/20 transition-all duration-300"
