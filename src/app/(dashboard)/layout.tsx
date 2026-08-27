@@ -4,6 +4,8 @@ import { Topbar } from "@/components/dashboard/Topbar";
 import { getSiteConfig } from "@/lib/dbConfig";
 import { db } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
