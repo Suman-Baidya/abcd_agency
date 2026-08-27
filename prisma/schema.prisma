@@ -64,6 +64,9 @@ model PricingPackage {
   id             String   @id @default(cuid())
   name           String
   targetAudience String
+  subHeading     String   @default("")
+  subDesc        String   @default("")
+  ctaLabel       String   @default("")
   deliverables   String[]
   support        String
   timeline       String

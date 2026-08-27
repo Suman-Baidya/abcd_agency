@@ -88,6 +88,9 @@ export async function updatePricingPackage(id: string, data: any) {
       data: {
         name: data.name,
         targetAudience: data.targetAudience,
+        subHeading: data.subHeading,
+        subDesc: data.subDesc,
+        ctaLabel: data.ctaLabel,
         deliverables: data.deliverables.split("\n").map((s: string) => s.trim()).filter(Boolean),
         support: data.support,
         timeline: data.timeline,
@@ -121,3 +124,64 @@ export async function updatePricingService(id: string, data: any) {
   }
 }
 
+export async function createPricingService(data: any) {
+  try {
+    const lastService = await db.pricingService.findFirst({
+      orderBy: { order: 'desc' }
+    });
+    const nextOrder = lastService ? lastService.order + 1 : 0;
+
+    await db.pricingService.create({
+      data: {
+        name: data.name,
+        scope: data.scope,
+        monthlyRetainer: data.monthlyRetainer,
+        yearlyPlan: data.yearlyPlan,
+        order: nextOrder
+      }
+    });
+    revalidatePath("/admin/settings");
+    revalidatePath("/pricing");
+  } catch (e) {
+    console.error("Failed to create pricing service", e);
+    throw new Error("Failed to create pricing service");
+  }
+}
+
+export async function deletePricingService(id: string) {
+  try {
+    await db.pricingService.delete({
+      where: { id }
+    });
+    revalidatePath("/admin/settings");
+    revalidatePath("/pricing");
+  } catch (e) {
+    console.error("Failed to delete pricing service", e);
+    throw new Error("Failed to delete pricing service");
+  }
+}
+
+export async function reorderPricingService(id: string, direction: "up" | "down") {
+  try {
+    const current = await db.pricingService.findUnique({ where: { id } });
+    if (!current) return;
+
+    const swapWith = await db.pricingService.findFirst({
+      where: direction === "up" ? { order: { lt: current.order } } : { order: { gt: current.order } },
+      orderBy: { order: direction === "up" ? "desc" : "asc" }
+    });
+
+    if (swapWith) {
+      // Swap their orders
+      await db.$transaction([
+        db.pricingService.update({ where: { id: current.id }, data: { order: swapWith.order } }),
+        db.pricingService.update({ where: { id: swapWith.id }, data: { order: current.order } })
+      ]);
+      revalidatePath("/admin/settings");
+      revalidatePath("/pricing");
+    }
+  } catch (e) {
+    console.error("Failed to reorder pricing service", e);
+    throw new Error("Failed to reorder pricing service");
+  }
+}

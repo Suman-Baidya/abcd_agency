@@ -41,9 +41,11 @@ export default async function PricingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
           {packages.map((pkg, i) => {
             const isMiddle = i === 1;
-            const subHeadings = ["Custom Scope", "Monthly Retainer", "Tailored Architecture"];
-            const subDescs = ["flat project fee", "bi-weekly sprint cycles", "milestone-based SLA"];
-            const ctaLabels = ["Get a Fixed Quote", "Start Dedicated Sprint", "Book Architecture Review"];
+
+            // Use dynamic fields from DB, fallback to defaults if empty
+            const subHeading = pkg.subHeading || (i === 0 ? "Custom Scope" : i === 1 ? "Monthly Retainer" : "Tailored Architecture");
+            const subDesc = pkg.subDesc || (i === 0 ? "flat project fee" : i === 1 ? "bi-weekly sprint cycles" : "milestone-based SLA");
+            const ctaLabel = pkg.ctaLabel || (i === 0 ? "Get a Fixed Quote" : i === 1 ? "Start Dedicated Sprint" : "Book Architecture Review");
 
             // Parse the investment string for better display
             let displayInvestment = pkg.investment;
@@ -109,12 +111,12 @@ export default async function PricingPage() {
                   <h4 className={`text-[1.4rem] font-extrabold tracking-tight leading-tight ${
                     isMiddle ? "text-white" : "text-[#0A0A0A] dark:text-white"
                   }`}>
-                    {subHeadings[i]}
+                    {subHeading}
                   </h4>
                   <p className={`text-xs mt-1 ${
                     isMiddle ? "text-white/30" : "text-[#A3A3A3] dark:text-neutral-500"
                   }`}>
-                    {subDescs[i]}
+                    {subDesc}
                   </p>
                 </div>
 
@@ -166,16 +168,16 @@ export default async function PricingPage() {
                     )}
                   </div>
 
-                  {/* CTA */}
+                  {/* Call to Action */}
                   <a
-                    href="#contact"
+                    href="/contact"
                     className={`block w-full py-3.5 rounded-xl text-center text-sm font-bold tracking-tight transition-all duration-200 ${
                       isMiddle
                         ? "bg-white text-[#0A0A0A] hover:bg-neutral-200"
                         : "bg-[#0A0A0A] text-white hover:bg-[#1a1a1a] dark:bg-white dark:text-[#0A0A0A] dark:hover:bg-neutral-200"
                     }`}
                   >
-                    {ctaLabels[i]}
+                    {ctaLabel}
                   </a>
                 </div>
               </div>
