@@ -14,11 +14,23 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "ABCD Agency — Software Development & Digital Consulting",
-  description:
-    "Full-stack agency building modern web applications, SaaS products, and digital systems for high-growth businesses.",
-};
+import { getSiteConfig } from "@/lib/dbConfig";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getSiteConfig();
+  
+  return {
+    title: `${config.agencyName} — Software Development & Digital Consulting`,
+    description: "Full-stack agency building modern web applications, SaaS products, and digital systems for high-growth businesses.",
+    icons: config.faviconUrl ? {
+      icon: config.faviconUrl,
+      shortcut: config.faviconUrl,
+      apple: config.faviconUrl,
+    } : undefined,
+  };
+}
+
+import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({
   children,
@@ -32,6 +44,35 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white font-sans selection:bg-[#0A0A0A] selection:text-white dark:selection:bg-white dark:selection:text-[#0A0A0A] transition-colors duration-200">
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            style: {
+              background: '#0A0A0A',
+              color: '#FFFFFF',
+              border: '1px solid #262626',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              borderRadius: '8px',
+              fontSize: '15px',
+              fontWeight: 600,
+              padding: '16px 24px',
+              letterSpacing: '-0.01em',
+              minWidth: '300px',
+            },
+            success: {
+              iconTheme: {
+                primary: '#FFFFFF',
+                secondary: '#0A0A0A',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: '#FFFFFF',
+              },
+            }
+          }} 
+        />
         {children}
       </body>
     </html>

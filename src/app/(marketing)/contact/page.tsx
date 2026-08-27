@@ -2,6 +2,7 @@ import React from "react";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { ContactInfo } from "@/components/contact/ContactInfo";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { MessageSquare } from "lucide-react";
 
 export const metadata = {
   title: "Contact ABCD Agency — Start Your Project",
@@ -14,9 +15,13 @@ export default function ContactPage() {
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       {/* Page Header */}
       <PageHeader
-        subtitle="Start a Conversation"
-        title="Tell us about what you want to build."
-        description="Fill out the form below or email us directly. We will schedule a technical discovery call to review your architecture and roadmap."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Contact", href: "/contact" },
+        ]}
+        title="Start a Project"
+        description="Ready to build something exceptional? Tell us about your project, timeline, and core technical goals."
+        icon={<MessageSquare className="w-32 h-32" />}
       />
 
       {/* Content */}
@@ -26,7 +31,7 @@ export default function ContactPage() {
           <div className="lg:col-span-7">
             <ContactForm />
           </div>
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
             <ContactInfo />
           </div>
         </div>

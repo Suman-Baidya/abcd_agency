@@ -8,9 +8,8 @@ import { usePathname } from "next/navigation";
 import { navItems } from "./NavLinks";
 import { QuickContactIcons } from "./QuickContactIcons";
 import { Button } from "@/components/ui/Button";
-import { siteConfig } from "@/lib/siteConfig";
 
-export function MobileMenu() {
+export function MobileMenu({ siteConfig }: { siteConfig: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -136,7 +135,7 @@ export function MobileMenu() {
         {/* Bottom Actions */}
         <div className="pt-6 border-t border-[#262626] flex flex-col gap-4 w-full">
           <div className="flex items-center justify-center gap-6 py-1">
-            <QuickContactIcons />
+            <QuickContactIcons siteConfig={siteConfig} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -160,7 +159,7 @@ export function MobileMenu() {
             </Button>
           </div>
           <p className="text-xs text-[#737373] text-center tracking-tight">
-            {siteConfig.contact.email}
+            {siteConfig.contactEmail}
           </p>
         </div>
       </div>,

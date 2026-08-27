@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { blogPosts } from "@/data/blog";
 import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/marketing/CTASection";
+import { BookOpen } from "lucide-react";
 
 export const metadata = {
   title: "Engineering Blog & Architecture Insights — ABCD Agency",
@@ -15,10 +16,14 @@ export default function BlogPage() {
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       {/* Blog Hero */}
-      <PageHeader
-        subtitle="Engineering Insights"
-        title="Architecture notes, technical deep-dives, and case logs."
-        description="We write about what we build: Next.js performance optimizations, AI workflow pipelines, and database scaling strategies."
+      <PageHeader 
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Blog", href: "/blog" },
+        ]}
+        title="Insights & News"
+        description="Explore our deep technical dives into Next.js performance, autonomous AI integration, and scalable systems architecture."
+        icon={<BookOpen className="w-32 h-32" />}
       />
 
       {/* Articles Grid */}

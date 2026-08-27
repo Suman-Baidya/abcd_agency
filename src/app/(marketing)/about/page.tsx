@@ -4,6 +4,7 @@ import { TechStack } from "@/components/marketing/TechStack";
 import { Testimonials } from "@/components/marketing/Testimonials";
 import { CTASection } from "@/components/marketing/CTASection";
 import { Button } from "@/components/ui/Button";
+import { Users } from "lucide-react";
 
 export const metadata = {
   title: "About ABCD Agency — Engineering Philosophy & Team",
@@ -43,9 +44,13 @@ export default function AboutPage() {
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       {/* Hero Header */}
       <PageHeader
-        subtitle="About ABCD Agency"
-        title="We build systems that scale, not just websites that look good."
-        description="Founded on the principles of transparent engineering and zero bloat, ABCD Agency is a collective of senior developers building production-ready architectures."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "About", href: "/about" },
+        ]}
+        title="About Our Agency"
+        description="A focused collective of senior engineers building extremely fast, production-ready technical architectures with zero bloat."
+        icon={<Users className="w-32 h-32" />}
       />
 
       {/* Founder Story & Mission */}

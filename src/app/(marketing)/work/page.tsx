@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { projectsData } from "@/data/projects";
 import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/marketing/CTASection";
+import { Briefcase } from "lucide-react";
 
 export const metadata = {
   title: "Case Studies & Work — ABCD Agency",
@@ -16,9 +17,13 @@ export default function WorkPage() {
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       {/* Hero Header */}
       <PageHeader
-        subtitle="Engineering Portfolio"
-        title="Selected client systems & software case studies."
-        description="We design and ship high-impact digital systems. Review our architectural breakdowns, technical decisions, and tangible business outcomes below."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Work", href: "/work" },
+        ]}
+        title="Client Systems"
+        description="Explore our selection of high-velocity web platforms, automated systems, and highly detailed architectural case studies."
+        icon={<Briefcase className="w-32 h-32" />}
       />
 
       {/* Projects Grid */}

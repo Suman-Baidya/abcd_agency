@@ -1,0 +1,87 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SiteConfig {
+  id              String   @id @default("1")
+  
+  // General
+  agencyName      String   @default("ABCD Agency")
+  lightLogoUrl    String?
+  darkLogoUrl     String?
+  faviconUrl      String?
+  contactEmail    String   @default("hello@abcdagency.com")
+  contactPhone    String   @default("+1 234 567 890")
+  websiteUrl      String   @default("https://abcdagency.com")
+  address         String   @default("Tripura, India")
+  
+  // Social Links
+  linkedinUrl     String?
+  facebookUrl     String?
+  instagramUrl    String?
+  youtubeUrl      String?
+  twitterUrl      String?
+  behanceUrl      String?
+  whatsappNumber  String?
+  
+  // Settings
+  enableWhatsappWidget Boolean @default(true)
+  
+  updatedAt       DateTime @updatedAt
+}
+
+model Inquiry {
+  id              String   @id @default(cuid())
+  
+  // Contact Info
+  name            String
+  email           String
+  mobile          String
+  isWhatsappSame  Boolean  @default(true)
+  whatsapp        String?
+  
+  // Project Details
+  businessType    String
+  services        String[]
+  projectType     String
+  budget          String
+  message         String   @db.Text
+  
+  // Admin Data
+  status          String   @default("New") // New, In Progress, Replied, Closed
+  priority        String   @default("Medium") // High, Medium, Low
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PricingPackage {
+  id             String   @id @default(cuid())
+  name           String
+  targetAudience String
+  deliverables   String[]
+  support        String
+  timeline       String
+  investment     String
+  order          Int      @default(0)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PricingService {
+  id               String   @id @default(cuid())
+  name             String
+  scope            String
+  monthlyRetainer  String
+  yearlyPlan       String
+  order            Int      @default(0)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

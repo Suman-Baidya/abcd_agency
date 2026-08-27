@@ -5,7 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-export function Sidebar() {
+interface SidebarProps {
+  lightLogoUrl?: string | null;
+  darkLogoUrl?: string | null;
+  agencyName?: string;
+  unreadInquiriesCount?: number;
+}
+
+export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency", unreadInquiriesCount = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   const navItems = [
@@ -49,16 +56,16 @@ export function Sidebar() {
         <div className="h-16 px-6 flex items-center">
           <Link href="/" className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xs">
             <Image
-              src="/images/Black_Logo.png"
-              alt="ABCD Agency Logo"
+              src={lightLogoUrl || "/images/Black_Logo.png"}
+              alt={`${agencyName} Logo`}
               width={140}
               height={40}
               className="h-10 w-auto object-contain block dark:hidden"
               style={{ width: "auto" }}
             />
             <Image
-              src="/images/White_Logo.png"
-              alt="ABCD Agency Logo"
+              src={darkLogoUrl || "/images/White_Logo.png"}
+              alt={`${agencyName} Logo`}
               width={140}
               height={40}
               className="h-10 w-auto object-contain hidden dark:block"
@@ -83,7 +90,14 @@ export function Sidebar() {
                 }`}
               >
                 {item.icon}
-                {item.label}
+                <div className="flex items-center justify-between flex-1">
+                  <span>{item.label}</span>
+                  {item.label === "Inquiries" && unreadInquiriesCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                      {unreadInquiriesCount}
+                    </span>
+                  )}
+                </div>
               </Link>
             );
           })}
@@ -112,13 +126,18 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center w-16 h-12 gap-1 rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center w-16 h-12 gap-1 rounded-md transition-colors relative ${
                 isActive
                   ? "text-[#0A0A0A] dark:text-white"
                   : "text-[#737373] dark:text-neutral-500 hover:text-[#0A0A0A] dark:hover:text-white"
               }`}
             >
-              {item.icon}
+              <div className="relative">
+                {item.icon}
+                {item.label === "Inquiries" && unreadInquiriesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-[#0A0A0A] rounded-full"></span>
+                )}
+              </div>
               <span className="text-[10px] font-semibold">{item.label}</span>
             </Link>
           );

@@ -34,10 +34,11 @@ export function NavLinks() {
           <Link
             key={item.href}
             href={item.href}
-            className={`relative py-1 text-[15px] tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xs ${isActive
+            className={`relative py-1 text-[15px] tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xs ${
+              pathname === item.href
               ? "font-semibold text-[#0A0A0A] dark:text-white"
               : "font-normal text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white"
-              }`}
+            }`}
           >
             {item.label}
             {isActive && (

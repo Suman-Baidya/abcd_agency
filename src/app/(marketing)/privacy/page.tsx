@@ -1,5 +1,6 @@
 import React from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Shield } from "lucide-react";
 
 export const metadata = {
   title: "Privacy Policy — ABCD Agency",
@@ -10,9 +11,13 @@ export default function PrivacyPage() {
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       <PageHeader
-        subtitle="Legal & Compliance"
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Privacy", href: "/privacy" },
+        ]}
         title="Privacy Policy"
         description="Effective Date: August 2026"
+        icon={<Shield className="w-32 h-32" />}
       />
 
       <div className="py-16 sm:py-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/marketing/CTASection";
+import { Rocket } from "lucide-react";
 
 export const metadata = {
   title: "Careers & Engineering Network — ABCD Agency",
@@ -43,9 +44,13 @@ export default function CareersPage() {
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       {/* Hero Header */}
       <PageHeader
-        subtitle="Careers & Network"
-        title="Join a collective of senior engineers."
-        description="We don't do junior hires or bloated management tiers. We partner with exceptional, autonomous engineers to ship high-impact software."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Careers", href: "/careers" },
+        ]}
+        title="Careers at ABCD"
+        description="We partner with exceptional, autonomous engineers to design and ship high-impact software without bloated management."
+        icon={<Rocket className="w-32 h-32" />}
       />
 
       {/* Open Roles */}

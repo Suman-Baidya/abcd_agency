@@ -42,18 +42,18 @@ export function Hero() {
             </div>
 
             {/* Micro-metrics */}
-            <div className="mt-10 sm:mt-12 pt-6 border-t border-[#E5E5E5] w-full grid grid-cols-3 gap-4">
+            <div className="mt-10 sm:mt-12 pt-6 border-t border-[#E5E5E5] dark:border-[#262626] w-full grid grid-cols-3 gap-4">
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-[#0A0A0A] tracking-tight">100%</p>
-                <p className="text-xs text-[#737373] mt-0.5">Code Ownership</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#0A0A0A] dark:text-white tracking-tight">100%</p>
+                <p className="text-xs text-[#737373] dark:text-[#A3A3A3] mt-0.5">Code Ownership</p>
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-[#0A0A0A] tracking-tight">2–4 wks</p>
-                <p className="text-xs text-[#737373] mt-0.5">Avg. MVP Sprint</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#0A0A0A] dark:text-white tracking-tight">2–4 wks</p>
+                <p className="text-xs text-[#737373] dark:text-[#A3A3A3] mt-0.5">Avg. MVP Sprint</p>
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-[#0A0A0A] tracking-tight">99.9%</p>
-                <p className="text-xs text-[#737373] mt-0.5">Uptime Standard</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#0A0A0A] dark:text-white tracking-tight">99.9%</p>
+                <p className="text-xs text-[#737373] dark:text-[#A3A3A3] mt-0.5">Uptime Standard</p>
               </div>
             </div>
           </div>
@@ -77,47 +77,47 @@ export function Hero() {
               </div>
 
               {/* Mockup Architecture Diagram / Card Visual */}
-              <div className="space-y-4 font-mono text-xs text-[#0A0A0A]">
+              <div className="space-y-4 font-mono text-xs text-[#0A0A0A] dark:text-white">
                 {/* Mockup Row 1 */}
-                <div className="p-4 rounded-lg bg-white border border-[#E5E5E5] flex items-center justify-between">
+                <div className="p-4 rounded-lg bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-[#0A0A0A] text-white flex items-center justify-center font-bold text-xs">
+                    <div className="w-8 h-8 rounded-md bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center font-bold text-xs">
                       ▲
                     </div>
                     <div>
                       <p className="font-semibold text-xs font-sans">Next.js 15 App Cluster</p>
-                      <p className="text-[11px] text-[#737373]">Edge Routing &amp; SSR</p>
+                      <p className="text-[11px] text-[#737373] dark:text-[#A3A3A3]">Edge Routing &amp; SSR</p>
                     </div>
                   </div>
-                  <span className="text-[11px] text-[#0A0A0A] font-semibold">14ms latency</span>
+                  <span className="text-[11px] text-[#0A0A0A] dark:text-[#E5E5E5] font-semibold">14ms latency</span>
                 </div>
 
                 {/* Mockup Row 2 */}
-                <div className="p-4 rounded-lg bg-white border border-[#E5E5E5] flex items-center justify-between">
+                <div className="p-4 rounded-lg bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md border border-[#0A0A0A] text-[#0A0A0A] flex items-center justify-center font-bold text-xs">
+                    <div className="w-8 h-8 rounded-md border border-[#0A0A0A] dark:border-white text-[#0A0A0A] dark:text-white flex items-center justify-center font-bold text-xs">
                       ⚡
                     </div>
                     <div>
                       <p className="font-semibold text-xs font-sans">Serverless DB &amp; Prisma</p>
-                      <p className="text-[11px] text-[#737373]">PostgreSQL Pool Active</p>
+                      <p className="text-[11px] text-[#737373] dark:text-[#A3A3A3]">PostgreSQL Pool Active</p>
                     </div>
                   </div>
-                  <span className="text-[11px] text-[#0A0A0A] font-semibold">0ms cold start</span>
+                  <span className="text-[11px] text-[#0A0A0A] dark:text-[#E5E5E5] font-semibold">0ms cold start</span>
                 </div>
 
                 {/* Mockup Row 3 */}
-                <div className="p-4 rounded-lg bg-white border border-[#E5E5E5] flex items-center justify-between">
+                <div className="p-4 rounded-lg bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-[#F5F5F5] border border-[#E5E5E5] text-[#0A0A0A] flex items-center justify-center font-bold text-xs">
+                    <div className="w-8 h-8 rounded-md bg-[#F5F5F5] dark:bg-[#262626] border border-[#E5E5E5] dark:border-[#333333] text-[#0A0A0A] dark:text-white flex items-center justify-center font-bold text-xs">
                       AI
                     </div>
                     <div>
                       <p className="font-semibold text-xs font-sans">Gemini 2.5 Inference</p>
-                      <p className="text-[11px] text-[#737373]">Automated Lead Engine</p>
+                      <p className="text-[11px] text-[#737373] dark:text-[#A3A3A3]">Automated Lead Engine</p>
                     </div>
                   </div>
-                  <span className="text-[11px] text-[#0A0A0A] font-semibold">100% sync</span>
+                  <span className="text-[11px] text-[#0A0A0A] dark:text-[#E5E5E5] font-semibold">100% sync</span>
                 </div>
               </div>
             </div>

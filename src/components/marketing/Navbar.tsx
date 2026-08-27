@@ -7,8 +7,11 @@ import { QuickContactIcons } from "./QuickContactIcons";
 import { MobileMenu } from "./MobileMenu";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Button } from "@/components/ui/Button";
+import { getSiteConfig } from "@/lib/dbConfig";
 
-export function Navbar() {
+export async function Navbar() {
+  const siteConfig = await getSiteConfig();
+
   return (
     <NavbarWrapper>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,8 +25,8 @@ export function Navbar() {
             >
               {/* Light Mode Logo */}
               <Image
-                src="/images/Black_Logo.png"
-                alt="ABCD Agency — AI-Powered Business Consulting & Digitalization"
+                src={siteConfig.lightLogoUrl || "/images/Black_Logo.png"}
+                alt={`${siteConfig.agencyName} — AI-Powered Business Consulting & Digitalization`}
                 width={150}
                 height={40}
                 className="h-7 sm:h-10 w-auto object-contain block dark:hidden"
@@ -32,8 +35,8 @@ export function Navbar() {
               />
               {/* Dark Mode Logo */}
               <Image
-                src="/images/White_Logo.png"
-                alt="ABCD Agency — AI-Powered Business Consulting & Digitalization"
+                src={siteConfig.darkLogoUrl || "/images/White_Logo.png"}
+                alt={`${siteConfig.agencyName} — AI-Powered Business Consulting & Digitalization`}
                 width={150}
                 height={40}
                 className="h-7 sm:h-10 w-auto object-contain hidden dark:block"
@@ -48,9 +51,8 @@ export function Navbar() {
             {/* Desktop Navigation Links */}
             <NavLinks />
 
-            {/* Quick Contact Icons (Phone, WhatsApp, Email) */}
             <div className="hidden lg:flex items-center border-l border-[#E5E5E5] dark:border-[#262626] pl-2 sm:pl-3">
-              <QuickContactIcons />
+              <QuickContactIcons siteConfig={siteConfig} />
             </div>
 
             {/* Login CTA Button */}
@@ -69,7 +71,7 @@ export function Navbar() {
             <ThemeToggle />
 
             {/* Mobile Hamburger Overlay (<768px) */}
-            <MobileMenu />
+            <MobileMenu siteConfig={siteConfig} />
           </div>
         </div>
       </div>

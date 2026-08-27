@@ -13,10 +13,15 @@ interface ServiceItem {
 
 const services: ServiceItem[] = [
   {
-    title: "Web & SaaS Development",
+    title: "Custom WebApp & Software Development",
     description:
-      "Production-ready web applications built on Next.js, TypeScript, and serverless databases with sub-second page loads.",
-    deliverables: ["Full-Stack Next.js Apps", "Custom SaaS Platforms", "API & Database Engineering"],
+      "Build fast, scalable, and secure digital infrastructure tailored to client operations.",
+    deliverables: [
+      "Full-Stack Web Applications",
+      "Modern Marketing Websites",
+      "API Integration & Backend",
+      "Maintenance & Speed Optimization",
+    ],
     href: "/services/web-development",
     icon: (
       <svg
@@ -35,30 +40,15 @@ const services: ServiceItem[] = [
     ),
   },
   {
-    title: "Business Digitalization",
+    title: "Creative UI/UX & Digital Product Design",
     description:
-      "Transform manual spreadsheets and fragmented tools into integrated, custom-built internal portals and automation pipelines.",
-    deliverables: ["Admin & ERP Portals", "Workflow Automation", "Legacy System Migration"],
-    href: "/services/consulting",
-    icon: (
-      <svg
-        className="w-6 h-6 stroke-[#0A0A0A] dark:stroke-white"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
-  },
-  {
-    title: "UI/UX & Brand Systems",
-    description:
-      "Minimal, high-converting digital interfaces and comprehensive design systems built to turn visitors into long-term clients.",
-    deliverables: ["Figma to Code Systems", "Conversion Optimization", "Accessible UI Libraries"],
+      "We design interfaces that turn visitors into your loyal customers on autopilot.",
+    deliverables: [
+      "Product UI/UX Design",
+      "Landing Page Redesigns",
+      "Design Systems & Identity",
+      "Conversion‑Focused Layouts",
+    ],
     href: "/services/ui-ux",
     icon: (
       <svg
@@ -76,11 +66,45 @@ const services: ServiceItem[] = [
     ),
   },
   {
-    title: "AI Integration & Automation",
+    title: "Performance Marketing & Lead Gen",
     description:
-      "Practical LLM pipelines, autonomous agent workflows, and smart search integrations using Google Gemini and Groq AI.",
-    deliverables: ["Intelligent Chat & Copilots", "Document & Data Extraction", "Automated CRM Routing"],
-    href: "/services/ai-integration",
+      "Drive targeted traffic and measurable revenue for local and national businesses.",
+    deliverables: [
+      "Meta & Google Ads",
+      "Lead Funnel Architecture",
+      "Search Engine Optimization (SEO)",
+      "Email Marketing & Automation",
+    ],
+    href: "/services/marketing",
+    icon: (
+      <svg
+        className="w-6 h-6 stroke-[#0A0A0A] dark:stroke-white"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6 3h12" />
+        <path d="M6 8h12" />
+        <path d="m6 13 8.5 8" />
+        <path d="M6 13h3" />
+        <path d="M9 13c6.667 0 6.667-10 0-10" />
+      </svg>
+    ),
+  },
+  {
+    title: "Business Automation & Cloud IT Services",
+    description:
+      "Streamline manual daily business operations using modern cloud tools.",
+    deliverables: [
+      "Custom AI Agents & Chatbots",
+      "Workflow Automation",
+      "Business Intelligence Dashboards",
+      "Cloud Hosting & Domain Setup",
+    ],
+    href: "/services/automation",
     icon: (
       <svg
         className="w-6 h-6 stroke-[#0A0A0A] dark:stroke-white"
