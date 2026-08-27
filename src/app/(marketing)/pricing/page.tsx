@@ -48,7 +48,7 @@ export default async function PricingPage() {
             const ctaLabel = pkg.ctaLabel || (i === 0 ? "Get a Fixed Quote" : i === 1 ? "Start Dedicated Sprint" : "Book Architecture Review");
 
             // Parse the investment string for better display
-            let displayInvestment = pkg.investment;
+            let displayInvestment = pkg.investment || "";
             let investmentNote = "";
 
             if (displayInvestment.toLowerCase().includes("(ad spend separate)")) {
@@ -56,9 +56,9 @@ export default async function PricingPage() {
               investmentNote = "*Ad spend separate";
             }
 
-            if (displayInvestment.includes(" to ")) {
+            if (displayInvestment.toLowerCase().includes(" to ")) {
               // "₹80,000 to ₹1,20,000+" -> "₹80,000+"
-              displayInvestment = displayInvestment.split(" to ")[0];
+              displayInvestment = displayInvestment.toLowerCase().split(" to ")[0];
             }
 
             // Standardize trailing Plus
@@ -123,7 +123,7 @@ export default async function PricingPage() {
                 {/* Features */}
                 <div className="px-8 pt-6 flex-1">
                   <ul className="space-y-3.5">
-                    {pkg.deliverables.map((item: string, idx: number) => (
+                    {(pkg.deliverables || []).map((item: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-3">
                         <Check className={`w-[15px] h-[15px] shrink-0 mt-[3px] ${
                           isMiddle ? "text-white/60" : "text-[#0A0A0A] dark:text-white"
