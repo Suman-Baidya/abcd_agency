@@ -9,7 +9,7 @@ import {
   Phone,
   Zap,
   ChevronDown,
-  DollarSign
+  IndianRupee
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
@@ -20,7 +20,7 @@ const TABS = [
   { id: "blog", label: "Blog", icon: BookOpen },
   { id: "legal", label: "Legal Pages", icon: ShieldCheck },
   { id: "documents", label: "Documents", icon: FileText },
-  { id: "pricing", label: "Pricing", icon: DollarSign },
+  { id: "pricing", label: "Pricing", icon: IndianRupee },
 ];
 
 import toast from "react-hot-toast";
