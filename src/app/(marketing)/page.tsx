@@ -5,8 +5,9 @@ import { Process } from "@/components/marketing/Process";
 import { WorkPreview } from "@/components/marketing/WorkPreview";
 import { TechStack } from "@/components/marketing/TechStack";
 import { Testimonials } from "@/components/marketing/Testimonials";
-import { Pricing } from "@/components/marketing/Pricing";
+import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
+import { ContactSection } from "@/components/marketing/ContactSection";
 
 export const metadata = {
   title: "ABCD Agency — Software Development & Digital Consulting",
@@ -35,11 +36,14 @@ export default function HomePage() {
       {/* 6. Testimonials */}
       <Testimonials />
 
-      {/* 7. Pricing & Engagement Models */}
-      <Pricing />
+      {/* 7. Smart FAQ Section */}
+      <FAQSection />
 
       {/* 8. Final High-Impact CTA */}
       <CTASection />
+
+      {/* 9. Contact Section */}
+      <ContactSection />
     </div>
   );
 }
