@@ -1,15 +1,19 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { projectsData } from "@/data/projects";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CTASection } from "@/components/marketing/CTASection";
+import { db } from "@/lib/prisma";
 
-export function generateStaticParams() {
-  return projectsData.map((project) => ({
-    slug: project.slug,
-  }));
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const project = await db.project.findUnique({ where: { slug } });
+  if (!project) return { title: "Not Found" };
+  return {
+    title: `${project.title} — ABCD Agency Case Study`,
+    description: project.summary,
+  };
 }
 
 export default async function CaseStudyPage({
@@ -18,7 +22,7 @@ export default async function CaseStudyPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = projectsData.find((p) => p.slug === slug);
+  const project = await db.project.findUnique({ where: { slug } });
 
   if (!project) {
     notFound();
@@ -53,7 +57,7 @@ export default async function CaseStudyPage({
               {project.title}
             </h1>
             <p className="text-lg sm:text-xl text-[#737373] dark:text-neutral-400 leading-relaxed">
-              {project.summary}
+              {project.tagline}
             </p>
           </div>
 
@@ -64,8 +68,8 @@ export default async function CaseStudyPage({
               <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white mt-1">{project.client}</p>
             </div>
             <div>
-              <p className="text-xs font-mono uppercase text-[#737373] dark:text-neutral-400">Sprint Timeline</p>
-              <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white mt-1">{project.timeline}</p>
+              <p className="text-xs font-mono uppercase text-[#737373] dark:text-neutral-400">Status</p>
+              <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white mt-1">{project.status}</p>
             </div>
             <div className="col-span-2 sm:col-span-1">
               <p className="text-xs font-mono uppercase text-[#737373] dark:text-neutral-400">Primary Outcome</p>
@@ -77,57 +81,20 @@ export default async function CaseStudyPage({
 
       {/* Main Content Layout */}
       <section className="py-16 sm:py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-        {/* The Problem */}
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white mb-4">
-            The Challenge &amp; Bottleneck
+            Project Overview
           </h2>
-          <p className="text-base sm:text-lg text-[#262626] dark:text-neutral-300 leading-relaxed">
-            {project.problem}
-          </p>
-        </div>
-
-        {/* The Architecture & Solution */}
-        <div className="p-8 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#111111]">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white mb-4">
-            Engineering Solution &amp; Architecture
-          </h2>
-          <p className="text-base text-[#262626] dark:text-neutral-300 leading-relaxed mb-6">
-            {project.solution}
+          <p className="text-base sm:text-lg text-[#262626] dark:text-neutral-300 leading-relaxed mb-12">
+            {project.summary}
           </p>
 
-          <h3 className="text-xs font-mono uppercase tracking-widest text-[#737373] dark:text-neutral-400 mb-3">
-            Core Features &amp; Modules
-          </h3>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {project.features.map((feat) => (
-              <li key={feat} className="text-xs font-medium text-[#0A0A0A] dark:text-neutral-200 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] dark:bg-white" />
-                {feat}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Measurable Results */}
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white mb-6">
-            Measurable Results &amp; ROI
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {project.results.map((res, i) => (
-              <div
-                key={i}
-                className="p-6 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] flex items-start gap-4 shadow-xs"
-              >
-                <div className="w-6 h-6 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  ✓
-                </div>
-                <p className="text-sm font-medium text-[#0A0A0A] dark:text-neutral-200 leading-relaxed">
-                  {res}
-                </p>
-              </div>
-            ))}
+          <div className="prose prose-neutral dark:prose-invert max-w-none">
+            {project.content ? (
+              <div dangerouslySetInnerHTML={{ __html: project.content }} />
+            ) : (
+              <p className="text-[#737373] italic">Detailed case study content is coming soon.</p>
+            )}
           </div>
         </div>
 

@@ -88,3 +88,29 @@ model PricingService {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+model Project {
+  id          String   @id @default(cuid())
+  
+  // Public Marketing Fields
+  title       String
+  slug        String   @unique
+  client      String
+  category    String
+  tagline     String
+  summary     String   @db.Text
+  impact      String
+  techStack   String[]
+  content     String   @db.Text // For the deep dive page
+  isFeatured  Boolean  @default(false)
+  
+  // Internal Dashboard Fields
+  status      String   @default("In Review")
+  statusColor String   @default("neutral")
+  progress    Int      @default(0)
+  budget      String   @default("")
+  deadline    String   @default("")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

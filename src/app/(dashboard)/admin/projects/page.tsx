@@ -1,94 +1,45 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { NewProjectButton } from "@/components/dashboard/NewProjectButton";
+import { ProjectTableRow } from "@/components/dashboard/ProjectTableRow";
+import { ProjectFilters } from "@/components/dashboard/ProjectFilters";
+import { ProjectPagination } from "@/components/dashboard/ProjectPagination";
+import { db } from "@/lib/prisma";
 
 export const metadata = {
   title: "Projects — ABCD Agency",
 };
 
-const projects = [
-  {
-    name: "ApexFlow Dashboard",
-    client: "ApexFlow Inc.",
-    status: "On Track",
-    statusColor: "emerald",
-    progress: 75,
-    budget: "$18,000",
-    deadline: "Sep 30, 2026",
-  },
-  {
-    name: "Nexus AI Pipeline",
-    client: "Nexus Labs",
-    status: "In Review",
-    statusColor: "neutral",
-    progress: 90,
-    budget: "$32,500",
-    deadline: "Aug 28, 2026",
-  },
-  {
-    name: "RGYCSP Portal",
-    client: "Govt Sector",
-    status: "Delayed",
-    statusColor: "amber",
-    progress: 40,
-    budget: "$45,000",
-    deadline: "Dec 15, 2026",
-  },
-  {
-    name: "FinEdge Mobile App",
-    client: "FinEdge Capital",
-    status: "On Track",
-    statusColor: "emerald",
-    progress: 55,
-    budget: "$28,000",
-    deadline: "Nov 01, 2026",
-  },
-  {
-    name: "Meridian CRM",
-    client: "Meridian Group",
-    status: "On Hold",
-    statusColor: "neutral",
-    progress: 20,
-    budget: "$15,000",
-    deadline: "Jan 10, 2027",
-  },
-  {
-    name: "CloudSync Integration",
-    client: "CloudSync Ltd.",
-    status: "On Track",
-    statusColor: "emerald",
-    progress: 65,
-    budget: "$22,000",
-    deadline: "Oct 20, 2026",
-  },
-];
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined };
+}) {
+  const resolvedParams = await searchParams;
+  const q = typeof resolvedParams?.q === "string" ? resolvedParams.q : undefined;
+  const statusFilter = typeof resolvedParams?.status === "string" ? resolvedParams.status : undefined;
+  const page = typeof resolvedParams?.page === "string" ? parseInt(resolvedParams.page, 10) : 1;
+  const limit = typeof resolvedParams?.limit === "string" ? parseInt(resolvedParams.limit, 10) : 20;
 
-function statusBadge(status: string, color: string) {
-  if (color === "emerald") {
-    return (
-      <Badge
-        variant="solid"
-        className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-none"
-      >
-        {status}
-      </Badge>
-    );
-  }
-  if (color === "amber") {
-    return (
-      <Badge
-        variant="solid"
-        className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-none"
-      >
-        {status}
-      </Badge>
-    );
-  }
-  return <Badge variant="outline">{status}</Badge>;
-}
+  const where = {
+    ...(q ? { title: { contains: q, mode: 'insensitive' as any } } : {}),
+    ...(statusFilter ? { status: statusFilter } : {}),
+  };
 
-export default function ProjectsPage() {
+  const [projects, totalProjects, allProjectsForCategories] = await Promise.all([
+    db.project.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    db.project.count({ where }),
+    db.project.findMany({ select: { category: true } }) // Needed for unique categories datalist
+  ]);
+
+  const uniqueCategories = Array.from(new Set(allProjectsForCategories.map((p) => p.category)));
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
@@ -101,22 +52,7 @@ export default function ProjectsPage() {
             Manage and monitor all agency projects.
           </p>
         </div>
-        <Button variant="primary" size="sm">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          New Project
-        </Button>
+        <NewProjectButton categories={uniqueCategories} />
       </div>
 
       {/* Stats row */}
@@ -126,7 +62,7 @@ export default function ProjectsPage() {
             Total
           </p>
           <p className="text-xl font-bold text-[#0A0A0A] dark:text-white mt-1">
-            {projects.length}
+            {totalProjects}
           </p>
         </Card>
         <Card className="!p-4">
@@ -150,7 +86,7 @@ export default function ProjectsPage() {
             Total Budget
           </p>
           <p className="text-xl font-bold text-[#0A0A0A] dark:text-white mt-1">
-            $160.5k
+            ₹160.5k
           </p>
         </Card>
       </div>
@@ -161,121 +97,44 @@ export default function ProjectsPage() {
           <h2 className="text-base font-bold text-[#0A0A0A] dark:text-white">
             All Projects
           </h2>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <svg
-                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search projects..."
-                className="pl-9 pr-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white w-48"
-              />
-            </div>
-            <select className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-md px-3 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer">
-              <option>All Status</option>
-              <option>On Track</option>
-              <option>In Review</option>
-              <option>Delayed</option>
-              <option>On Hold</option>
-            </select>
-          </div>
+          <Suspense fallback={<div className="h-9 w-64 bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md"></div>}>
+            <ProjectFilters />
+          </Suspense>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-[#262626] dark:text-neutral-300">
-            <thead className="text-xs font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400 bg-[#FBFBFB] dark:bg-[#111111] border-b border-[#E5E5E5] dark:border-[#262626]">
+            <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#525252] dark:text-[#A3A3A3] bg-neutral-200/80 dark:bg-[#0A0A0A]/70 backdrop-blur-md border-b border-[#E5E5E5] dark:border-[#262626]">
               <tr>
-                <th className="px-6 py-3.5">Project</th>
-                <th className="px-6 py-3.5">Client</th>
+                <th className="px-6 py-3.5 w-16">SL</th>
+                <th className="px-6 py-3.5 w-80">Project Details</th>
                 <th className="px-6 py-3.5">Status</th>
-                <th className="px-6 py-3.5">Progress</th>
+                <th className="px-6 py-3.5 w-24">Progress</th>
                 <th className="px-6 py-3.5">Budget</th>
                 <th className="px-6 py-3.5">Deadline</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
+                <th className="px-6 py-3.5 text-right w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
-              {projects.map((project) => (
-                <tr
-                  key={project.name}
-                  className="hover:bg-[#FBFBFB] dark:hover:bg-[#1A1A1A] transition-colors"
-                >
-                  <td className="px-6 py-4 font-semibold text-[#0A0A0A] dark:text-white whitespace-nowrap">
-                    {project.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {project.client}
-                  </td>
-                  <td className="px-6 py-4">
-                    {statusBadge(project.status, project.statusColor)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 min-w-[120px]">
-                      <div className="flex-1 h-1.5 bg-[#E5E5E5] dark:bg-[#262626] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#0A0A0A] dark:bg-white rounded-full transition-all"
-                          style={{ width: `${project.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-mono text-[#737373] dark:text-neutral-400 w-8 text-right">
-                        {project.progress}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-mono whitespace-nowrap">
-                    {project.budget}
-                  </td>
-                  <td className="px-6 py-4 text-xs whitespace-nowrap">
-                    {project.deadline}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#262626]">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                        />
-                      </svg>
-                    </button>
+              {projects.length > 0 ? projects.map((project, index) => (
+                <ProjectTableRow 
+                  key={project.id} 
+                  project={project} 
+                  serialNumber={(page - 1) * limit + index + 1} 
+                  categories={uniqueCategories}
+                />
+              )) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-[#737373]">
+                    No projects found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 border-t border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between">
-          <p className="text-xs text-[#737373] dark:text-neutral-400">
-            Showing {projects.length} of {projects.length} projects
-          </p>
-          <div className="flex items-center gap-1">
-            <button className="px-3 py-1.5 text-xs font-medium border border-[#E5E5E5] dark:border-[#262626] rounded-md text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white hover:border-[#0A0A0A] dark:hover:border-white transition-colors">
-              Previous
-            </button>
-            <button className="px-3 py-1.5 text-xs font-medium bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] rounded-md">
-              1
-            </button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-[#E5E5E5] dark:border-[#262626] rounded-md text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white hover:border-[#0A0A0A] dark:hover:border-white transition-colors">
-              Next
-            </button>
-          </div>
-        </div>
+        <Suspense fallback={<div className="h-16 border-t border-[#E5E5E5] dark:border-[#262626]"></div>}>
+          <ProjectPagination totalItems={totalProjects} />
+        </Suspense>
       </Card>
     </div>
   );
