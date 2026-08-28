@@ -5,6 +5,7 @@ import { NewProjectButton } from "@/components/dashboard/NewProjectButton";
 import { ProjectTableRow } from "@/components/dashboard/ProjectTableRow";
 import { ProjectFilters } from "@/components/dashboard/ProjectFilters";
 import { ProjectPagination } from "@/components/dashboard/ProjectPagination";
+import { CategoryManager } from "@/components/dashboard/CategoryManager";
 import { db } from "@/lib/prisma";
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default async function ProjectsPage({
     ...(statusFilter ? { status: statusFilter } : {}),
   };
 
-  const [projects, totalProjects, allProjectsForCategories] = await Promise.all([
+  const [projects, totalProjects, projectCategories] = await Promise.all([
     db.project.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -35,10 +36,10 @@ export default async function ProjectsPage({
       take: limit,
     }),
     db.project.count({ where }),
-    db.project.findMany({ select: { category: true } }) // Needed for unique categories datalist
+    db.category.findMany({ orderBy: { name: 'asc' } })
   ]);
 
-  const uniqueCategories = Array.from(new Set(allProjectsForCategories.map((p) => p.category)));
+  const categoryNames = projectCategories.map(c => c.name);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -52,7 +53,10 @@ export default async function ProjectsPage({
             Manage and monitor all agency projects.
           </p>
         </div>
-        <NewProjectButton categories={uniqueCategories} />
+        <div className="flex items-center gap-2">
+          <CategoryManager categories={projectCategories} />
+          <NewProjectButton categories={categoryNames} />
+        </div>
       </div>
 
       {/* Stats row */}
@@ -120,7 +124,7 @@ export default async function ProjectsPage({
                   key={project.id} 
                   project={project} 
                   serialNumber={(page - 1) * limit + index + 1} 
-                  categories={uniqueCategories}
+                  categories={categoryNames}
                 />
               )) : (
                 <tr>

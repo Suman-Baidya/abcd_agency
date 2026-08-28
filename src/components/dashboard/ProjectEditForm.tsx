@@ -65,20 +65,17 @@ export function ProjectEditForm({ project, categories, onSuccess, onCancel }: Pr
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">Category</label>
-            <input 
-              type="text" 
+            <select 
               name="category" 
-              list="category-options"
-              defaultValue={project?.category} 
+              defaultValue={project?.category || ""} 
               required 
-              placeholder="e.g. Web Application"
-              className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none" 
-            />
-            <datalist id="category-options">
+              className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none cursor-pointer" 
+            >
+              <option value="" disabled>Select a Category</option>
               {categories.map((c) => (
-                <option key={c} value={c} />
+                <option key={c} value={c}>{c}</option>
               ))}
-            </datalist>
+            </select>
           </div>
           <div className="space-y-2 sm:col-span-2">
             <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">Tagline</label>

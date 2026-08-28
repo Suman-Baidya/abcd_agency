@@ -104,23 +104,23 @@ export default function ProfilePage() {
         </Card>
 
         {/* Edit Form Accordions */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {/* Personal Info Accordion */}
-          <div className="rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
+          <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button
               onClick={() => setExpandedSection(expandedSection === "personal" ? null : "personal")}
-              className="w-full px-6 py-5 flex items-center justify-between text-left focus-visible:outline-none focus-visible:bg-[#FBFBFB] dark:focus-visible:bg-[#111111] transition-colors"
+              className="w-full flex items-center justify-between p-4 px-5 text-left hover:bg-[#FBFBFB] dark:hover:bg-[#111111] transition-colors focus-visible:outline-none"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5 text-[#0A0A0A] dark:text-white" />
+                <div className="w-10 h-10 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#0A0A0A] dark:text-white tracking-tight">Personal Information</h3>
-                  <p className="text-sm text-[#737373] mt-0.5">Update your personal details.</p>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Personal Information</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Update your personal details.</p>
                 </div>
               </div>
-              <ChevronDown className={`w-5 h-5 text-[#737373] transition-transform duration-300 ${expandedSection === "personal" ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "personal" ? "rotate-180" : ""}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "personal" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
               <div className="p-6 space-y-5">
@@ -205,21 +205,21 @@ export default function ProfilePage() {
           </div>
 
           {/* Security Accordion */}
-          <div className="rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
+          <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button
               onClick={() => setExpandedSection(expandedSection === "security" ? null : "security")}
-              className="w-full px-6 py-5 flex items-center justify-between text-left focus-visible:outline-none focus-visible:bg-[#FBFBFB] dark:focus-visible:bg-[#111111] transition-colors"
+              className="w-full flex items-center justify-between p-4 px-5 text-left hover:bg-[#FBFBFB] dark:hover:bg-[#111111] transition-colors focus-visible:outline-none"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-[#0A0A0A] dark:text-white" />
+                <div className="w-10 h-10 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#0A0A0A] dark:text-white tracking-tight">Security</h3>
-                  <p className="text-sm text-[#737373] mt-0.5">Manage your password and security settings.</p>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Security</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Manage your password and security settings.</p>
                 </div>
               </div>
-              <ChevronDown className={`w-5 h-5 text-[#737373] transition-transform duration-300 ${expandedSection === "security" ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "security" ? "rotate-180" : ""}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "security" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
               <div className="p-6 space-y-5">
@@ -265,21 +265,21 @@ export default function ProfilePage() {
           </div>
 
           {/* Active Sessions Accordion */}
-          <div className="rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
+          <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button
               onClick={() => setExpandedSection(expandedSection === "sessions" ? null : "sessions")}
-              className="w-full px-6 py-5 flex items-center justify-between text-left focus-visible:outline-none focus-visible:bg-[#FBFBFB] dark:focus-visible:bg-[#111111] transition-colors"
+              className="w-full flex items-center justify-between p-4 px-5 text-left hover:bg-[#FBFBFB] dark:hover:bg-[#111111] transition-colors focus-visible:outline-none"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
-                  <MonitorSmartphone className="w-5 h-5 text-[#0A0A0A] dark:text-white" />
+                <div className="w-10 h-10 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
+                  <MonitorSmartphone className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#0A0A0A] dark:text-white tracking-tight">Active Sessions</h3>
-                  <p className="text-sm text-[#737373] mt-0.5">Devices currently signed in to your account.</p>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Active Sessions</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Devices currently signed in to your account.</p>
                 </div>
               </div>
-              <ChevronDown className={`w-5 h-5 text-[#737373] transition-transform duration-300 ${expandedSection === "sessions" ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "sessions" ? "rotate-180" : ""}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "sessions" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
               <div className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
