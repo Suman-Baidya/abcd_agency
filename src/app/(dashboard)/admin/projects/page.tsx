@@ -55,7 +55,7 @@ export default async function ProjectsPage({
     }),
   ]);
 
-  const categoryNames = projectCategories.map(c => c.name);
+  const categoryNames = projectCategories.map((c: any) => c.name);
 
   const statusCounts: Record<string, number> = {
     All: totalAll,

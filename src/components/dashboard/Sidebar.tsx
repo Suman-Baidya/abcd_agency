@@ -31,6 +31,11 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
     )},
+    { label: "Finance", href: "/admin/finance", icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 3h12M6 8h12M6 13h3c6.667 0 6.667-10 0-10M6 13l8.5 8" />
+      </svg>
+    )},
     { label: "Inquiries", href: "/admin/inquiries", icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -117,8 +122,8 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
       </aside>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[#E5E5E5] dark:border-[#262626] bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md z-50 px-2 sm:px-6 py-2 flex items-center justify-between pb-safe transition-colors duration-200">
-        {navItems.slice(0, 5).map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[#E5E5E5] dark:border-[#262626] bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md z-50 px-2 sm:px-4 py-2 flex items-center justify-around pb-safe transition-colors duration-200">
+        {navItems.map((item) => {
           const isActive = item.href === "/admin"
               ? pathname === "/admin"
               : pathname === item.href || pathname?.startsWith(`${item.href}/`);
@@ -126,9 +131,9 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center w-16 h-12 gap-1 rounded-md transition-colors relative ${
+              className={`flex flex-col items-center justify-center min-w-[48px] h-11 gap-0.5 rounded-md transition-colors relative ${
                 isActive
-                  ? "text-[#0A0A0A] dark:text-white"
+                  ? "text-[#0A0A0A] dark:text-white font-bold"
                   : "text-[#737373] dark:text-neutral-500 hover:text-[#0A0A0A] dark:hover:text-white"
               }`}
             >
@@ -138,7 +143,7 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
                   <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-[#0A0A0A] rounded-full"></span>
                 )}
               </div>
-              <span className="text-[10px] font-semibold">{item.label}</span>
+              <span className="text-[9px] font-semibold tracking-tight">{item.label}</span>
             </Link>
           );
         })}

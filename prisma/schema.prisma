@@ -145,4 +145,23 @@ model Client {
   updatedAt      DateTime @updatedAt
 }
 
+model Transaction {
+  id             String   @id @default(cuid())
+  title          String
+  type           String   @default("Income") // "Income" | "Expense"
+  category       String   @default("Project Payment") // "Project Payment", "Client Retainer", "Software & Tools", "Salaries & Payroll", "Marketing & Ads", "Hosting & Cloud", "Office & Equipment", "Miscellaneous"
+  amount         String   @default("₹0")
+  amountRaw      Int      @default(0)
+  status         String   @default("Completed") // "Completed" | "Pending" | "Cancelled"
+  date           DateTime @default(now())
+  paymentMethod  String   @default("Bank Transfer") // "Bank Transfer", "UPI", "Credit Card", "Stripe", "Cash", "PayPal"
+  referenceNo    String?  // Invoice / Transaction / UTR reference like "INV-2026-001" or "UPI-983742"
+  clientName     String?  // Associated client (if Income) or vendor/payee (if Expense)
+  notes          String?  @db.Text
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+
 

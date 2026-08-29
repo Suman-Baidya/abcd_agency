@@ -27,13 +27,13 @@ function createPrismaClient(): PrismaClient {
 }
 
 export function getDb(): PrismaClient {
-  if (!globalThis.prisma || !(globalThis.prisma as any).client) {
+  if (!globalThis.prisma || !(globalThis.prisma as any).transaction) {
     globalThis.prisma = createPrismaClient();
   }
   return globalThis.prisma;
 }
 
-// Proxy exported as `db` so `db.client` or any model property always dynamically resolves to the latest fresh instance
+// Proxy exported as `db` so `db.transaction` or any model property always dynamically resolves to the latest fresh instance
 export const db = new Proxy({} as any, {
   get(_target, prop) {
     const clientInstance = getDb();
@@ -45,7 +45,9 @@ export const db = new Proxy({} as any, {
   },
 }) as PrismaClient & {
   client: any;
+  transaction: any;
   project: any;
   inquiry: any;
   siteConfig: any;
+  category: any;
 };
