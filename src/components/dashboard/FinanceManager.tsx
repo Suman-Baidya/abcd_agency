@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useTransition } from "react";
+import React, { useState, useMemo, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -30,7 +30,12 @@ import {
   TrendingDown,
   Receipt,
   Wallet,
+  Tag,
+  Check,
+  FileDown,
+  Printer,
 } from "lucide-react";
+import jsPDF from "jspdf";
 import { toast } from "react-hot-toast";
 import {
   TransactionItem,
@@ -40,7 +45,7 @@ import {
   deleteTransaction,
 } from "@/app/(dashboard)/admin/finance/actions";
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   "Project Milestone",
   "Client Retainer",
   "Software & Cloud",
@@ -78,9 +83,413 @@ export function FinanceManager({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionItem | null>(null);
   const [deletingTransaction, setDeletingTransaction] = useState<TransactionItem | null>(null);
+  const [previewReceiptTx, setPreviewReceiptTx] = useState<TransactionItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Dynamic Categories state
+  const [categories, setCategories] = useState<string[]>(() => {
+    const fromTx = initialTransactions.map((t) => t.category).filter(Boolean);
+    return Array.from(new Set([...DEFAULT_CATEGORIES, ...fromTx]));
+  });
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryManagerInput, setNewCategoryManagerInput] = useState("");
+
+  // Inline Category creation state for Add modal
+  const [isCreatingCategoryAdd, setIsCreatingCategoryAdd] = useState(false);
+  const [newCategoryInputAdd, setNewCategoryInputAdd] = useState("");
+
+  // Inline Category creation state for Edit modal
+  const [isCreatingCategoryEdit, setIsCreatingCategoryEdit] = useState(false);
+  const [newCategoryInputEdit, setNewCategoryInputEdit] = useState("");
+
+  // Load custom saved categories from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("abcd_finance_categories");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCategories((prev) => Array.from(new Set([...prev, ...parsed])));
+        }
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+  }, []);
+
+  const handleAddCategory = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    setCategories((prev) => {
+      if (prev.includes(trimmed)) return prev;
+      const updated = [...prev, trimmed];
+      try {
+        localStorage.setItem("abcd_finance_categories", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+    return trimmed;
+  };
+
+  const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
+  const [editCategoryInput, setEditCategoryInput] = useState("");
+
+  const handleEditCategory = (oldName: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) {
+      setEditingCategoryName(null);
+      return;
+    }
+
+    setCategories((prev) => {
+      const updated = prev.map((c) => (c === oldName ? trimmed : c));
+      try {
+        localStorage.setItem("abcd_finance_categories", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
+    // Update in-memory transactions that used the old category name
+    setTransactionList((prev) =>
+      prev.map((t) => (t.category === oldName ? { ...t, category: trimmed } : t))
+    );
+
+    if (formData.category === oldName) {
+      setFormData((prev) => ({ ...prev, category: trimmed }));
+    }
+
+    if (editFormData && editFormData.category === oldName) {
+      setEditFormData((prev) => (prev ? { ...prev, category: trimmed } : prev));
+    }
+
+    if (selectedCategory === oldName) {
+      setSelectedCategory(trimmed);
+    }
+
+    setEditingCategoryName(null);
+    setEditCategoryInput("");
+    toast.success(`Category renamed to "${trimmed}"`);
+  };
+
+  const handleDeleteCategory = (catToDelete: string) => {
+    setCategories((prev) => {
+      const updated = prev.filter((c) => c !== catToDelete);
+      try {
+        localStorage.setItem("abcd_finance_categories", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+    toast.success(`Category "${catToDelete}" removed`);
+  };
+
+  // Helper to fetch local image and convert to Base64 for jsPDF embedding
+  const getBase64ImageFromUrl = async (imageUrl: string): Promise<string | null> => {
+    try {
+      const res = await fetch(imageUrl);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // Helper to format clean ASCII amount for PDF to avoid UTF-8 font corruption and page overflow
+  const formatPdfAmount = (raw: string | number) => {
+    if (!raw) return "0.00";
+    const str = String(raw).replace(/[₹\u20B9]/g, "").trim();
+    return `INR ${str}`;
+  };
+
+  // State for PDF download progress
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Direct A4 Vector PDF Generation with Official Logo & Pristine Monochrome Aesthetics
+  const handleDownloadDirectPDF = async (t: TransactionItem) => {
+    setIsDownloadingPdf(true);
+    const toastId = toast.loading("Generating PDF receipt...");
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const receiptNo = t.referenceNo || `REC-${t.id.slice(-6).toUpperCase()}`;
+      const cleanAmount = formatPdfAmount(t.amount);
+
+      // --- Header Brand & Logo (Exact 1.945 aspect ratio without stretching) ---
+      const logoBase64 = await getBase64ImageFromUrl("/images/Black_Logo.png");
+      if (logoBase64) {
+        try {
+          doc.addImage(logoBase64, "PNG", 20, 14, 36, 18.5);
+        } catch {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(20);
+          doc.setTextColor(10, 10, 10);
+          doc.text("ABCD AGENCY", 20, 24);
+        }
+      } else {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.setTextColor(10, 10, 10);
+        doc.text("ABCD AGENCY", 20, 24);
+      }
+
+      // Real Agency Contact Info from siteConfig
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 100, 100);
+      doc.text("sb.abcd321@gmail.com  •  +91 89448 99747", 20, 36.5);
+      doc.text("Tripura, India  •  abcdagency.com", 20, 41);
+
+      // --- Receipt Badge Top Right ---
+      doc.setFillColor(10, 10, 10);
+      doc.roundedRect(138, 14, 52, 7, 1.2, 1.2, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text("PAYMENT RECEIPT", 164, 18.8, { align: "center" });
+
+      // Receipt Meta Lines
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text("Receipt No:", 138, 27.5);
+      doc.setFont("courier", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(10, 10, 10);
+      doc.text(receiptNo, 190, 27.5, { align: "right" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text("Date:", 138, 33.5);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(10, 10, 10);
+      doc.text(t.date, 190, 33.5, { align: "right" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text("Status:", 138, 39.5);
+
+      if (t.status === "Completed") {
+        doc.setFillColor(236, 253, 245);
+        doc.setDrawColor(167, 243, 208);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(165, 36, 25, 4.8, 1, 1, "FD");
+        doc.setTextColor(6, 95, 70);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+        doc.text("COMPLETED", 177.5, 39.5, { align: "center" });
+      } else {
+        doc.setFillColor(255, 251, 235);
+        doc.setDrawColor(253, 230, 138);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(165, 36, 25, 4.8, 1, 1, "FD");
+        doc.setTextColor(146, 64, 14);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+        doc.text(t.status.toUpperCase(), 177.5, 39.5, { align: "center" });
+      }
+
+      // --- Header Separator Line ---
+      doc.setDrawColor(10, 10, 10);
+      doc.setLineWidth(0.5);
+      doc.line(20, 46, 190, 46);
+
+      // --- Party & Summary Cards ---
+      // Left Card: Received From / Paid To
+      doc.setFillColor(250, 250, 250);
+      doc.setDrawColor(229, 229, 229);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(20, 52, 82, 24, 2, 2, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text(t.type === "Income" ? "RECEIVED FROM (CLIENT)" : "PAID TO (PAYEE / VENDOR)", 24, 58.5);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(10, 10, 10);
+      doc.text(t.clientName || "Valued Client", 24, 65.5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(82, 82, 82);
+      doc.text(t.referenceNo ? `Ref / Invoice ID: ${t.referenceNo}` : "Direct Agency Transaction", 24, 71.5);
+
+      // Right Card: Transaction Summary (Explicit fill color)
+      doc.setFillColor(250, 250, 250);
+      doc.setDrawColor(229, 229, 229);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(108, 52, 82, 24, 2, 2, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text("TRANSACTION SUMMARY", 112, 58.5);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(10, 10, 10);
+      doc.text(`${t.type}  •  ${t.paymentMethod}`, 112, 65.5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(82, 82, 82);
+      doc.text(`Category: ${t.category}`, 112, 71.5);
+
+      // --- Itemized Table ---
+      const tableTopY = 82;
+      doc.setFillColor(245, 245, 245);
+      doc.setDrawColor(229, 229, 229);
+      doc.setLineWidth(0.3);
+      doc.rect(20, tableTopY, 170, 8, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(82, 82, 82);
+      doc.text("SL", 24, tableTopY + 5.5);
+      doc.text("ITEM / DESCRIPTION", 36, tableTopY + 5.5);
+      doc.text("CATEGORY", 112, tableTopY + 5.5);
+      doc.text("METHOD", 142, tableTopY + 5.5);
+      doc.text("AMOUNT", 188, tableTopY + 5.5, { align: "right" });
+
+      // Table Row
+      const rowY = tableTopY + 8;
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(115, 115, 115);
+      doc.text("01", 24, rowY + 7);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(10, 10, 10);
+      const splitTitle = doc.splitTextToSize(t.title, 70);
+      doc.text(splitTitle, 36, rowY + 6);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text(t.clientName ? `Party: ${t.clientName}` : "Standard Agency Account", 36, rowY + 11);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(82, 82, 82);
+      doc.text(t.category, 112, rowY + 7);
+      doc.text(t.paymentMethod, 142, rowY + 7);
+
+      doc.setFont("courier", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(10, 10, 10);
+      doc.text(cleanAmount, 188, rowY + 7, { align: "right" });
+
+      doc.setDrawColor(229, 229, 229);
+      doc.setLineWidth(0.3);
+      doc.line(20, rowY + 16, 190, rowY + 16);
+
+      // --- Summary Section (Safe within page boundaries) ---
+      const summaryY = rowY + 22;
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(229, 229, 229);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(120, summaryY, 70, 26, 1.5, 1.5, "FD");
+
+      // Subtotal
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(82, 82, 82);
+      doc.text("Subtotal", 124, summaryY + 5.5);
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(10, 10, 10);
+      doc.text(cleanAmount, 186, summaryY + 5.5, { align: "right" });
+      doc.setDrawColor(229, 229, 229);
+      doc.line(120, summaryY + 8.5, 190, summaryY + 8.5);
+
+      // Tax
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(82, 82, 82);
+      doc.text("Tax / Fee", 124, summaryY + 13.5);
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(10, 10, 10);
+      doc.text("INR 0.00", 186, summaryY + 13.5, { align: "right" });
+      doc.line(120, summaryY + 16.5, 190, summaryY + 16.5);
+
+      // Net Total Dark Bar
+      doc.setFillColor(10, 10, 10);
+      doc.rect(120, summaryY + 16.5, 70, 9.5, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(`Net Total (${t.type})`, 124, summaryY + 23);
+      doc.setFont("courier", "bold");
+      doc.setFontSize(9);
+      doc.text(cleanAmount, 186, summaryY + 23, { align: "right" });
+
+      // --- Notes Section ---
+      const notesY = summaryY + 34;
+      doc.setFillColor(250, 250, 250);
+      doc.setDrawColor(229, 229, 229);
+      doc.rect(20, notesY, 170, 18, "FD");
+      doc.setFillColor(10, 10, 10);
+      doc.rect(20, notesY, 2.5, 18, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(10, 10, 10);
+      doc.text(t.notes ? "TRANSACTION NOTES" : "RECEIPT NOTICE", 26, notesY + 5.5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(82, 82, 82);
+      const noteContent = t.notes || "This is a computer-generated official payment receipt. No physical signature is mandatory for digital transaction validation.";
+      const splitNotes = doc.splitTextToSize(noteContent, 158);
+      doc.text(splitNotes, 26, notesY + 11);
+
+      // --- Footer Section (No sign box, clean official footer) ---
+      const footerY = 262;
+      doc.setDrawColor(229, 229, 229);
+      doc.setLineDashPattern([1.5, 1.5], 0);
+      doc.line(20, footerY - 4, 190, footerY - 4);
+      doc.setLineDashPattern([], 0);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(115, 115, 115);
+      doc.text("Official electronic payment receipt generated by ABCD Agency Finance Management System.", 20, footerY + 2);
+      doc.text(`Support: sb.abcd321@gmail.com  •  Phone: +91 89448 99747  •  Website: abcdagency.com  •  Record ID: ${t.id}`, 20, footerY + 6.5);
+
+      const filename = `Receipt_${receiptNo.replace(/[^a-zA-Z0-9-_]/g, "_")}.pdf`;
+      doc.save(filename);
+
+      toast.success(`Downloaded ${filename}`, { id: toastId });
+    } catch (err: any) {
+      console.error("PDF export error:", err);
+      toast.error("Failed to generate PDF download", { id: toastId });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   // Quick Status Change
   const handleQuickStatusChange = (id: string, newStatus: TransactionItem["status"]) => {
@@ -434,6 +843,15 @@ export function FinanceManager({
           <Button
             variant="secondary"
             size="sm"
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Tag className="w-4 h-4" />
+            Categories
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleExportCSV}
             className="flex items-center gap-2"
           >
@@ -443,11 +861,15 @@ export function FinanceManager({
           <Button
             variant="primary"
             size="sm"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setIsCreatingCategoryAdd(false);
+              setNewCategoryInputAdd("");
+              setIsAddModalOpen(true);
+            }}
             className="flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Record Transaction
+            New Record
           </Button>
         </div>
       </div>
@@ -532,7 +954,7 @@ export function FinanceManager({
               className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-3 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
             >
               <option value="All" className="dark:bg-[#111111]">All Categories</option>
-              {CATEGORIES.map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat} value={cat} className="dark:bg-[#111111]">{cat}</option>
               ))}
             </select>
@@ -556,13 +978,12 @@ export function FinanceManager({
             <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#525252] dark:text-[#A3A3A3] bg-[#F9F9F9] dark:bg-[#0E0E0E] border-b border-[#E5E5E5] dark:border-[#262626]">
               <tr>
                 <th className="px-5 py-3.5 w-12 text-center">SL</th>
-                <th className="px-5 py-3.5 min-w-[280px]">Transaction &amp; Details</th>
-                <th className="px-5 py-3.5 min-w-[130px] text-center">Status</th>
+                <th className="px-5 py-3.5 min-w-[200px] max-w-[280px]">Transaction &amp; Details</th>
+                <th className="px-3.5 py-3.5 min-w-[120px] text-left">Status</th>
                 <th className="px-5 py-3.5 min-w-[140px]">Category</th>
-                <th className="px-5 py-3.5 min-w-[130px]">Method</th>
-                <th className="px-5 py-3.5 min-w-[120px]">Date</th>
+                <th className="px-5 py-3.5 min-w-[140px]">Date &amp; Method</th>
                 <th className="px-5 py-3.5 min-w-[130px] text-right">Amount</th>
-                <th className="px-5 py-3.5 text-right w-24">Actions</th>
+                <th className="px-5 py-3.5 text-right min-w-[140px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626] bg-white dark:bg-[#0A0A0A]">
@@ -582,8 +1003,8 @@ export function FinanceManager({
                       </td>
 
                       {/* Transaction info */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3.5">
+                      <td className="px-5 py-4 min-w-[200px] max-w-[280px]">
+                        <div className="flex items-center gap-3.5 min-w-0">
                           <div
                             className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 shadow-xs ${
                               isIncome
@@ -592,22 +1013,28 @@ export function FinanceManager({
                             }`}
                           >
                             {isIncome ? (
-                              <ArrowDownLeft className="w-4 h-4" />
+                              <ArrowDownLeft className="w-4 h-4 shrink-0" />
                             ) : (
-                              <ArrowUpRight className="w-4 h-4" />
+                              <ArrowUpRight className="w-4 h-4 shrink-0" />
                             )}
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#0A0A0A] dark:text-white truncate">
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="text-sm font-bold text-[#0A0A0A] dark:text-white truncate block"
+                              title={t.title}
+                            >
                               {t.title}
                             </p>
-                            <p className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5 flex items-center gap-1.5">
-                              {t.clientName && <span>{t.clientName}</span>}
+                            <p
+                              className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5 flex items-center gap-1.5"
+                              title={t.clientName || ""}
+                            >
+                              {t.clientName && <span className="truncate">{t.clientName}</span>}
                               {t.clientName && t.referenceNo && (
-                                <span className="text-[#A3A3A3] dark:text-neutral-600">•</span>
+                                <span className="text-[#A3A3A3] dark:text-neutral-600 shrink-0">•</span>
                               )}
                               {t.referenceNo && (
-                                <span className="font-mono text-[11px] bg-[#F5F5F5] dark:bg-[#1A1A1A] px-1.5 py-0.2 rounded-md">
+                                <span className="font-mono text-[11px] bg-[#F5F5F5] dark:bg-[#1A1A1A] px-1.5 py-0.2 rounded-md shrink-0">
                                   {t.referenceNo}
                                 </span>
                               )}
@@ -617,7 +1044,7 @@ export function FinanceManager({
                       </td>
 
                       {/* Quick Status */}
-                      <td className="px-5 py-4 whitespace-nowrap text-center">
+                      <td className="px-3.5 py-4 whitespace-nowrap text-left">
                         <select
                           value={t.status}
                           onChange={(e) => handleQuickStatusChange(t.id, e.target.value as any)}
@@ -640,14 +1067,16 @@ export function FinanceManager({
                         {t.category}
                       </td>
 
-                      {/* Payment Method */}
-                      <td className="px-5 py-4 whitespace-nowrap text-xs text-[#737373] dark:text-neutral-400">
-                        {t.paymentMethod}
-                      </td>
-
-                      {/* Date */}
-                      <td className="px-5 py-4 whitespace-nowrap text-xs text-[#737373] dark:text-neutral-400">
-                        {t.date}
+                      {/* Date & Method */}
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-[#0A0A0A] dark:text-white">
+                            {t.date}
+                          </span>
+                          <span className="text-[11px] text-[#737373] dark:text-neutral-400 mt-0.5">
+                            {t.paymentMethod}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Amount */}
@@ -669,9 +1098,16 @@ export function FinanceManager({
                           <button
                             onClick={() => setSelectedTransaction(t)}
                             className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:border-[#0A0A0A] dark:hover:border-white transition-colors cursor-pointer"
-                            title="View Transaction"
+                            title="View Details"
                           >
                             <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setPreviewReceiptTx(t)}
+                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:border-[#0A0A0A] dark:hover:border-white transition-colors cursor-pointer"
+                            title="Download Receipt Copy (A4 PDF)"
+                          >
+                            <FileDown className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleOpenEdit(t)}
@@ -694,7 +1130,7 @@ export function FinanceManager({
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="max-w-xs mx-auto text-center space-y-2">
                       <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white">
                         No transactions found
@@ -811,8 +1247,10 @@ export function FinanceManager({
         onClose={() => {
           if (isSubmitting) return;
           setIsAddModalOpen(false);
+          setIsCreatingCategoryAdd(false);
+          setNewCategoryInputAdd("");
         }}
-        title="Record Transaction"
+        title="New Record"
         variant="centered"
         size="2xl"
       >
@@ -888,18 +1326,97 @@ export function FinanceManager({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                Category
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat} className="dark:bg-[#111111]">{cat}</option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                  Category
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingCategoryAdd(!isCreatingCategoryAdd);
+                    setNewCategoryInputAdd("");
+                  }}
+                  className="text-[11px] font-semibold text-[#0A0A0A] dark:text-white hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  {isCreatingCategoryAdd ? "Select Existing" : "Create New"}
+                </button>
+              </div>
+
+              {isCreatingCategoryAdd ? (
+                <div className="flex items-center gap-1.5 animate-in fade-in duration-150">
+                  <input
+                    type="text"
+                    placeholder="Enter category name..."
+                    value={newCategoryInputAdd}
+                    onChange={(e) => setNewCategoryInputAdd(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (newCategoryInputAdd.trim()) {
+                          const added = handleAddCategory(newCategoryInputAdd);
+                          if (added) {
+                            setFormData({ ...formData, category: added });
+                            setIsCreatingCategoryAdd(false);
+                            setNewCategoryInputAdd("");
+                            toast.success(`Category "${added}" created & selected`);
+                          }
+                        }
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-xs border border-[#0A0A0A] dark:border-white rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newCategoryInputAdd.trim()) {
+                        const added = handleAddCategory(newCategoryInputAdd);
+                        if (added) {
+                          setFormData({ ...formData, category: added });
+                          setIsCreatingCategoryAdd(false);
+                          setNewCategoryInputAdd("");
+                          toast.success(`Category "${added}" created & selected`);
+                        }
+                      }
+                    }}
+                    disabled={!newCategoryInputAdd.trim()}
+                    className="px-3 py-2 text-xs font-semibold rounded-lg bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shrink-0 cursor-pointer"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingCategoryAdd(false);
+                      setNewCategoryInputAdd("");
+                    }}
+                    className="px-2.5 py-2 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#262626] text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={formData.category}
+                  onChange={(e) => {
+                    if (e.target.value === "__CREATE_NEW__") {
+                      setIsCreatingCategoryAdd(true);
+                      setNewCategoryInputAdd("");
+                    } else {
+                      setFormData({ ...formData, category: e.target.value });
+                    }
+                  }}
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat} className="dark:bg-[#111111]">{cat}</option>
+                  ))}
+                  <option value="__CREATE_NEW__" className="dark:bg-[#111111] font-semibold text-[#0A0A0A] dark:text-white">
+                    + Create New Category...
+                  </option>
+                </select>
+              )}
             </div>
           </div>
 
@@ -1078,18 +1595,97 @@ export function FinanceManager({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                  Category
-                </label>
-                <select
-                  value={editFormData.category}
-                  onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat} className="dark:bg-[#111111]">{cat}</option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                    Category
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingCategoryEdit(!isCreatingCategoryEdit);
+                      setNewCategoryInputEdit("");
+                    }}
+                    className="text-[11px] font-semibold text-[#0A0A0A] dark:text-white hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {isCreatingCategoryEdit ? "Select Existing" : "Create New"}
+                  </button>
+                </div>
+
+                {isCreatingCategoryEdit ? (
+                  <div className="flex items-center gap-1.5 animate-in fade-in duration-150">
+                    <input
+                      type="text"
+                      placeholder="Enter category name..."
+                      value={newCategoryInputEdit}
+                      onChange={(e) => setNewCategoryInputEdit(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (newCategoryInputEdit.trim()) {
+                            const added = handleAddCategory(newCategoryInputEdit);
+                            if (added) {
+                              setEditFormData({ ...editFormData, category: added });
+                              setIsCreatingCategoryEdit(false);
+                              setNewCategoryInputEdit("");
+                              toast.success(`Category "${added}" created & selected`);
+                            }
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 text-xs border border-[#0A0A0A] dark:border-white rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newCategoryInputEdit.trim()) {
+                          const added = handleAddCategory(newCategoryInputEdit);
+                          if (added) {
+                            setEditFormData({ ...editFormData, category: added });
+                            setIsCreatingCategoryEdit(false);
+                            setNewCategoryInputEdit("");
+                            toast.success(`Category "${added}" created & selected`);
+                          }
+                        }
+                      }}
+                      disabled={!newCategoryInputEdit.trim()}
+                      className="px-3 py-2 text-xs font-semibold rounded-lg bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shrink-0 cursor-pointer"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingCategoryEdit(false);
+                        setNewCategoryInputEdit("");
+                      }}
+                      className="px-2.5 py-2 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#262626] text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={editFormData.category}
+                    onChange={(e) => {
+                      if (e.target.value === "__CREATE_NEW__") {
+                        setIsCreatingCategoryEdit(true);
+                        setNewCategoryInputEdit("");
+                      } else {
+                        setEditFormData({ ...editFormData, category: e.target.value });
+                      }
+                    }}
+                    className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat} className="dark:bg-[#111111]">{cat}</option>
+                    ))}
+                    <option value="__CREATE_NEW__" className="dark:bg-[#111111] font-semibold text-[#0A0A0A] dark:text-white">
+                      + Create New Category...
+                    </option>
+                  </select>
+                )}
               </div>
             </div>
 
@@ -1293,24 +1889,379 @@ export function FinanceManager({
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2.5 border-t border-[#E5E5E5] dark:border-[#262626]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2.5 border-t border-[#E5E5E5] dark:border-[#262626]">
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setSelectedTransaction(null)}
+                onClick={() => handleDownloadDirectPDF(selectedTransaction)}
+                disabled={isDownloadingPdf}
+                className="flex items-center justify-center gap-1.5"
+              >
+                {isDownloadingPdf ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Download PDF Receipt
+                  </>
+                )}
+              </Button>
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setSelectedTransaction(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    const t = selectedTransaction;
+                    setSelectedTransaction(null);
+                    handleOpenEdit(t);
+                  }}
+                >
+                  Edit Transaction
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {/* Category Manager Modal */}
+      <Modal
+        isOpen={isCategoryModalOpen}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          setNewCategoryManagerInput("");
+        }}
+        title="Manage Finance Categories"
+        variant="centered"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-[#737373] dark:text-neutral-400 leading-relaxed">
+            Create and organize categories for grouping agency transactions, client billings, and operational expenses.
+          </p>
+
+          {/* Add New Category Input */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+              Create New Category
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="e.g. Legal & Compliance, Cloud Hosting..."
+                value={newCategoryManagerInput}
+                onChange={(e) => setNewCategoryManagerInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (newCategoryManagerInput.trim()) {
+                      const added = handleAddCategory(newCategoryManagerInput);
+                      if (added) {
+                        setNewCategoryManagerInput("");
+                        toast.success(`Category "${added}" created successfully`);
+                      }
+                    }
+                  }
+                }}
+                className="flex-1 px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  if (newCategoryManagerInput.trim()) {
+                    const added = handleAddCategory(newCategoryManagerInput);
+                    if (added) {
+                      setNewCategoryManagerInput("");
+                      toast.success(`Category "${added}" created successfully`);
+                    }
+                  }
+                }}
+                disabled={!newCategoryManagerInput.trim()}
+                className="flex items-center gap-1.5 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Category
+              </Button>
+            </div>
+          </div>
+
+          {/* Existing Categories List */}
+          <div className="space-y-2 pt-2 border-t border-[#E5E5E5] dark:border-[#262626]">
+            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+              Available Categories ({categories.length})
+            </h4>
+            <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+              {categories.map((cat) => {
+                const count = transactionList.filter((t) => t.category === cat).length;
+                const isDefault = DEFAULT_CATEGORIES.includes(cat);
+                const isEditing = editingCategoryName === cat;
+
+                if (isEditing) {
+                  return (
+                    <div
+                      key={cat}
+                      className="flex items-center gap-2 p-2 border border-[#0A0A0A] dark:border-white rounded-lg bg-white dark:bg-[#111111] animate-in fade-in duration-150"
+                    >
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editCategoryInput}
+                        onChange={(e) => setEditCategoryInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleEditCategory(cat, editCategoryInput);
+                          } else if (e.key === "Escape") {
+                            setEditingCategoryName(null);
+                          }
+                        }}
+                        className="flex-1 px-2 py-1 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleEditCategory(cat, editCategoryInput)}
+                        disabled={!editCategoryInput.trim()}
+                        className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                        title="Save Changes"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategoryName(null)}
+                        className="p-1.5 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:bg-[#E5E5E5] dark:hover:bg-[#262626] rounded-md transition-colors cursor-pointer"
+                        title="Cancel"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={cat}
+                    className="flex items-center justify-between p-2.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-[#FAFAFA] dark:bg-[#141414] hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-xs font-semibold text-[#0A0A0A] dark:text-white truncate">
+                        {cat}
+                      </span>
+                      <span className="text-[10px] font-mono text-[#737373] dark:text-neutral-500 bg-[#E5E5E5] dark:bg-[#262626] px-1.5 py-0.5 rounded">
+                        {count} {count === 1 ? "record" : "records"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCategoryName(cat);
+                          setEditCategoryInput(cat);
+                        }}
+                        className="p-1.5 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:bg-[#E5E5E5] dark:hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                        title="Edit Category Name"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, category: cat }));
+                          setIsCategoryModalOpen(false);
+                          setIsAddModalOpen(true);
+                        }}
+                        className="px-2 py-1 text-[11px] font-medium text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:bg-[#E5E5E5] dark:hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                        title="Create new record with this category"
+                      >
+                        Use in New Record
+                      </button>
+                      {!isDefault && count === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat)}
+                          className="p-1 text-[#737373] hover:text-red-600 dark:text-neutral-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors cursor-pointer"
+                          title="Remove custom category"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <Button variant="secondary" size="sm" onClick={() => setIsCategoryModalOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      {/* Receipt Preview Modal */}
+      {previewReceiptTx && (
+        <Modal
+          isOpen={!!previewReceiptTx}
+          onClose={() => setPreviewReceiptTx(null)}
+          title="Payment Receipt Copy (A4 Preview)"
+          variant="centered"
+          size="2xl"
+        >
+          <div className="space-y-4">
+            {/* A4 Sheet Preview Box */}
+            <div id="printable-receipt-preview" className="max-h-[65vh] overflow-y-auto p-4 sm:p-6 bg-white text-[#0A0A0A] rounded-xl border border-[#E5E5E5] shadow-xs">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b-2 border-[#0A0A0A]">
+                <div>
+                  <img
+                    src="/images/Black_Logo.png"
+                    alt="ABCD Agency"
+                    className="h-10 w-auto object-contain mb-1.5"
+                  />
+                  <p className="text-[11px] text-[#525252] leading-relaxed">
+                    sb.abcd321@gmail.com • +91 89448 99747<br />
+                    Tripura, India • abcdagency.com
+                  </p>
+                </div>
+                <div className="sm:text-right">
+                  <span className="inline-block px-3 py-1 bg-[#0A0A0A] text-white text-[10px] font-bold uppercase tracking-widest rounded">
+                    Payment Receipt
+                  </span>
+                  <div className="mt-2.5 text-xs text-[#525252] space-y-0.5">
+                    <div>Receipt No: <strong className="font-mono text-[#0A0A0A]">{previewReceiptTx.referenceNo || `REC-${previewReceiptTx.id.slice(-6).toUpperCase()}`}</strong></div>
+                    <div>Date: <strong className="text-[#0A0A0A]">{previewReceiptTx.date}</strong></div>
+                    <div>Status: <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${previewReceiptTx.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{previewReceiptTx.status}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-5 border-b border-[#E5E5E5]">
+                <div className="p-3.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#737373]">
+                    {previewReceiptTx.type === "Income" ? "Received From (Client)" : "Paid To (Payee / Vendor)"}
+                  </div>
+                  <div className="text-sm font-bold text-[#0A0A0A] mt-1">
+                    {previewReceiptTx.clientName || "Valued Client"}
+                  </div>
+                  <div className="text-xs text-[#737373] mt-1">
+                    {previewReceiptTx.referenceNo ? `Ref / Invoice ID: ${previewReceiptTx.referenceNo}` : "Direct Transaction"}
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#737373]">
+                    Transaction Summary
+                  </div>
+                  <div className="text-sm font-bold text-[#0A0A0A] mt-1">
+                    {previewReceiptTx.type} • {previewReceiptTx.paymentMethod}
+                  </div>
+                  <div className="text-xs text-[#737373] mt-1">
+                    Category: <strong className="text-[#0A0A0A]">{previewReceiptTx.category}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="py-5">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-[#F5F5F5] border-y border-[#E5E5E5] text-[10px] font-bold uppercase tracking-wider text-[#525252]">
+                      <th className="py-2.5 px-3 w-10 text-center">SL</th>
+                      <th className="py-2.5 px-3">Description</th>
+                      <th className="py-2.5 px-3">Category</th>
+                      <th className="py-2.5 px-3">Method</th>
+                      <th className="py-2.5 px-3 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E5E5E5]">
+                    <tr>
+                      <td className="py-3 px-3 text-center font-mono text-[#737373]">01</td>
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-[#0A0A0A]">{previewReceiptTx.title}</div>
+                        <div className="text-[11px] text-[#737373] mt-0.5">{previewReceiptTx.clientName ? `Party: ${previewReceiptTx.clientName}` : "Standard Agency Account"}</div>
+                      </td>
+                      <td className="py-3 px-3 text-[#525252]">{previewReceiptTx.category}</td>
+                      <td className="py-3 px-3 text-[#525252]">{previewReceiptTx.paymentMethod}</td>
+                      <td className="py-3 px-3 text-right font-mono font-bold text-[#0A0A0A]">{previewReceiptTx.amount}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totals */}
+              <div className="flex justify-end pt-2">
+                <div className="w-full sm:w-72 border border-[#E5E5E5] rounded-lg overflow-hidden text-xs">
+                  <div className="flex justify-between px-3.5 py-2 border-b border-[#E5E5E5] text-[#525252]">
+                    <span>Subtotal</span>
+                    <span className="font-mono">{previewReceiptTx.amount}</span>
+                  </div>
+                  <div className="flex justify-between px-3.5 py-2 border-b border-[#E5E5E5] text-[#525252]">
+                    <span>Tax / Processing Fee</span>
+                    <span className="font-mono">₹0.00</span>
+                  </div>
+                  <div className="flex justify-between px-3.5 py-2.5 bg-[#0A0A0A] text-white font-bold">
+                    <span>Net Total ({previewReceiptTx.type})</span>
+                    <span className="font-mono text-sm">{previewReceiptTx.amount}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {previewReceiptTx.notes && (
+                <div className="mt-4 p-3 bg-[#FAFAFA] border-l-2 border-[#0A0A0A] rounded-r-lg text-xs text-[#525252] leading-relaxed">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#0A0A0A] mb-1">Notes</div>
+                  {previewReceiptTx.notes}
+                </div>
+              )}
+
+              {/* Footer (No signature box) */}
+              <div className="mt-6 pt-4 border-t border-dashed border-[#CCCCCC] flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-[#737373]">
+                <div>Official electronic payment receipt generated by ABCD Agency Finance System.</div>
+                <div>Support: sb.abcd321@gmail.com • +91 89448 99747</div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPreviewReceiptTx(null)}
+                disabled={isDownloadingPdf}
               >
                 Close
               </Button>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => {
-                  const t = selectedTransaction;
-                  setSelectedTransaction(null);
-                  handleOpenEdit(t);
-                }}
+                onClick={() => handleDownloadDirectPDF(previewReceiptTx)}
+                disabled={isDownloadingPdf}
+                className="flex items-center gap-2"
               >
-                Edit Transaction
+                {isDownloadingPdf ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </>
+                )}
               </Button>
             </div>
           </div>
