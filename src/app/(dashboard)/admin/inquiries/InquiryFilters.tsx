@@ -4,32 +4,31 @@ import React, { useTransition, useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 
-interface ProjectFiltersProps {
-  statusCounts?: Record<string, number>;
+interface InquiryFiltersProps {
+  tabCounts: Record<string, number>;
 }
 
-const STATUS_OPTIONS = [
-  "All",
-  "On Track",
-  "In Review",
-  "Delayed",
-  "On Hold",
+const TABS = [
+  { label: "All" },
+  { label: "Unread" },
+  { label: "Replied" },
+  { label: "Trash" },
 ] as const;
 
-export function ProjectFilters({ statusCounts }: ProjectFiltersProps) {
+export function InquiryFilters({ tabCounts }: InquiryFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const currentStatus = searchParams.get("status") || "All";
+  const currentTab = searchParams.get("tab") || "Unread";
   const currentSort = searchParams.get("sort") || "newest";
 
   // Debounced search
   useEffect(() => {
     const currentQ = searchParams.get("q") || "";
-    if (searchQuery === currentQ) return; // Prevent infinite loop on URL update
+    if (searchQuery === currentQ) return;
 
     const timer = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
@@ -39,7 +38,7 @@ export function ProjectFilters({ statusCounts }: ProjectFiltersProps) {
         params.delete("q");
       }
       params.set("page", "1");
-      
+
       startTransition(() => {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
@@ -48,14 +47,9 @@ export function ProjectFilters({ statusCounts }: ProjectFiltersProps) {
     return () => clearTimeout(timer);
   }, [searchQuery, pathname, router, searchParams]);
 
-  const handleStatusClick = (status: string) => {
+  const handleTabClick = (tabLabel: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    
-    if (status && status !== "All" && status !== "All Status") {
-      params.set("status", status);
-    } else {
-      params.delete("status");
-    }
+    params.set("tab", tabLabel);
     params.set("page", "1");
 
     startTransition(() => {
@@ -79,28 +73,26 @@ export function ProjectFilters({ statusCounts }: ProjectFiltersProps) {
 
   return (
     <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
-      {/* Status Filter Tabs */}
+      {/* Left side: Tab type status filter */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-        {STATUS_OPTIONS.map((status) => {
-          const isSelected =
-            currentStatus === status ||
-            (status === "All" && (!currentStatus || currentStatus === "All" || currentStatus === "All Status"));
-          const count = statusCounts?.[status];
+        {TABS.map((t) => {
+          const isSelected = currentTab === t.label;
+          const count = tabCounts[t.label];
 
           return (
             <button
-              key={status}
-              onClick={() => handleStatusClick(status)}
-              className={`px-3 py-2 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+              key={t.label}
+              onClick={() => handleTabClick(t.label)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                 isSelected
-                  ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-sm"
+                  ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
                   : "text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A]"
               }`}
             >
-              <span>{status}</span>
+              <span>{t.label}</span>
               {typeof count === "number" && (
                 <span
-                  className={`px-1.5 py-0.2 text-[10px] rounded-full font-mono ${
+                  className={`px-1.5 py-0.2 text-[10px] rounded-md font-mono ${
                     isSelected
                       ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
                       : "bg-[#E5E5E5] text-[#0A0A0A] dark:bg-[#262626] dark:text-neutral-300"
@@ -114,17 +106,17 @@ export function ProjectFilters({ statusCounts }: ProjectFiltersProps) {
         })}
       </div>
 
-      {/* Search & Sort Controls */}
+      {/* Right side: Search & Sort controls */}
       <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
         {/* Search Input Controls */}
-        <div className="relative flex-1 sm:w-64">
+        <div className="relative flex-1 sm:w-72">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />
           <input
             type="text"
-            placeholder="Search projects..."
+            placeholder="Search inquiries..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+            className="w-full pl-9 pr-8 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
           />
           {searchQuery ? (
             <button
@@ -146,13 +138,12 @@ export function ProjectFilters({ statusCounts }: ProjectFiltersProps) {
           <select
             value={currentSort}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-md px-3 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
+            className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-3 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
           >
             <option value="newest" className="dark:bg-[#111111]">Sort: Newest</option>
             <option value="oldest" className="dark:bg-[#111111]">Sort: Oldest</option>
             <option value="a-z" className="dark:bg-[#111111]">Sort: Name (A-Z)</option>
             <option value="z-a" className="dark:bg-[#111111]">Sort: Name (Z-A)</option>
-            <option value="progress" className="dark:bg-[#111111]">Sort: Progress</option>
           </select>
         </div>
       </div>

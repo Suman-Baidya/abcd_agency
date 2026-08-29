@@ -45,7 +45,7 @@ function StatusPill({ status }: { status: string }) {
     Closed: "bg-[#F5F5F5] text-[#737373] dark:bg-[#1A1A1A] dark:text-neutral-400",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${map[status] || map.Closed}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${map[status] || map.Closed}`}>
       {status}
     </span>
   );
@@ -59,13 +59,13 @@ function PriorityDot({ priority }: { priority: string }) {
 
 /* ── Inline SVG icons ── */
 const EyeIcon = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
   </svg>
 );
 const TrashIcon = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
   </svg>
 );
@@ -90,7 +90,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 }
 
 /* ════════════════════════════════
-   DETAIL MODAL (centred overlay)
+   DETAIL MODAL
 ════════════════════════════════ */
 function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => void }) {
   const [isPending, startTransition] = useTransition();
@@ -119,7 +119,7 @@ function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => v
           if (e.target === e.currentTarget) onClose();
         }}
       >
-        <div className="relative w-full max-w-2xl mx-auto rounded-2xl bg-white dark:bg-[#111111] shadow-2xl border border-[#E5E5E5] dark:border-[#262626] animate-in zoom-in-95 fade-in duration-200 flex flex-col max-h-[calc(100vh-8rem)]">
+        <div className="relative w-full max-w-2xl mx-auto rounded-xl bg-white dark:bg-[#111111] shadow-2xl border border-[#E5E5E5] dark:border-[#262626] animate-in zoom-in-95 fade-in duration-200 flex flex-col max-h-[calc(100vh-8rem)]">
           {/* Header */}
           <div className="flex items-start justify-between px-6 py-4 border-b border-[#E5E5E5] dark:border-[#262626] flex-shrink-0">
             <div className="flex items-center gap-3 min-w-0">
@@ -133,7 +133,7 @@ function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => v
             </div>
             <button
               onClick={onClose}
-              className="flex-shrink-0 ml-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F5F5F5] dark:hover:bg-[#262626] text-[#737373] dark:text-neutral-400 transition-colors"
+              className="flex-shrink-0 ml-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#262626] text-[#737373] dark:text-neutral-400 transition-colors cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -150,7 +150,7 @@ function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => v
                 <div className="flex flex-wrap gap-1.5">
                   {statuses.map((s) => (
                     <button key={s} onClick={() => handleStatus(s)} disabled={isPending}
-                      className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${inquiry.status === s
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${inquiry.status === s
                           ? "bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] border-[#0A0A0A] dark:border-white"
                           : "border-[#E5E5E5] dark:border-[#2A2A2A] text-[#737373] dark:text-neutral-400 hover:border-[#0A0A0A] dark:hover:border-neutral-300"
                         }`}
@@ -165,7 +165,7 @@ function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => v
                     const dot = p === "High" ? "bg-red-500" : p === "Medium" ? "bg-amber-500" : "bg-[#737373]";
                     return (
                       <button key={p} onClick={() => handlePriority(p)} disabled={isPending}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${inquiry.priority === p
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${inquiry.priority === p
                             ? "bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] border-[#0A0A0A] dark:border-white"
                             : "border-[#E5E5E5] dark:border-[#2A2A2A] text-[#737373] dark:text-neutral-400 hover:border-[#0A0A0A] dark:hover:border-neutral-300"
                           }`}
@@ -207,7 +207,7 @@ function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => v
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] dark:text-neutral-500 mb-2">Services</p>
                 <div className="flex flex-wrap gap-1.5">
                   {inquiry.services.map((s) => (
-                    <span key={s} className="px-2.5 py-1 text-xs font-medium bg-[#F5F5F5] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-white rounded-md border border-[#E5E5E5] dark:border-[#2A2A2A]">
+                    <span key={s} className="px-2.5 py-1 text-xs font-medium bg-[#F5F5F5] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-white rounded-lg border border-[#E5E5E5] dark:border-[#2A2A2A]">
                       {s}
                     </span>
                   ))}
@@ -220,19 +220,19 @@ function InquiryModal({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => v
             {/* Message */}
             <section>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] dark:text-neutral-500 mb-2">Project Description</p>
-              <p className="text-sm text-[#737373] dark:text-neutral-300 leading-relaxed whitespace-pre-wrap bg-[#FAFAFA] dark:bg-[#0A0A0A] rounded-lg p-4 border border-[#F0F0F0] dark:border-[#1E1E1E]">
+              <p className="text-sm text-[#737373] dark:text-neutral-300 leading-relaxed whitespace-pre-wrap bg-[#FAFAFA] dark:bg-[#0A0A0A] rounded-xl p-4 border border-[#F0F0F0] dark:border-[#1E1E1E]">
                 {inquiry.message}
               </p>
             </section>
 
             {/* Timestamps */}
             <div className="grid grid-cols-2 gap-4 text-xs pt-1">
-              <div className="p-3 rounded-lg bg-[#FAFAFA] dark:bg-[#0A0A0A] border border-[#F0F0F0] dark:border-[#1E1E1E]">
+              <div className="p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-[#0A0A0A] border border-[#F0F0F0] dark:border-[#1E1E1E]">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] dark:text-neutral-500 mb-1">Submitted</p>
                 <p className="font-semibold text-[#0A0A0A] dark:text-white">{format(new Date(inquiry.createdAt), "dd MMM yyyy")}</p>
                 <p className="text-[#A3A3A3] dark:text-neutral-500">{format(new Date(inquiry.createdAt), "hh:mm a")} · {formatDistanceToNow(new Date(inquiry.createdAt), { addSuffix: true })}</p>
               </div>
-              <div className="p-3 rounded-lg bg-[#FAFAFA] dark:bg-[#0A0A0A] border border-[#F0F0F0] dark:border-[#1E1E1E]">
+              <div className="p-3.5 rounded-xl bg-[#FAFAFA] dark:bg-[#0A0A0A] border border-[#F0F0F0] dark:border-[#1E1E1E]">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] dark:text-neutral-500 mb-1">Last Updated</p>
                 <p className="font-semibold text-[#0A0A0A] dark:text-white">{format(new Date(inquiry.updatedAt), "dd MMM yyyy")}</p>
                 <p className="text-[#A3A3A3] dark:text-neutral-500">{format(new Date(inquiry.updatedAt), "hh:mm a")} · {formatDistanceToNow(new Date(inquiry.updatedAt), { addSuffix: true })}</p>
@@ -295,7 +295,6 @@ function InquiryRow({
     });
   };
 
-
   const isUnread = inquiry.status === "New";
 
   return (
@@ -315,8 +314,8 @@ function InquiryRow({
 
         {/* 0. Serial Number */}
         <div className="flex items-center justify-center w-6 sm:w-8 flex-shrink-0">
-          <span className="text-xs font-semibold text-[#A3A3A3] dark:text-neutral-500">
-            {index + 1}
+          <span className="text-xs font-mono font-medium text-[#737373] dark:text-neutral-500">
+            {index + 1 < 10 ? `0${index + 1}` : index + 1}
           </span>
         </div>
 
@@ -368,7 +367,7 @@ function InquiryRow({
       <div className="flex-shrink-0 flex items-center gap-2">
         <button
           onClick={handleView}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] hover:opacity-80 transition-opacity"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] hover:opacity-80 transition-opacity cursor-pointer"
         >
           <EyeIcon />
           <span className="hidden sm:inline">View</span>
@@ -376,7 +375,7 @@ function InquiryRow({
 
         <button
           onClick={() => setConfirmDelete(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-[#E5E5E5] dark:border-[#262626] text-[#737373] dark:text-neutral-400 hover:border-red-300 hover:text-red-500 dark:hover:border-red-800 dark:hover:text-red-400 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#E5E5E5] dark:border-[#262626] text-[#737373] dark:text-neutral-400 hover:border-red-300 hover:text-red-500 dark:hover:border-red-800 dark:hover:text-red-400 transition-colors cursor-pointer"
         >
           <TrashIcon />
           <span className="hidden sm:inline">Delete</span>
@@ -384,7 +383,7 @@ function InquiryRow({
 
         {confirmDelete && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#111111] p-6 shadow-2xl border border-[#E5E5E5] dark:border-[#262626] animate-in zoom-in-95 fade-in duration-200">
+            <div className="w-full max-w-md rounded-xl bg-white dark:bg-[#111111] p-6 shadow-2xl border border-[#E5E5E5] dark:border-[#262626] animate-in zoom-in-95 fade-in duration-200">
               <h3 className="text-lg font-bold text-[#0A0A0A] dark:text-white mb-2">Delete Inquiry</h3>
               <p className="text-sm text-[#737373] dark:text-neutral-400 mb-6">
                 Are you sure you want to delete the inquiry from <strong>{inquiry.name}</strong>? This action cannot be undone.
@@ -393,14 +392,14 @@ function InquiryRow({
                 <button 
                   onClick={() => setConfirmDelete(false)}
                   disabled={deleting}
-                  className="px-4 py-2 text-sm font-semibold rounded-lg border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
+                  className="px-4 py-2 text-xs font-semibold rounded-lg border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleDelete} 
                   disabled={deleting}
-                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   {deleting ? "Deleting..." : "Delete"}
                 </button>
@@ -416,7 +415,7 @@ function InquiryRow({
 /* ════════════════════════════════
    MAIN EXPORT
 ════════════════════════════════ */
-export function InquiriesClient({ inquiries }: { inquiries: Inquiry[] }) {
+export function InquiriesClient({ inquiries, startIndex = 1 }: { inquiries: Inquiry[]; startIndex?: number }) {
   const [list, setList] = useState<Inquiry[]>(inquiries);
   const [active, setActive] = useState<Inquiry | null>(null);
 
@@ -424,7 +423,6 @@ export function InquiriesClient({ inquiries }: { inquiries: Inquiry[] }) {
 
   const handleView = (inq: Inquiry) => {
     setActive(inq);
-    // Optimistically mark unread as in-progress in local state
     if (inq.status === "New") {
       setList((prev) =>
         prev.map((i) => i.id === inq.id ? { ...i, status: "In Progress" } : i)
@@ -439,12 +437,12 @@ export function InquiriesClient({ inquiries }: { inquiries: Inquiry[] }) {
 
   return (
     <>
-      {/* List container — no headers */}
-      <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] overflow-hidden divide-y divide-[#F0F0F0] dark:divide-[#1A1A1A]">
+      {/* List container */}
+      <div className="bg-white dark:bg-[#0A0A0A] divide-y divide-[#F0F0F0] dark:divide-[#1A1A1A]">
         {list.map((inq, index) => (
           <InquiryRow
             key={inq.id}
-            index={index}
+            index={startIndex + index - 1}
             inquiry={inq}
             onView={() => handleView(inq)}
             onDelete={() => handleDelete(inq.id)}

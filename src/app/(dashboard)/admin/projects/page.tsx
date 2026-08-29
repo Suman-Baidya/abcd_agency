@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { Card } from "@/components/ui/Card";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/Badge";
 import { NewProjectButton } from "@/components/dashboard/NewProjectButton";
 import { ProjectTableRow } from "@/components/dashboard/ProjectTableRow";
@@ -20,6 +21,7 @@ export default async function ProjectsPage({
   const resolvedParams = await searchParams;
   const q = typeof resolvedParams?.q === "string" ? resolvedParams.q : undefined;
   const statusFilter = typeof resolvedParams?.status === "string" ? resolvedParams.status : undefined;
+  const sort = typeof resolvedParams?.sort === "string" ? resolvedParams.sort : "newest";
   const page = typeof resolvedParams?.page === "string" ? parseInt(resolvedParams.page, 10) : 1;
   const limit = typeof resolvedParams?.limit === "string" ? parseInt(resolvedParams.limit, 10) : 20;
 
@@ -28,18 +30,46 @@ export default async function ProjectsPage({
     ...(statusFilter ? { status: statusFilter } : {}),
   };
 
-  const [projects, totalProjects, projectCategories] = await Promise.all([
+  let orderBy: any = { createdAt: "desc" };
+  if (sort === "oldest") orderBy = { createdAt: "asc" };
+  else if (sort === "a-z") orderBy = { title: "asc" };
+  else if (sort === "z-a") orderBy = { title: "desc" };
+  else if (sort === "progress") orderBy = { progress: "desc" };
+
+  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll] = await Promise.all([
     db.project.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     }),
     db.project.count({ where }),
-    db.category.findMany({ orderBy: { name: 'asc' } })
+    db.category.findMany({ orderBy: { name: 'asc' } }),
+    db.project.groupBy({
+      by: ['status'],
+      _count: { _all: true },
+      where: q ? { title: { contains: q, mode: 'insensitive' as any } } : undefined,
+    }),
+    db.project.count({
+      where: q ? { title: { contains: q, mode: 'insensitive' as any } } : undefined,
+    }),
   ]);
 
   const categoryNames = projectCategories.map(c => c.name);
+
+  const statusCounts: Record<string, number> = {
+    All: totalAll,
+    "On Track": 0,
+    "In Review": 0,
+    "Delayed": 0,
+    "On Hold": 0,
+  };
+
+  allStatusGroup.forEach((g: any) => {
+    if (g.status) {
+      statusCounts[g.status] = g._count._all;
+    }
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -61,65 +91,34 @@ export default async function ProjectsPage({
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="!p-4">
-          <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider">
-            Total
-          </p>
-          <p className="text-xl font-bold text-[#0A0A0A] dark:text-white mt-1">
-            {totalProjects}
-          </p>
-        </Card>
-        <Card className="!p-4">
-          <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider">
-            On Track
-          </p>
-          <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">
-            {projects.filter((p) => p.status === "On Track").length}
-          </p>
-        </Card>
-        <Card className="!p-4">
-          <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider">
-            Delayed
-          </p>
-          <p className="text-xl font-bold text-amber-700 dark:text-amber-400 mt-1">
-            {projects.filter((p) => p.status === "Delayed").length}
-          </p>
-        </Card>
-        <Card className="!p-4">
-          <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider">
-            Total Budget
-          </p>
-          <p className="text-xl font-bold text-[#0A0A0A] dark:text-white mt-1">
-            ₹160.5k
-          </p>
-        </Card>
+        <StatCard label="Total Projects" value={totalAll} />
+        <StatCard label="On Track" value={statusCounts["On Track"] || 0} color="emerald" />
+        <StatCard label="Delayed" value={statusCounts["Delayed"] || 0} color="amber" />
+        <StatCard label="Total Budget" value="₹160.5k" />
       </div>
 
       {/* Projects Table */}
-      <Card className="overflow-hidden !p-0">
-        <div className="p-5 sm:p-6 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-[#0A0A0A] dark:text-white">
-            All Projects
-          </h2>
-          <Suspense fallback={<div className="h-9 w-64 bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md"></div>}>
-            <ProjectFilters />
+      <Card className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A]">
+          <Suspense fallback={<div className="h-10 w-full bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md"></div>}>
+            <ProjectFilters statusCounts={statusCounts} />
           </Suspense>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-[#262626] dark:text-neutral-300">
-            <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#525252] dark:text-[#A3A3A3] bg-neutral-200/80 dark:bg-[#0A0A0A]/70 backdrop-blur-md border-b border-[#E5E5E5] dark:border-[#262626]">
+            <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#525252] dark:text-[#A3A3A3] bg-[#F9F9F9] dark:bg-[#0E0E0E] border-b border-[#E5E5E5] dark:border-[#262626]">
               <tr>
-                <th className="px-6 py-3.5 w-16">SL</th>
-                <th className="px-6 py-3.5 w-80">Project Details</th>
-                <th className="px-6 py-3.5">Status</th>
-                <th className="px-6 py-3.5 w-24">Progress</th>
-                <th className="px-6 py-3.5">Budget</th>
-                <th className="px-6 py-3.5">Deadline</th>
-                <th className="px-6 py-3.5 text-right w-24">Actions</th>
+                <th className="px-5 py-3.5 w-12 text-center">SL</th>
+                <th className="px-5 py-3.5 w-80">Project Details</th>
+                <th className="px-5 py-3.5 text-center">Status</th>
+                <th className="px-5 py-3.5 w-24">Progress</th>
+                <th className="px-5 py-3.5">Budget</th>
+                <th className="px-5 py-3.5">Deadline</th>
+                <th className="px-5 py-3.5 text-right w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
-              {projects.length > 0 ? projects.map((project, index) => (
+              {projects.length > 0 ? projects.map((project: any, index: number) => (
                 <ProjectTableRow 
                   key={project.id} 
                   project={project} 

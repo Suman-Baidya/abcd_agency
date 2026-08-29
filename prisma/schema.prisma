@@ -121,3 +121,28 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Client {
+  id             String   @id @default(cuid())
+  name           String
+  contactPerson  String   @default("")
+  email          String
+  phone          String   @default("")
+  isWhatsappSame Boolean  @default(true)
+  whatsapp       String?
+  industry       String   @default("")
+  location       String   @default("")
+  website        String?
+  status         String   @default("Active") // Active, Prospect, Inactive
+  totalSpend     String   @default("₹0")
+  totalSpendRaw  Int      @default(0)
+  dueBalance     String   @default("₹0")
+  dueBalanceRaw  Int      @default(0)
+  notes          String?  @db.Text
+  joinedDate     DateTime @default(now())
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+

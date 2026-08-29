@@ -42,7 +42,7 @@ export default async function WorkPage() {
       <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {projects.length > 0 ? (
-            projects.map((project) => (
+            projects.map((project: any) => (
               <ProjectCard key={project.slug} project={project} />
             ))
           ) : (

@@ -1,4 +1,4 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
+import { neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
 import { PrismaClient } from '@prisma/client';
 import ws from 'ws';
@@ -7,23 +7,45 @@ import ws from 'ws';
 neonConfig.webSocketConstructor = ws;
 
 declare global {
-    var prisma: PrismaClient | undefined;
+  var prisma: PrismaClient | undefined;
 }
 
 const connectionString = process.env.DATABASE_URL;
 
-let prismaArgs = {};
-if (connectionString) {
+function createPrismaClient(): PrismaClient {
+  let prismaArgs = {};
+  if (connectionString) {
     // Prisma 7+ PrismaNeon adapter takes a config object rather than a Pool instance
     const adapter = new PrismaNeon({ connectionString });
     prismaArgs = { adapter };
+  }
+
+  return new PrismaClient({
+    ...prismaArgs,
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
 }
 
-export const db =
-    globalThis.prisma ||
-    new PrismaClient({
-        ...prismaArgs,
-        log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-    });
+export function getDb(): PrismaClient {
+  if (!globalThis.prisma || !(globalThis.prisma as any).client) {
+    globalThis.prisma = createPrismaClient();
+  }
+  return globalThis.prisma;
+}
 
-if (process.env.NODE_ENV !== "production") globalThis.prisma = db;
+// Proxy exported as `db` so `db.client` or any model property always dynamically resolves to the latest fresh instance
+export const db = new Proxy({} as any, {
+  get(_target, prop) {
+    const clientInstance = getDb();
+    const value = (clientInstance as any)[prop];
+    if (typeof value === "function") {
+      return value.bind(clientInstance);
+    }
+    return value;
+  },
+}) as PrismaClient & {
+  client: any;
+  project: any;
+  inquiry: any;
+  siteConfig: any;
+};

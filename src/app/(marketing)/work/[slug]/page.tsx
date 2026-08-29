@@ -104,7 +104,7 @@ export default async function CaseStudyPage({
             Technologies &amp; Frameworks Deployed
           </p>
           <div className="flex flex-wrap gap-2">
-            {project.techStack.map((tech) => (
+            {project.techStack.map((tech: string) => (
               <Badge key={tech} variant="outline" size="md">
                 {tech}
               </Badge>

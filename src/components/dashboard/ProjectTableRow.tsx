@@ -77,14 +77,14 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
 
   return (
     <>
-    <tr className={`hover:bg-[#FBFBFB] dark:hover:bg-[#1A1A1A] transition-colors ${isPending ? "opacity-50" : ""}`}>
+    <tr className={`hover:bg-[#F9F9F9] dark:hover:bg-[#141414] transition-colors ${isPending ? "opacity-50" : ""}`}>
       {/* SL Number */}
-      <td className="px-6 py-4 font-mono text-xs text-[#737373] dark:text-neutral-400">
-        {String(serialNumber).padStart(2, '0')}
+      <td className="px-5 py-4 text-center font-mono text-xs font-medium text-[#737373] dark:text-neutral-500">
+        {serialNumber < 10 ? `0${serialNumber}` : serialNumber}
       </td>
 
       {/* Project & Client (Combined, Truncated) */}
-      <td className="px-6 py-4 w-80 max-w-[20rem]">
+      <td className="px-5 py-4 w-80 max-w-[20rem]">
         <div className="flex flex-col">
           <div className="flex items-center">
             <span className="font-semibold text-[#0A0A0A] dark:text-white truncate" title={project.title}>
@@ -101,7 +101,7 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
       </td>
 
       {/* Quick Status Selection */}
-      <td className="px-6 py-4">
+      <td className="px-5 py-4 text-center">
         <select
           value={project.status}
           onChange={handleStatusChange}
@@ -114,15 +114,15 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
               : "bg-transparent text-[#0A0A0A] dark:text-white border-[#E5E5E5] dark:border-[#262626]"
           }`}
         >
-          <option value="On Track">On Track</option>
-          <option value="In Review">In Review</option>
-          <option value="Delayed">Delayed</option>
-          <option value="On Hold">On Hold</option>
+          <option value="On Track" className="dark:bg-[#111111]">On Track</option>
+          <option value="In Review" className="dark:bg-[#111111]">In Review</option>
+          <option value="Delayed" className="dark:bg-[#111111]">Delayed</option>
+          <option value="On Hold" className="dark:bg-[#111111]">On Hold</option>
         </select>
       </td>
 
       {/* Quick Progress Input */}
-      <td className="px-6 py-4">
+      <td className="px-5 py-4">
         <div className="flex flex-col gap-2 min-w-[80px]">
           <div className="flex items-center">
             <input 
@@ -146,11 +146,11 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
         </div>
       </td>
 
-      <td className="px-6 py-4 font-mono text-xs whitespace-nowrap text-[#737373] dark:text-neutral-300">
+      <td className="px-5 py-4 font-mono text-xs whitespace-nowrap text-[#737373] dark:text-neutral-300">
         {project.budget || "₹ 1,50,000"}
       </td>
       
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-5 py-4 whitespace-nowrap">
         <div className="flex flex-col">
           <span className="text-xs font-semibold text-[#0A0A0A] dark:text-white mb-0.5">
             {weeksText}
@@ -162,7 +162,7 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
       </td>
 
       {/* Action Icons */}
-      <td className="px-6 py-4 text-right">
+      <td className="px-5 py-4 text-right">
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => setIsViewOpen(true)}

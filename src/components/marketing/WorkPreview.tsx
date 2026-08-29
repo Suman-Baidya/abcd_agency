@@ -52,7 +52,7 @@ export async function WorkPreview() {
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {projects.length > 0 ? (
-            projects.map((project) => (
+            projects.map((project: any) => (
               <ProjectCard key={project.slug} project={project} />
             ))
           ) : (
