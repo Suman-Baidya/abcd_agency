@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { syncClientAndProjectBalances, parseCurrencyToNumber, formatNumberToINR } from "@/lib/sync-financials";
 
 export interface TransactionInput {
   title: string;
@@ -13,6 +14,8 @@ export interface TransactionInput {
   paymentMethod: string;
   referenceNo?: string;
   clientName?: string;
+  clientId?: string;
+  projectId?: string;
   notes?: string;
 }
 
@@ -29,7 +32,35 @@ export interface TransactionItem {
   paymentMethod: string;
   referenceNo?: string;
   clientName?: string;
+  clientId?: string;
+  projectId?: string;
   notes?: string;
+}
+
+export async function getFinanceClientsAndProjects() {
+  try {
+    const clients = await db.client.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        projects: {
+          select: {
+            id: true,
+            title: true,
+            budget: true,
+            budgetRaw: true,
+            paidRaw: true,
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+    return clients;
+  } catch (error) {
+    console.error("Error fetching finance clients & projects:", error);
+    return [];
+  }
 }
 
 const DEFAULT_TRANSACTIONS = [
@@ -229,7 +260,7 @@ export async function getFinanceTransactions(): Promise<TransactionItem[]> {
       type: (r.type || "Income") as "Income" | "Expense",
       category: r.category || "Miscellaneous",
       amount: r.amount || "₹0",
-      amountRaw: r.amountRaw || 0,
+      amountRaw: r.amountRaw || parseCurrencyToNumber(r.amount),
       status: (r.status || "Completed") as "Completed" | "Pending" | "Cancelled",
       date: new Date(r.date || r.createdAt).toLocaleDateString("en-US", {
         month: "short",
@@ -240,6 +271,8 @@ export async function getFinanceTransactions(): Promise<TransactionItem[]> {
       paymentMethod: r.paymentMethod || "Bank Transfer",
       referenceNo: r.referenceNo || undefined,
       clientName: r.clientName || undefined,
+      clientId: r.clientId || undefined,
+      projectId: r.projectId || undefined,
       notes: r.notes || undefined,
     }));
   } catch (error) {
@@ -264,9 +297,27 @@ export async function getFinanceTransactions(): Promise<TransactionItem[]> {
 
 export async function createTransaction(data: TransactionInput) {
   try {
-    const rawNumber = parseInt(data.amount.replace(/[^0-9]/g, "") || "0", 10);
-    const formattedAmount = data.amount.startsWith("₹") ? data.amount : `₹${data.amount || "0"}`;
+    const rawNumber = parseCurrencyToNumber(data.amount);
+    const formattedAmount = formatNumberToINR(rawNumber);
     const txDate = data.date ? new Date(data.date) : new Date();
+
+    let resolvedClientId = data.clientId || null;
+    let resolvedClientName = data.clientName?.trim() || null;
+
+    if (!resolvedClientId && resolvedClientName) {
+      const match = await db.client.findFirst({
+        where: { name: { equals: resolvedClientName, mode: "insensitive" } },
+      });
+      if (match) {
+        resolvedClientId = match.id;
+        resolvedClientName = match.name;
+      }
+    } else if (resolvedClientId && !resolvedClientName) {
+      const match = await db.client.findUnique({
+        where: { id: resolvedClientId },
+      });
+      if (match) resolvedClientName = match.name;
+    }
 
     const created = await db.transaction.create({
       data: {
@@ -279,12 +330,20 @@ export async function createTransaction(data: TransactionInput) {
         date: txDate,
         paymentMethod: data.paymentMethod || "Bank Transfer",
         referenceNo: data.referenceNo?.trim() || null,
-        clientName: data.clientName?.trim() || null,
+        clientName: resolvedClientName,
+        clientId: resolvedClientId,
+        projectId: data.projectId || null,
         notes: data.notes?.trim() || null,
       },
     });
 
+    if (resolvedClientId || resolvedClientName) {
+      await syncClientAndProjectBalances(resolvedClientId || resolvedClientName);
+    }
+
     revalidatePath("/admin/finance");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
     revalidatePath("/admin");
     return created;
   } catch (error: any) {
@@ -295,9 +354,27 @@ export async function createTransaction(data: TransactionInput) {
 
 export async function updateTransaction(id: string, data: TransactionInput) {
   try {
-    const rawNumber = parseInt(data.amount.replace(/[^0-9]/g, "") || "0", 10);
-    const formattedAmount = data.amount.startsWith("₹") ? data.amount : `₹${data.amount || "0"}`;
+    const rawNumber = parseCurrencyToNumber(data.amount);
+    const formattedAmount = formatNumberToINR(rawNumber);
     const txDate = data.date ? new Date(data.date) : new Date();
+
+    let resolvedClientId = data.clientId || null;
+    let resolvedClientName = data.clientName?.trim() || null;
+
+    if (!resolvedClientId && resolvedClientName) {
+      const match = await db.client.findFirst({
+        where: { name: { equals: resolvedClientName, mode: "insensitive" } },
+      });
+      if (match) {
+        resolvedClientId = match.id;
+        resolvedClientName = match.name;
+      }
+    } else if (resolvedClientId && !resolvedClientName) {
+      const match = await db.client.findUnique({
+        where: { id: resolvedClientId },
+      });
+      if (match) resolvedClientName = match.name;
+    }
 
     const updated = await db.transaction.update({
       where: { id },
@@ -311,12 +388,20 @@ export async function updateTransaction(id: string, data: TransactionInput) {
         date: txDate,
         paymentMethod: data.paymentMethod || "Bank Transfer",
         referenceNo: data.referenceNo?.trim() || null,
-        clientName: data.clientName?.trim() || null,
+        clientName: resolvedClientName,
+        clientId: resolvedClientId,
+        projectId: data.projectId || null,
         notes: data.notes?.trim() || null,
       },
     });
 
+    if (resolvedClientId || resolvedClientName) {
+      await syncClientAndProjectBalances(resolvedClientId || resolvedClientName);
+    }
+
     revalidatePath("/admin/finance");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
     revalidatePath("/admin");
     return updated;
   } catch (error: any) {
@@ -332,7 +417,13 @@ export async function updateTransactionStatus(id: string, status: string) {
       data: { status },
     });
 
+    if (updated.clientId || updated.clientName) {
+      await syncClientAndProjectBalances(updated.clientId || updated.clientName);
+    }
+
     revalidatePath("/admin/finance");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
     revalidatePath("/admin");
     return updated;
   } catch (error: any) {
@@ -343,11 +434,22 @@ export async function updateTransactionStatus(id: string, status: string) {
 
 export async function deleteTransaction(id: string) {
   try {
+    const tx = await db.transaction.findUnique({
+      where: { id },
+      select: { clientId: true, clientName: true },
+    });
+
     await db.transaction.delete({
       where: { id },
     });
 
+    if (tx?.clientId || tx?.clientName) {
+      await syncClientAndProjectBalances(tx.clientId || tx.clientName);
+    }
+
     revalidatePath("/admin/finance");
+    revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
     revalidatePath("/admin");
   } catch (error: any) {
     console.error("Failed to delete transaction:", error);

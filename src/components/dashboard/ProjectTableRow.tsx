@@ -12,12 +12,13 @@ import { quickUpdateStatus, quickUpdateProgress, deleteProject } from "@/app/(da
 import { Project } from "@prisma/client";
 
 interface ProjectTableRowProps {
-  project: Project;
+  project: any;
   serialNumber: number;
   categories: string[];
+  clients?: Array<{ id: string; name: string; email: string }>;
 }
 
-export function ProjectTableRow({ project, serialNumber, categories }: ProjectTableRowProps) {
+export function ProjectTableRow({ project, serialNumber, categories, clients = [] }: ProjectTableRowProps) {
   const [isPending, startTransition] = useTransition();
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -49,6 +50,11 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
     });
   };
 
+  const budgetRaw = project.budgetRaw > 0 ? project.budgetRaw : (parseInt(String(project.budget || "0").replace(/[^0-9]/g, "") || "0", 10));
+  const paidRaw = project.paidRaw || 0;
+  const dueRaw = Math.max(0, budgetRaw - paidRaw);
+  const paidPercent = budgetRaw > 0 ? Math.round((paidRaw / budgetRaw) * 100) : (paidRaw > 0 ? 100 : 0);
+
   let weeksText = "4 Weeks";
   let dateText = "Aug 01 - Sep 30, '2026'";
   if (project.deadline) {
@@ -69,7 +75,7 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
         dateText = `${startStr} - ${endStr}, '${yearStr}'`;
       }
     } catch(e) {
-      // Fallback for legacy string format or invalid JSON, use example
+      // Fallback for legacy string format or invalid JSON
       weeksText = "4 Weeks";
       dateText = "Aug 01 - Sep 30, '26";
     }
@@ -85,8 +91,8 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
 
       {/* Project & Client (Combined, Truncated) */}
       <td className="px-5 py-4 w-80 max-w-[20rem]">
-        <div className="flex flex-col">
-          <div className="flex items-center">
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center min-w-0">
             <span className="font-semibold text-[#0A0A0A] dark:text-white truncate" title={project.title}>
               {project.title}
             </span>
@@ -94,9 +100,22 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
               <Badge variant="outline" size="sm" className="ml-2 text-[9px] shrink-0">Featured</Badge>
             )}
           </div>
-          <span className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5" title={project.client}>
-            {project.client}
-          </span>
+          <div className="flex items-center gap-1.5 mt-1 min-w-0">
+            <span className="text-xs text-[#737373] dark:text-neutral-400 truncate min-w-0 shrink" title={project.client}>
+              {project.client}
+            </span>
+            {project.category && (
+              <>
+                <span className="text-[#A3A3A3] dark:text-neutral-600 text-[10px] shrink-0">•</span>
+                <span
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F0F0F0] dark:bg-[#202020] text-[#737373] dark:text-neutral-400 truncate max-w-[130px] whitespace-nowrap shrink-0"
+                  title={project.category}
+                >
+                  {project.category}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </td>
 
@@ -146,8 +165,38 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
         </div>
       </td>
 
-      <td className="px-5 py-4 font-mono text-xs whitespace-nowrap text-[#737373] dark:text-neutral-300">
-        {project.budget || "₹ 1,50,000"}
+      {/* Budget, Paid & Due info */}
+      <td className="px-5 py-4 whitespace-nowrap">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono font-bold text-xs text-[#0A0A0A] dark:text-white">
+              {project.budget || (budgetRaw > 0 ? `₹${budgetRaw.toLocaleString("en-IN")}` : "₹0")}
+            </span>
+            {paidPercent > 0 && (
+              <span className={`text-[10px] font-mono px-1 py-0.2 rounded font-medium ${
+                paidPercent >= 100 
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400" 
+                  : "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400"
+              }`}>
+                {paidPercent}% Paid
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 text-[11px] font-mono">
+            <span className="text-emerald-700 dark:text-emerald-400">
+              Paid: ₹{paidRaw.toLocaleString("en-IN")}
+            </span>
+            {dueRaw > 0 ? (
+              <span className="text-amber-700 dark:text-amber-400">
+                Due: ₹{dueRaw.toLocaleString("en-IN")}
+              </span>
+            ) : (
+              <span className="text-[#737373] dark:text-neutral-500">
+                Due: ₹0
+              </span>
+            )}
+          </div>
+        </div>
       </td>
       
       <td className="px-5 py-4 whitespace-nowrap">
@@ -221,8 +270,8 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
         </div>
       }
     >
-      <ProjectViewDetails 
-        project={project} 
+      <ProjectViewDetails
+        project={project}
         onEdit={() => {
           setIsViewOpen(false);
           setIsEditOpen(true);
@@ -244,6 +293,7 @@ export function ProjectTableRow({ project, serialNumber, categories }: ProjectTa
       <ProjectEditForm 
         project={project} 
         categories={categories}
+        clients={clients}
         onSuccess={() => setIsEditOpen(false)} 
         onCancel={() => setIsEditOpen(false)} 
       />

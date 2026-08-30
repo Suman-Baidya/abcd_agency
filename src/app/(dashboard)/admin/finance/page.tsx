@@ -1,6 +1,6 @@
 import React from "react";
 import { FinanceManager } from "@/components/dashboard/FinanceManager";
-import { getFinanceTransactions } from "./actions";
+import { getFinanceTransactions, getFinanceClientsAndProjects } from "./actions";
 
 export const metadata = {
   title: "Finance & Accounting — ABCD Agency",
@@ -10,6 +10,10 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function FinancePage() {
-  const transactions = await getFinanceTransactions();
-  return <FinanceManager initialTransactions={transactions} />;
+  const [transactions, clients] = await Promise.all([
+    getFinanceTransactions(),
+    getFinanceClientsAndProjects(),
+  ]);
+
+  return <FinanceManager initialTransactions={transactions} clients={clients} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -38,6 +39,8 @@ import {
   deleteClient,
 } from "@/app/(dashboard)/admin/clients/actions";
 
+import { ClientProjectItem } from "@/app/(dashboard)/admin/clients/actions";
+
 export interface ClientItem {
   id: string;
   name: string;
@@ -51,6 +54,7 @@ export interface ClientItem {
   website?: string;
   projects: number;
   activeProjects: number;
+  projectsList?: ClientProjectItem[];
   totalSpend: string;
   totalSpendRaw: number;
   dueBalance: string;
@@ -655,10 +659,10 @@ export function ClientManager({
                                 </a>
                               )}
                             </div>
-                            <p className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5 flex items-center gap-1.5">
-                              <span>{client.contactPerson}</span>
-                              <span className="text-[#A3A3A3] dark:text-neutral-600">•</span>
-                              <span className="font-mono text-[11px]">{client.email}</span>
+                            <p className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5 flex items-center gap-1.5 min-w-0">
+                              <span className="truncate">{client.contactPerson}</span>
+                              <span className="text-[#A3A3A3] dark:text-neutral-600 shrink-0">•</span>
+                              <span className="font-mono text-[11px] truncate">{client.email}</span>
                             </p>
                           </div>
                         </div>
@@ -1259,6 +1263,119 @@ export function ClientManager({
                   {selectedClient.projects} ({selectedClient.activeProjects} active)
                 </p>
               </div>
+            </div>
+
+            {/* Client's Linked Projects Section */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                  Active & Completed Projects ({selectedClient.projectsList?.length || selectedClient.projects || 0})
+                </p>
+                <Link
+                  href={`/admin/projects`}
+                  className="text-[11px] font-semibold text-[#0A0A0A] dark:text-white hover:underline flex items-center gap-1"
+                >
+                  View All in Projects <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+
+              {selectedClient.projectsList && selectedClient.projectsList.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {selectedClient.projectsList.map((proj) => (
+                    <div
+                      key={proj.id}
+                      className="p-3 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#111111] hover:border-[#0A0A0A] dark:hover:border-white transition-all group"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-xs font-bold text-[#0A0A0A] dark:text-white truncate">
+                              {proj.title}
+                            </h4>
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                              proj.status === "On Track"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60"
+                                : proj.status === "Delayed"
+                                ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60"
+                                : "bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700"
+                            }`}>
+                              {proj.status}
+                            </span>
+                            <span className="text-[10px] text-[#737373] dark:text-neutral-400 font-mono">
+                              {proj.category}
+                            </span>
+                          </div>
+
+                          {/* Progress and Financial stats */}
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-mono">
+                            <div>
+                              <span className="text-[#737373] dark:text-neutral-500 block text-[9px] uppercase">Budget</span>
+                              <span className="font-semibold text-[#0A0A0A] dark:text-white">{proj.budget}</span>
+                            </div>
+                            <div>
+                              <span className="text-[#737373] dark:text-neutral-500 block text-[9px] uppercase">Paid</span>
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">₹{proj.paidRaw.toLocaleString("en-IN")}</span>
+                            </div>
+                            <div>
+                              <span className="text-[#737373] dark:text-neutral-500 block text-[9px] uppercase">Remaining Due</span>
+                              <span className={`font-semibold ${proj.dueRaw > 0 ? "text-amber-700 dark:text-amber-400" : "text-[#737373] dark:text-neutral-500"}`}>
+                                ₹{proj.dueRaw.toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-[#E5E5E5] dark:bg-[#262626] rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-[#0A0A0A] dark:bg-white rounded-full"
+                                style={{ width: `${proj.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono font-medium text-[#737373] dark:text-neutral-400 shrink-0">
+                              {proj.progress}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Direct action link to project */}
+                        <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
+                          <Link
+                            href={`/admin/projects?q=${encodeURIComponent(proj.title)}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                            title="Manage this project"
+                          >
+                            <span>Open Project</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </Link>
+                          {proj.slug && (
+                            <Link
+                              href={`/work/${proj.slug}`}
+                              target="_blank"
+                              className="text-[10px] text-[#737373] dark:text-neutral-400 hover:underline flex items-center gap-0.5"
+                            >
+                              <span>Public Page</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-dashed border-[#E5E5E5] dark:border-[#262626] text-center bg-[#FAFAFA] dark:bg-[#111111]">
+                  <p className="text-xs text-[#737373] dark:text-neutral-400">
+                    No projects found for this client.
+                  </p>
+                  <Link
+                    href={`/admin/projects`}
+                    className="inline-block mt-2 text-xs font-semibold text-[#0A0A0A] dark:text-white underline underline-offset-2"
+                  >
+                    + Create a Project for {selectedClient.name}
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Contact Information */}

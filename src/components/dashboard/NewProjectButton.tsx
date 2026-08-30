@@ -7,9 +7,10 @@ import { ProjectEditForm } from "./ProjectEditForm";
 
 interface NewProjectButtonProps {
   categories: string[];
+  clients?: Array<{ id: string; name: string; email: string }>;
 }
 
-export function NewProjectButton({ categories }: NewProjectButtonProps) {
+export function NewProjectButton({ categories, clients = [] }: NewProjectButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -26,6 +27,7 @@ export function NewProjectButton({ categories }: NewProjectButtonProps) {
       >
         <ProjectEditForm
           categories={categories}
+          clients={clients}
           onSuccess={() => setIsOpen(false)}
           onCancel={() => setIsOpen(false)}
         />

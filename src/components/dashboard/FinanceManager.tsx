@@ -23,6 +23,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronsUpDown,
   AlertTriangle,
   Loader2,
   DollarSign,
@@ -66,10 +67,25 @@ const PAYMENT_METHODS = [
   "Cash",
 ];
 
+export interface FinanceClientItem {
+  id: string;
+  name: string;
+  email?: string;
+  projects?: Array<{
+    id: string;
+    title: string;
+    budget: string;
+    budgetRaw: number;
+    paidRaw: number;
+  }>;
+}
+
 export function FinanceManager({
   initialTransactions = [],
+  clients = [],
 }: {
   initialTransactions?: TransactionItem[];
+  clients?: FinanceClientItem[];
 }) {
   const router = useRouter();
   const [transactionList, setTransactionList] = useState<TransactionItem[]>(initialTransactions);
@@ -520,6 +536,8 @@ export function FinanceManager({
     paymentMethod: "Bank Transfer",
     referenceNo: "",
     clientName: "",
+    clientId: "",
+    projectId: "",
     notes: "",
   });
 
@@ -535,8 +553,141 @@ export function FinanceManager({
     paymentMethod: string;
     referenceNo: string;
     clientName: string;
+    clientId?: string;
+    projectId?: string;
     notes: string;
   } | null>(null);
+
+  // Smart Client Combobox states for Add & Edit modals
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [addClientSearch, setAddClientSearch] = useState("");
+  const addClientDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  const [isEditClientOpen, setIsEditClientOpen] = useState(false);
+  const [editClientSearch, setEditClientSearch] = useState("");
+  const editClientDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (addClientDropdownRef.current && !addClientDropdownRef.current.contains(event.target as Node)) {
+        setIsAddClientOpen(false);
+      }
+      if (editClientDropdownRef.current && !editClientDropdownRef.current.contains(event.target as Node)) {
+        setIsEditClientOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter clients by search query
+  const filteredAddClients = useMemo(() => {
+    if (!addClientSearch.trim()) return clients;
+    const q = addClientSearch.toLowerCase();
+    return clients.filter(
+      (c) => c.name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q))
+    );
+  }, [clients, addClientSearch]);
+
+  const filteredEditClients = useMemo(() => {
+    if (!editClientSearch.trim()) return clients;
+    const q = editClientSearch.toLowerCase();
+    return clients.filter(
+      (c) => c.name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q))
+    );
+  }, [clients, editClientSearch]);
+
+  // Smart Select Client for Add Modal
+  const handleSelectAddClient = (client: FinanceClientItem) => {
+    const clientProjects = client.projects || [];
+    let autoProjectId = "";
+    let autoTitle = formData.title;
+    let autoAmount = formData.amount;
+
+    if (clientProjects.length === 1) {
+      const p = clientProjects[0];
+      autoProjectId = p.id;
+      const due = Math.max(0, p.budgetRaw - p.paidRaw);
+      if (!autoTitle || autoTitle.includes("Milestone") || autoTitle.includes("Payment")) {
+        autoTitle = `${p.title} - Payment`;
+      }
+      if (!autoAmount || autoAmount === "₹0") {
+        autoAmount = due > 0 ? `₹${due.toLocaleString("en-IN")}` : `₹${p.budgetRaw.toLocaleString("en-IN")}`;
+      }
+    } else if (clientProjects.length > 1) {
+      // If only one project has due > 0, auto-prioritize it
+      const dueProjects = clientProjects.filter((p) => (p.budgetRaw - p.paidRaw) > 0);
+      if (dueProjects.length === 1) {
+        const p = dueProjects[0];
+        autoProjectId = p.id;
+        const due = p.budgetRaw - p.paidRaw;
+        if (!autoTitle) autoTitle = `${p.title} - Payment`;
+        if (!autoAmount || autoAmount === "₹0") autoAmount = `₹${due.toLocaleString("en-IN")}`;
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      clientId: client.id,
+      clientName: client.name,
+      projectId: autoProjectId,
+      title: autoTitle || (client.name ? `${client.name} - Payment` : prev.title),
+      amount: autoAmount || prev.amount,
+    }));
+    setIsAddClientOpen(false);
+    setAddClientSearch("");
+  };
+
+  // Smart Select Project for Add Modal
+  const handleSelectAddProject = (pId: string) => {
+    const currentClient = clients.find((c) => c.id === formData.clientId);
+    const matchedProj = currentClient?.projects?.find((p) => p.id === pId);
+
+    if (matchedProj) {
+      const due = Math.max(0, matchedProj.budgetRaw - matchedProj.paidRaw);
+      setFormData((prev) => ({
+        ...prev,
+        projectId: pId,
+        title: (!prev.title || currentClient?.projects?.some((p) => prev.title.includes(p.title)))
+          ? `${matchedProj.title} - Payment`
+          : prev.title,
+        amount: (!prev.amount || prev.amount === "₹0" || currentClient?.projects?.some(p => prev.amount === `₹${(p.budgetRaw - p.paidRaw).toLocaleString("en-IN")}`)) && due > 0
+          ? `₹${due.toLocaleString("en-IN")}`
+          : prev.amount,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        projectId: "",
+      }));
+    }
+  };
+
+  // Smart Select Client for Edit Modal
+  const handleSelectEditClient = (client: FinanceClientItem) => {
+    if (!editFormData) return;
+    const clientProjects = client.projects || [];
+    let autoProjectId = "";
+
+    if (clientProjects.length === 1) {
+      autoProjectId = clientProjects[0].id;
+    } else if (clientProjects.length > 1) {
+      const dueProjects = clientProjects.filter((p) => (p.budgetRaw - p.paidRaw) > 0);
+      if (dueProjects.length === 1) {
+        autoProjectId = dueProjects[0].id;
+      }
+    }
+
+    setEditFormData({
+      ...editFormData,
+      clientId: client.id,
+      clientName: client.name,
+      projectId: autoProjectId,
+    });
+    setIsEditClientOpen(false);
+    setEditClientSearch("");
+  };
 
   // Statistics
   const stats = useMemo(() => {
@@ -674,6 +825,8 @@ export function FinanceManager({
         paymentMethod: formData.paymentMethod,
         referenceNo: formData.referenceNo,
         clientName: formData.clientName,
+        clientId: formData.clientId || undefined,
+        projectId: formData.projectId || undefined,
         notes: formData.notes,
       });
 
@@ -699,6 +852,8 @@ export function FinanceManager({
         paymentMethod: created.paymentMethod,
         referenceNo: created.referenceNo || undefined,
         clientName: created.clientName || undefined,
+        clientId: created.clientId || undefined,
+        projectId: created.projectId || undefined,
         notes: created.notes || undefined,
       };
 
@@ -714,6 +869,8 @@ export function FinanceManager({
         paymentMethod: "Bank Transfer",
         referenceNo: "",
         clientName: "",
+        clientId: "",
+        projectId: "",
         notes: "",
       });
       toast.success(`Transaction "${newItem.title}" recorded!`);
@@ -739,6 +896,8 @@ export function FinanceManager({
       paymentMethod: t.paymentMethod,
       referenceNo: t.referenceNo || "",
       clientName: t.clientName || "",
+      clientId: t.clientId || "",
+      projectId: t.projectId || "",
       notes: t.notes || "",
     });
   };
@@ -760,6 +919,8 @@ export function FinanceManager({
         paymentMethod: editFormData.paymentMethod,
         referenceNo: editFormData.referenceNo,
         clientName: editFormData.clientName,
+        clientId: editFormData.clientId || undefined,
+        projectId: editFormData.projectId || undefined,
         notes: editFormData.notes,
       });
 
@@ -1253,63 +1414,270 @@ export function FinanceManager({
         title="New Record"
         variant="centered"
         size="2xl"
-      >
-        <form onSubmit={handleAddSubmit} className="space-y-3">
-          {/* Type Toggle */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-[#F5F5F5] dark:bg-[#141414] rounded-lg border border-[#E5E5E5] dark:border-[#262626]">
+        className="h-[600px] max-h-[85vh]"
+        headerActions={
+          <div className="flex items-center p-1 bg-white dark:bg-[#141414] rounded-lg border border-[#0A0A0A] dark:border-white/30 shadow-xs">
             <button
               type="button"
               onClick={() => setFormData({ ...formData, type: "Income" })}
-              className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                 formData.type === "Income"
-                  ? "bg-white text-emerald-700 dark:bg-[#262626] dark:text-emerald-400 shadow-xs"
+                  ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
                   : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
               }`}
             >
               <ArrowDownLeft className="w-3.5 h-3.5" />
-              Income / Inflow
+              <span>Income / Inflow</span>
             </button>
             <button
               type="button"
               onClick={() => setFormData({ ...formData, type: "Expense" })}
-              className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                 formData.type === "Expense"
-                  ? "bg-white text-[#0A0A0A] dark:bg-[#262626] dark:text-white shadow-xs"
+                  ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
                   : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
               }`}
             >
               <ArrowUpRight className="w-3.5 h-3.5" />
-              Expense / Outflow
+              <span>Expense / Outflow</span>
             </button>
           </div>
+        }
+      >
+        <form onSubmit={handleAddSubmit} className="flex flex-col min-h-0">
+          <div className="space-y-3.5 pb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                  Transaction Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={formData.type === "Income" ? "e.g. Acme Corp Milestone 1" : "e.g. Server Hosting & Cloud"}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                />
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                Transaction Title *
+            {/* Smart Searchable Client Combobox for Add */}
+            <div className="space-y-1 relative" ref={addClientDropdownRef}>
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400 flex items-center justify-between">
+                <span>{formData.type === "Income" ? "Client / Account *" : "Vendor / Payee *"}</span>
+                {formData.type === "Income" && clients.length > 0 && (
+                  <span className="text-[10px] text-[#737373] dark:text-neutral-500">Searchable account</span>
+                )}
               </label>
-              <input
-                type="text"
-                required
-                placeholder={formData.type === "Income" ? "e.g. Acme Corp Retainer" : "e.g. Server Hosting & Cloud"}
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                {formData.type === "Income" ? "Client / Payer" : "Vendor / Payee"}
-              </label>
-              <input
-                type="text"
-                placeholder={formData.type === "Income" ? "e.g. Acme Corp" : "e.g. Vercel Inc."}
-                value={formData.clientName}
-                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-              />
+
+              {formData.type === "Income" && clients.length > 0 ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddClientOpen(!isAddClientOpen);
+                      setAddClientSearch("");
+                    }}
+                    className="w-full text-left flex items-center justify-between px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white hover:border-[#0A0A0A] dark:hover:border-white transition-colors cursor-pointer"
+                  >
+                    {formData.clientName ? (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-[9px] font-bold shrink-0">
+                          {formData.clientName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="font-semibold truncate">{formData.clientName}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[#737373] dark:text-neutral-500">
+                        -- Select Client Account --
+                      </span>
+                    )}
+                    <ChevronsUpDown className="w-3.5 h-3.5 text-[#737373] shrink-0 ml-1.5 opacity-70" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isAddClientOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-lg shadow-xl p-2 space-y-2 animate-in fade-in duration-100">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#737373]" />
+                        <input
+                          type="text"
+                          placeholder="Search client by name or email..."
+                          value={addClientSearch}
+                          onChange={(e) => setAddClientSearch(e.target.value)}
+                          autoFocus
+                          className="w-full pl-8 pr-7 py-1.5 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-[#F9F9F9] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                        />
+                        {addClientSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setAddClientSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-48 overflow-y-auto space-y-0.5 pr-0.5">
+                        {filteredAddClients.length > 0 ? (
+                          filteredAddClients.map((c) => {
+                            const isSelected = formData.clientId === c.id || formData.clientName.toLowerCase() === c.name.toLowerCase();
+                            const dueCount = c.projects?.filter(p => (p.budgetRaw - p.paidRaw) > 0).length || 0;
+
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => handleSelectAddClient(c)}
+                                className={`w-full text-left px-2.5 py-2 rounded-md text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] font-semibold"
+                                    : "hover:bg-[#F5F5F5] dark:hover:bg-[#1C1C1C] text-[#0A0A0A] dark:text-white"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                      isSelected
+                                        ? "bg-white text-[#0A0A0A] dark:bg-[#0A0A0A] dark:text-white"
+                                        : "bg-[#E5E5E5] text-[#0A0A0A] dark:bg-[#262626] dark:text-white"
+                                    }`}
+                                  >
+                                    {c.name.slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="truncate font-medium">{c.name}</p>
+                                      {dueCount > 0 && (
+                                        <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isSelected ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"}`}>
+                                          {dueCount} Due
+                                        </span>
+                                      )}
+                                    </div>
+                                    {c.email && (
+                                      <p className={`text-[10px] truncate ${isSelected ? "text-neutral-300 dark:text-neutral-600" : "text-[#737373] dark:text-neutral-400"}`}>
+                                        {c.email}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="py-4 text-center text-xs text-[#737373] dark:text-neutral-500">
+                            {addClientSearch ? `No clients matching "${addClientSearch}"` : "No registered clients found"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  placeholder={formData.type === "Income" ? "e.g. Acme Corp" : "e.g. Vercel Inc."}
+                  value={formData.clientName}
+                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                />
+              )}
             </div>
           </div>
+
+          {/* Smart Project Due Selector for Income */}
+          {formData.type === "Income" && formData.clientId && (
+            (() => {
+              const currentClient = clients.find((c) => c.id === formData.clientId);
+              const clientProjects = currentClient?.projects || [];
+              if (clientProjects.length === 0) return null;
+
+              return (
+                <div className="space-y-2 p-3 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#141414] animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#0A0A0A] dark:text-white flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-[#737373]" />
+                      <span>Select Project for Payment</span>
+                    </label>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-medium">
+                      Auto-syncs project balance
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                    {/* General Retainer Option */}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAddProject("")}
+                      className={`w-full text-left px-3 py-2 rounded-lg border text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                        !formData.projectId
+                          ? "border-[#0A0A0A] bg-white dark:border-white dark:bg-[#1C1C1C] shadow-xs font-semibold"
+                          : "border-[#E5E5E5] dark:border-[#262626] bg-white/60 dark:bg-[#111111] hover:bg-white dark:hover:bg-[#181818] text-[#737373] dark:text-neutral-400"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs text-[#0A0A0A] dark:text-white font-medium truncate">
+                          General Account Retainer / Advance
+                        </span>
+                        <span className="text-[10px] font-mono text-[#737373] dark:text-neutral-500 shrink-0">
+                          (No specific project)
+                        </span>
+                      </div>
+                      {!formData.projectId && <Check className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white shrink-0 ml-2" />}
+                    </button>
+
+                    {/* Client's Projects with Due Balances (Clean 1-Line Layout) */}
+                    {clientProjects.map((p) => {
+                      const isSelected = formData.projectId === p.id;
+                      const due = Math.max(0, p.budgetRaw - p.paidRaw);
+                      const isDue = due > 0;
+
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleSelectAddProject(p.id)}
+                          className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all cursor-pointer ${
+                            isSelected
+                              ? "border-[#0A0A0A] bg-white dark:border-white dark:bg-[#1C1C1C] shadow-xs"
+                              : "border-[#E5E5E5] dark:border-[#262626] bg-white/60 dark:bg-[#111111] hover:bg-white dark:hover:bg-[#181818]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3 min-w-0">
+                            {/* Left: Project title & Due badge in 1 line */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="font-semibold text-xs text-[#0A0A0A] dark:text-white truncate" title={p.title}>
+                                {p.title}
+                              </span>
+                              {isDue ? (
+                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 dark:bg-amber-950/70 dark:text-amber-300 shrink-0">
+                                  Due: ₹{due.toLocaleString("en-IN")}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-300 shrink-0">
+                                  Fully Paid
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Right: Payment details (Budget & Paid) */}
+                            <div className="flex items-center gap-2 text-[11px] text-[#737373] dark:text-neutral-400 font-mono shrink-0">
+                              <span>Budget: {p.budget || `₹${p.budgetRaw.toLocaleString("en-IN")}`}</span>
+                              <span>•</span>
+                              <span>Paid: ₹{p.paidRaw.toLocaleString("en-IN")}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white ml-1 shrink-0" />}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -1477,20 +1845,22 @@ export function FinanceManager({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-              Notes &amp; Description
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Add accounting details, bank reference, or project milestone notes..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white resize-none"
-            />
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                Notes &amp; Description
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Add accounting details, bank reference, or project milestone notes..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white resize-y min-h-[96px]"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E5] dark:border-[#262626]">
+          {/* Fixed / Sticky Bottom Actions Bar (No negative margins = No horizontal scrollbar) */}
+          <div className="sticky bottom-0 -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 -mb-4 sm:-mb-5 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-sm border-t border-[#E5E5E5] dark:border-[#262626] flex items-center justify-end gap-2.5 z-20 min-h-[58px]">
             <Button
               type="button"
               variant="secondary"
@@ -1523,63 +1893,272 @@ export function FinanceManager({
             setEditingTransaction(null);
             setEditFormData(null);
           }}
-          title="Edit Transaction"
+          title="Edit Record"
           variant="centered"
           size="2xl"
-        >
-          <form onSubmit={handleEditSubmit} className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 p-1 bg-[#F5F5F5] dark:bg-[#141414] rounded-lg border border-[#E5E5E5] dark:border-[#262626]">
+          className="h-[600px] max-h-[85vh]"
+          headerActions={
+            <div className="flex items-center p-1 bg-white dark:bg-[#141414] rounded-lg border border-[#0A0A0A] dark:border-white/30 shadow-xs">
               <button
                 type="button"
                 onClick={() => setEditFormData({ ...editFormData, type: "Income" })}
-                className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                   editFormData.type === "Income"
-                    ? "bg-white text-emerald-700 dark:bg-[#262626] dark:text-emerald-400 shadow-xs"
+                    ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
                     : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
                 }`}
               >
                 <ArrowDownLeft className="w-3.5 h-3.5" />
-                Income / Inflow
+                <span>Income / Inflow</span>
               </button>
               <button
                 type="button"
                 onClick={() => setEditFormData({ ...editFormData, type: "Expense" })}
-                className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                   editFormData.type === "Expense"
-                    ? "bg-white text-[#0A0A0A] dark:bg-[#262626] dark:text-white shadow-xs"
+                    ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
                     : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
                 }`}
               >
                 <ArrowUpRight className="w-3.5 h-3.5" />
-                Expense / Outflow
+                <span>Expense / Outflow</span>
               </button>
             </div>
+          }
+        >
+          <form onSubmit={handleEditSubmit} className="flex flex-col min-h-0">
+            <div className="space-y-3.5 pb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                    Transaction Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                  Transaction Title *
+              {/* Smart Searchable Client Combobox for Edit */}
+              <div className="space-y-1 relative" ref={editClientDropdownRef}>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400 flex items-center justify-between">
+                  <span>{editFormData.type === "Income" ? "Client / Account *" : "Vendor / Payee *"}</span>
+                  {editFormData.type === "Income" && clients.length > 0 && (
+                    <span className="text-[10px] text-[#737373] dark:text-neutral-500">Searchable account</span>
+                  )}
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={editFormData.title}
-                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                  {editFormData.type === "Income" ? "Client / Payer" : "Vendor / Payee"}
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.clientName}
-                  onChange={(e) => setEditFormData({ ...editFormData, clientName: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                />
+
+                {editFormData.type === "Income" && clients.length > 0 ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditClientOpen(!isEditClientOpen);
+                        setEditClientSearch("");
+                      }}
+                      className="w-full text-left flex items-center justify-between px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white hover:border-[#0A0A0A] dark:hover:border-white transition-colors cursor-pointer"
+                    >
+                      {editFormData.clientName ? (
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-5 h-5 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-[9px] font-bold shrink-0">
+                            {editFormData.clientName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <span className="font-semibold truncate">{editFormData.clientName}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[#737373] dark:text-neutral-500">
+                          -- Select Client Account --
+                        </span>
+                      )}
+                      <ChevronsUpDown className="w-3.5 h-3.5 text-[#737373] shrink-0 ml-1.5 opacity-70" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isEditClientOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-lg shadow-xl p-2 space-y-2 animate-in fade-in duration-100">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#737373]" />
+                          <input
+                            type="text"
+                            placeholder="Search client by name or email..."
+                            value={editClientSearch}
+                            onChange={(e) => setEditClientSearch(e.target.value)}
+                            autoFocus
+                            className="w-full pl-8 pr-7 py-1.5 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-[#F9F9F9] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                          />
+                          {editClientSearch && (
+                            <button
+                              type="button"
+                              onClick={() => setEditClientSearch("")}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-48 overflow-y-auto space-y-0.5 pr-0.5">
+                          {filteredEditClients.length > 0 ? (
+                            filteredEditClients.map((c) => {
+                              const isSelected = editFormData.clientId === c.id || editFormData.clientName.toLowerCase() === c.name.toLowerCase();
+                              const dueCount = c.projects?.filter(p => (p.budgetRaw - p.paidRaw) > 0).length || 0;
+
+                              return (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => handleSelectEditClient(c)}
+                                  className={`w-full text-left px-2.5 py-2 rounded-md text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] font-semibold"
+                                      : "hover:bg-[#F5F5F5] dark:hover:bg-[#1C1C1C] text-[#0A0A0A] dark:text-white"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                        isSelected
+                                          ? "bg-white text-[#0A0A0A] dark:bg-[#0A0A0A] dark:text-white"
+                                          : "bg-[#E5E5E5] text-[#0A0A0A] dark:bg-[#262626] dark:text-white"
+                                      }`}
+                                    >
+                                      {c.name.slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <p className="truncate font-medium">{c.name}</p>
+                                        {dueCount > 0 && (
+                                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isSelected ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"}`}>
+                                            {dueCount} Due
+                                          </span>
+                                        )}
+                                      </div>
+                                      {c.email && (
+                                        <p className={`text-[10px] truncate ${isSelected ? "text-neutral-300 dark:text-neutral-600" : "text-[#737373] dark:text-neutral-400"}`}>
+                                          {c.email}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <div className="py-4 text-center text-xs text-[#737373] dark:text-neutral-500">
+                              {editClientSearch ? `No clients matching "${editClientSearch}"` : "No registered clients found"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder={editFormData.type === "Income" ? "e.g. Acme Corp" : "e.g. Vercel Inc."}
+                    value={editFormData.clientName}
+                    onChange={(e) => setEditFormData({ ...editFormData, clientName: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                  />
+                )}
               </div>
             </div>
+
+            {/* Smart Project Due Selector for Income (Edit) */}
+            {editFormData.type === "Income" && editFormData.clientId && (
+              (() => {
+                const currentClient = clients.find((c) => c.id === editFormData.clientId);
+                const clientProjects = currentClient?.projects || [];
+                if (clientProjects.length === 0) return null;
+
+                return (
+                  <div className="space-y-2 p-3 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#141414] animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#0A0A0A] dark:text-white flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-[#737373]" />
+                        <span>Select Project for Payment</span>
+                      </label>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-medium">
+                        Auto-syncs project balance
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                      {/* General Retainer Option */}
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData({ ...editFormData, projectId: "" })}
+                        className={`w-full text-left px-3 py-2 rounded-lg border text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                          !editFormData.projectId
+                            ? "border-[#0A0A0A] bg-white dark:border-white dark:bg-[#1C1C1C] shadow-xs font-semibold"
+                            : "border-[#E5E5E5] dark:border-[#262626] bg-white/60 dark:bg-[#111111] hover:bg-white dark:hover:bg-[#181818] text-[#737373] dark:text-neutral-400"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs text-[#0A0A0A] dark:text-white font-medium truncate">
+                            General Account Retainer / Advance
+                          </span>
+                          <span className="text-[10px] font-mono text-[#737373] dark:text-neutral-500 shrink-0">
+                            (No specific project)
+                          </span>
+                        </div>
+                        {!editFormData.projectId && <Check className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white shrink-0 ml-2" />}
+                      </button>
+
+                      {/* Client's Projects with Due Balances (Clean 1-Line Layout) */}
+                      {clientProjects.map((p) => {
+                        const isSelected = editFormData.projectId === p.id;
+                        const due = Math.max(0, p.budgetRaw - p.paidRaw);
+                        const isDue = due > 0;
+
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setEditFormData({ ...editFormData, projectId: p.id })}
+                            className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all cursor-pointer ${
+                              isSelected
+                                ? "border-[#0A0A0A] bg-white dark:border-white dark:bg-[#1C1C1C] shadow-xs"
+                                : "border-[#E5E5E5] dark:border-[#262626] bg-white/60 dark:bg-[#111111] hover:bg-white dark:hover:bg-[#181818]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3 min-w-0">
+                              {/* Left: Project title & Due badge in 1 line */}
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="font-semibold text-xs text-[#0A0A0A] dark:text-white truncate" title={p.title}>
+                                  {p.title}
+                                </span>
+                                {isDue ? (
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 dark:bg-amber-950/70 dark:text-amber-300 shrink-0">
+                                    Due: ₹{due.toLocaleString("en-IN")}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-300 shrink-0">
+                                    Fully Paid
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Right: Payment details (Budget & Paid) */}
+                              <div className="flex items-center gap-2 text-[11px] text-[#737373] dark:text-neutral-400 font-mono shrink-0">
+                                <span>Budget: {p.budget || `₹${p.budgetRaw.toLocaleString("en-IN")}`}</span>
+                                <span>•</span>
+                                <span>Paid: ₹{p.paidRaw.toLocaleString("en-IN")}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white ml-1 shrink-0" />}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -1745,19 +2324,21 @@ export function FinanceManager({
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                Notes &amp; Description
-              </label>
-              <textarea
-                rows={2}
-                value={editFormData.notes}
-                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white resize-none"
-              />
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                  Notes &amp; Description
+                </label>
+                <textarea
+                  rows={4}
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white resize-y min-h-[96px]"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E5] dark:border-[#262626]">
+            {/* Fixed / Sticky Bottom Actions Bar (No negative margins = No horizontal scrollbar) */}
+            <div className="sticky bottom-0 -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 -mb-4 sm:-mb-5 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-sm border-t border-[#E5E5E5] dark:border-[#262626] flex items-center justify-end gap-2.5 z-20 min-h-[58px]">
               <Button
                 type="button"
                 variant="secondary"

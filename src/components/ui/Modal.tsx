@@ -83,16 +83,20 @@ export function Modal({
         } flex flex-col ${className}`}
       >
         {/* Header with explicit rounded top corners matching parent */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] rounded-t-xl z-10 shrink-0">
-          <h2 className="text-lg font-bold tracking-tight text-[#0A0A0A] dark:text-white">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b-2 border-[#0A0A0A] dark:border-white/20 bg-[#FAFAFA] dark:bg-[#0A0A0A] rounded-t-xl z-10 shrink-0 gap-3 min-h-[66px]">
+          <h2 className="text-base sm:text-lg font-bold tracking-tight text-[#0A0A0A] dark:text-white shrink-0">
             {title}
           </h2>
-          <div className="flex items-center gap-2">
-            {headerActions}
-            <div className="w-px h-4 bg-[#E5E5E5] dark:bg-[#262626] mx-1 hidden sm:block"></div>
+          {headerActions && (
+            <div className="flex-1 flex justify-center items-center min-w-0">
+              {headerActions}
+            </div>
+          )}
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={onClose}
-              className="p-1 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#262626] cursor-pointer"
+              className="p-2 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors rounded-lg hover:bg-[#E5E5E5] dark:hover:bg-[#262626] cursor-pointer"
+              title="Close modal"
             >
               <X className="w-4 h-4" />
             </button>
@@ -100,7 +104,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-5">{children}</div>
       </div>
     </div>,
     document.body

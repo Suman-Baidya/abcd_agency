@@ -166,6 +166,22 @@ const DEFAULT_SEEDS = [
   },
 ];
 
+import { syncClientAndProjectBalances, parseCurrencyToNumber, formatNumberToINR } from "@/lib/sync-financials";
+
+export interface ClientProjectItem {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  status: string;
+  progress: number;
+  budget: string;
+  budgetRaw: number;
+  paidRaw: number;
+  dueRaw: number;
+  deadline?: string;
+}
+
 export async function getClientsWithProjectCounts() {
   try {
     if (!db.client) {
@@ -177,6 +193,7 @@ export async function getClientsWithProjectCounts() {
         whatsapp: s.whatsapp || undefined,
         projects: 1,
         activeProjects: s.status === "Active" ? 1 : 0,
+        projectsList: [] as ClientProjectItem[],
         joined: s.joinedDate.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
         joinedDate: s.joinedDate.toISOString().slice(0, 10),
         initials: s.name.slice(0, 2).toUpperCase(),
@@ -191,21 +208,56 @@ export async function getClientsWithProjectCounts() {
       });
     }
 
-    const [clients, projects] = await Promise.all([
+    const [clients, projects, incomeTransactions] = await Promise.all([
       db.client.findMany({
         orderBy: { createdAt: "desc" },
       }),
       db.project.findMany({
-        select: { client: true, status: true },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          client: true,
+          clientId: true,
+          category: true,
+          status: true,
+          progress: true,
+          budget: true,
+          budgetRaw: true,
+          paidRaw: true,
+          deadline: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.transaction.findMany({
+        where: { type: "Income", status: "Completed" },
+        select: {
+          id: true,
+          amount: true,
+          amountRaw: true,
+          clientId: true,
+          clientName: true,
+          projectId: true,
+          title: true,
+        },
       }),
     ]);
 
     return clients.map((c: any) => {
       const clientProjects = projects.filter(
-        (p: any) => p.client.toLowerCase() === c.name.toLowerCase()
+        (p: any) =>
+          (p.clientId && p.clientId === c.id) ||
+          p.client.toLowerCase() === c.name.toLowerCase()
       );
+
+      const clientIncome = incomeTransactions.filter(
+        (t: any) =>
+          (t.clientId && t.clientId === c.id) ||
+          (t.clientName && t.clientName.toLowerCase() === c.name.toLowerCase())
+      );
+
       const activeProjects = clientProjects.filter(
-        (p: any) => p.status === "On Track" || p.status === "In Review"
+        (p: any) => p.status === "On Track" || p.status === "In Review" || p.status === "In Progress"
       ).length;
 
       const words = c.name.trim().split(" ");
@@ -213,6 +265,38 @@ export async function getClientsWithProjectCounts() {
         words.length > 1
           ? `${words[0][0]}${words[1][0]}`.toUpperCase()
           : c.name.slice(0, 2).toUpperCase();
+
+      const projectsList: ClientProjectItem[] = clientProjects.map((p: any) => {
+        const projTxs = clientIncome.filter(
+          (t: any) =>
+            t.projectId === p.id ||
+            (t.title && t.title.toLowerCase().includes(p.title.toLowerCase()))
+        );
+        const pBudgetRaw = p.budgetRaw > 0 ? p.budgetRaw : parseCurrencyToNumber(p.budget);
+        const pPaidRaw = p.paidRaw > 0 ? p.paidRaw : projTxs.reduce((acc: number, cur: any) => acc + (cur.amountRaw || parseCurrencyToNumber(cur.amount)), 0);
+        const pDueRaw = Math.max(0, pBudgetRaw - pPaidRaw);
+
+        return {
+          id: p.id,
+          title: p.title,
+          slug: p.slug,
+          category: p.category || "Development",
+          status: p.status || "On Track",
+          progress: p.progress || 0,
+          budget: p.budget || formatNumberToINR(pBudgetRaw),
+          budgetRaw: pBudgetRaw,
+          paidRaw: pPaidRaw,
+          dueRaw: pDueRaw,
+          deadline: p.deadline || undefined,
+        };
+      });
+
+      // Calculate totals
+      const totalContractedRaw = projectsList.reduce((sum, p) => sum + p.budgetRaw, 0);
+      const totalIncomeRaw = clientIncome.reduce((sum: number, t: any) => sum + (t.amountRaw || parseCurrencyToNumber(t.amount)), 0);
+      
+      const totalSpendRaw = totalIncomeRaw > 0 ? totalIncomeRaw : (c.totalSpendRaw || parseCurrencyToNumber(c.totalSpend));
+      const dueBalanceRaw = totalContractedRaw > 0 ? Math.max(0, totalContractedRaw - totalSpendRaw) : (c.dueBalanceRaw || parseCurrencyToNumber(c.dueBalance));
 
       return {
         id: c.id,
@@ -227,10 +311,11 @@ export async function getClientsWithProjectCounts() {
         website: c.website || undefined,
         projects: clientProjects.length,
         activeProjects,
-        totalSpend: c.totalSpend || "₹0",
-        totalSpendRaw: c.totalSpendRaw || 0,
-        dueBalance: c.dueBalance || "₹0",
-        dueBalanceRaw: c.dueBalanceRaw || 0,
+        projectsList,
+        totalSpend: formatNumberToINR(totalSpendRaw),
+        totalSpendRaw,
+        dueBalance: formatNumberToINR(dueBalanceRaw),
+        dueBalanceRaw,
         status: (c.status || "Active") as "Active" | "Prospect" | "Inactive",
         joined: new Date(c.joinedDate || c.createdAt).toLocaleDateString("en-US", {
           month: "short",
@@ -251,6 +336,7 @@ export async function getClientsWithProjectCounts() {
       whatsapp: s.whatsapp || undefined,
       projects: 1,
       activeProjects: s.status === "Active" ? 1 : 0,
+      projectsList: [] as ClientProjectItem[],
       joined: s.joinedDate.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       joinedDate: s.joinedDate.toISOString().slice(0, 10),
       initials: s.name.slice(0, 2).toUpperCase(),
@@ -261,11 +347,8 @@ export async function getClientsWithProjectCounts() {
 
 export async function createClient(data: ClientInput) {
   try {
-    const spendRaw = parseInt((data.totalSpend || "0").replace(/[^0-9]/g, "") || "0", 10);
-    const dueRaw = parseInt((data.dueBalance || "0").replace(/[^0-9]/g, "") || "0", 10);
-    const formattedSpend = data.totalSpend?.startsWith("₹") ? data.totalSpend : `₹${data.totalSpend || "0"}`;
-    const formattedDue = data.dueBalance?.startsWith("₹") ? data.dueBalance : `₹${data.dueBalance || "0"}`;
-
+    const spendRaw = parseCurrencyToNumber(data.totalSpend);
+    const dueRaw = parseCurrencyToNumber(data.dueBalance);
     const isSame = data.isWhatsappSame ?? true;
 
     const created = await db.client.create({
@@ -280,15 +363,19 @@ export async function createClient(data: ClientInput) {
         location: data.location?.trim() || "",
         website: data.website?.trim() || null,
         status: data.status || "Active",
-        totalSpend: formattedSpend,
+        totalSpend: formatNumberToINR(spendRaw),
         totalSpendRaw: spendRaw,
-        dueBalance: formattedDue,
+        dueBalance: formatNumberToINR(dueRaw),
         dueBalanceRaw: dueRaw,
         notes: data.notes?.trim() || null,
       },
     });
 
+    await syncClientAndProjectBalances(created.id);
+
     revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
+    revalidatePath("/admin/finance");
     revalidatePath("/admin");
     return created;
   } catch (error: any) {
@@ -299,11 +386,8 @@ export async function createClient(data: ClientInput) {
 
 export async function updateClient(id: string, data: ClientInput) {
   try {
-    const spendRaw = parseInt((data.totalSpend || "0").replace(/[^0-9]/g, "") || "0", 10);
-    const dueRaw = parseInt((data.dueBalance || "0").replace(/[^0-9]/g, "") || "0", 10);
-    const formattedSpend = data.totalSpend?.startsWith("₹") ? data.totalSpend : `₹${data.totalSpend || "0"}`;
-    const formattedDue = data.dueBalance?.startsWith("₹") ? data.dueBalance : `₹${data.dueBalance || "0"}`;
-
+    const spendRaw = parseCurrencyToNumber(data.totalSpend);
+    const dueRaw = parseCurrencyToNumber(data.dueBalance);
     const isSame = data.isWhatsappSame ?? true;
 
     const updated = await db.client.update({
@@ -319,15 +403,19 @@ export async function updateClient(id: string, data: ClientInput) {
         location: data.location?.trim() || "",
         website: data.website?.trim() || null,
         status: data.status || "Active",
-        totalSpend: formattedSpend,
+        totalSpend: formatNumberToINR(spendRaw),
         totalSpendRaw: spendRaw,
-        dueBalance: formattedDue,
+        dueBalance: formatNumberToINR(dueRaw),
         dueBalanceRaw: dueRaw,
         notes: data.notes?.trim() || null,
       },
     });
 
+    await syncClientAndProjectBalances(id);
+
     revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
+    revalidatePath("/admin/finance");
     revalidatePath("/admin");
     return updated;
   } catch (error: any) {
@@ -359,6 +447,8 @@ export async function deleteClient(id: string) {
     });
 
     revalidatePath("/admin/clients");
+    revalidatePath("/admin/projects");
+    revalidatePath("/admin/finance");
     revalidatePath("/admin");
   } catch (error: any) {
     console.error("Failed to delete client:", error);

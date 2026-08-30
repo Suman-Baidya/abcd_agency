@@ -96,6 +96,8 @@ model Project {
   title       String
   slug        String   @unique
   client      String
+  clientId    String?
+  clientRel   Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   category    String
   tagline     String
   summary     String   @db.Text
@@ -109,8 +111,12 @@ model Project {
   statusColor String   @default("neutral")
   progress    Int      @default(0)
   budget      String   @default("")
+  budgetRaw   Int      @default(0)
+  paidRaw     Int      @default(0)
   deadline    String   @default("")
   
+  transactions Transaction[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -141,6 +147,9 @@ model Client {
   notes          String?  @db.Text
   joinedDate     DateTime @default(now())
   
+  projects       Project[]
+  transactions   Transaction[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -149,14 +158,18 @@ model Transaction {
   id             String   @id @default(cuid())
   title          String
   type           String   @default("Income") // "Income" | "Expense"
-  category       String   @default("Project Payment") // "Project Payment", "Client Retainer", "Software & Tools", "Salaries & Payroll", "Marketing & Ads", "Hosting & Cloud", "Office & Equipment", "Miscellaneous"
+  category       String   @default("Project Payment") // "Project Payment", "Client Retainer", etc.
   amount         String   @default("₹0")
   amountRaw      Int      @default(0)
   status         String   @default("Completed") // "Completed" | "Pending" | "Cancelled"
   date           DateTime @default(now())
   paymentMethod  String   @default("Bank Transfer") // "Bank Transfer", "UPI", "Credit Card", "Stripe", "Cash", "PayPal"
-  referenceNo    String?  // Invoice / Transaction / UTR reference like "INV-2026-001" or "UPI-983742"
+  referenceNo    String?  // Invoice / Transaction / UTR reference
   clientName     String?  // Associated client (if Income) or vendor/payee (if Expense)
+  clientId       String?
+  clientRel      Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId      String?
+  projectRel     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   notes          String?  @db.Text
   
   createdAt      DateTime @default(now())

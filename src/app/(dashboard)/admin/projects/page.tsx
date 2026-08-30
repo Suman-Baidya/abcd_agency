@@ -9,6 +9,9 @@ import { ProjectPagination } from "@/components/dashboard/ProjectPagination";
 import { CategoryManager } from "@/components/dashboard/CategoryManager";
 import { db } from "@/lib/prisma";
 
+import { getAvailableClients } from "./actions";
+import { parseCurrencyToNumber } from "@/lib/sync-financials";
+
 export const metadata = {
   title: "Projects — ABCD Agency",
 };
@@ -26,7 +29,12 @@ export default async function ProjectsPage({
   const limit = typeof resolvedParams?.limit === "string" ? parseInt(resolvedParams.limit, 10) : 20;
 
   const where = {
-    ...(q ? { title: { contains: q, mode: 'insensitive' as any } } : {}),
+    ...(q ? { 
+      OR: [
+        { title: { contains: q, mode: 'insensitive' as any } },
+        { client: { contains: q, mode: 'insensitive' as any } },
+      ]
+    } : {}),
     ...(statusFilter ? { status: statusFilter } : {}),
   };
 
@@ -36,12 +44,17 @@ export default async function ProjectsPage({
   else if (sort === "z-a") orderBy = { title: "desc" };
   else if (sort === "progress") orderBy = { progress: "desc" };
 
-  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll] = await Promise.all([
+  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allProjectsForBudget] = await Promise.all([
     db.project.findMany({
       where,
       orderBy,
       skip: (page - 1) * limit,
       take: limit,
+      include: {
+        clientRel: {
+          select: { id: true, name: true, email: true }
+        }
+      }
     }),
     db.project.count({ where }),
     db.category.findMany({ orderBy: { name: 'asc' } }),
@@ -53,7 +66,19 @@ export default async function ProjectsPage({
     db.project.count({
       where: q ? { title: { contains: q, mode: 'insensitive' as any } } : undefined,
     }),
+    getAvailableClients(),
+    db.project.findMany({ select: { budgetRaw: true, budget: true } }),
   ]);
+
+  const totalBudgetRaw = allProjectsForBudget.reduce(
+    (sum: number, p: any) => sum + (p.budgetRaw > 0 ? p.budgetRaw : parseCurrencyToNumber(p.budget)),
+    0
+  );
+  const formattedBudgetStat = totalBudgetRaw >= 100000 
+    ? `₹${(totalBudgetRaw / 100000).toFixed(1)}L` 
+    : totalBudgetRaw >= 1000 
+    ? `₹${(totalBudgetRaw / 1000).toFixed(1)}k`
+    : `₹${totalBudgetRaw.toLocaleString("en-IN")}`;
 
   const categoryNames = projectCategories.map((c: any) => c.name);
 
@@ -85,7 +110,7 @@ export default async function ProjectsPage({
         </div>
         <div className="flex items-center gap-2">
           <CategoryManager categories={projectCategories} />
-          <NewProjectButton categories={categoryNames} />
+          <NewProjectButton categories={categoryNames} clients={clients} />
         </div>
       </div>
 
@@ -94,7 +119,7 @@ export default async function ProjectsPage({
         <StatCard label="Total Projects" value={totalAll} />
         <StatCard label="On Track" value={statusCounts["On Track"] || 0} color="emerald" />
         <StatCard label="Delayed" value={statusCounts["Delayed"] || 0} color="amber" />
-        <StatCard label="Total Budget" value="₹160.5k" />
+        <StatCard label="Total Budget" value={formattedBudgetStat} />
       </div>
 
       {/* Projects Table */}
@@ -112,7 +137,7 @@ export default async function ProjectsPage({
                 <th className="px-5 py-3.5 w-80">Project Details</th>
                 <th className="px-5 py-3.5 text-center">Status</th>
                 <th className="px-5 py-3.5 w-24">Progress</th>
-                <th className="px-5 py-3.5">Budget</th>
+                <th className="px-5 py-3.5">Budget & Paid</th>
                 <th className="px-5 py-3.5">Deadline</th>
                 <th className="px-5 py-3.5 text-right w-24">Actions</th>
               </tr>
@@ -124,6 +149,7 @@ export default async function ProjectsPage({
                   project={project} 
                   serialNumber={(page - 1) * limit + index + 1} 
                   categories={categoryNames}
+                  clients={clients}
                 />
               )) : (
                 <tr>
