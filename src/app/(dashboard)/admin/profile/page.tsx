@@ -15,7 +15,7 @@ export default function ProfilePage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
-          Profile
+          Admin Profile
         </h1>
         <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
           Manage your personal information and account settings.

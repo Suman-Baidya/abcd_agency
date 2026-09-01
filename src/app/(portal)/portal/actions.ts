@@ -18,6 +18,7 @@ export async function getPortalData() {
               include: {
                 transactions: true,
                 revisionRequests: true,
+                tasks: { orderBy: [{ order: "asc" }, { createdAt: "desc" }] },
               },
             },
             transactions: true,
@@ -122,7 +123,52 @@ export async function submitRevisionRequest(data: {
   );
 
   revalidatePath("/portal/revisions");
+  revalidatePath("/portal/projects");
+  revalidatePath("/admin/projects");
   return revision;
+}
+
+export async function clientApproveTask(taskId: string) {
+  const user = await getCurrentUser();
+  if (!user || !user.clientId) throw new Error("Only active clients can approve deliverables.");
+
+  const task = await db.projectTask.update({
+    where: { id: taskId },
+    data: { status: "Approved" },
+    include: { projectRel: { select: { id: true, title: true } } },
+  });
+
+  if (task.projectId) {
+    const allTasks = await db.projectTask.findMany({
+      where: { projectId: task.projectId },
+      select: { status: true },
+    });
+
+    if (allTasks.length > 0) {
+      const completedCount = allTasks.filter((t: { status: string }) => t.status === "Approved" || t.status === "Done").length;
+      const computedProgress = Math.round((completedCount / allTasks.length) * 100);
+
+      await db.project.update({
+        where: { id: task.projectId },
+        data: {
+          progress: computedProgress,
+          ...(computedProgress === 100 ? { status: "Completed" } : {}),
+        },
+      });
+    }
+  }
+
+  await logUserActivity(
+    user.id,
+    "TASK_APPROVED",
+    `Approved deliverable: "${task.title}" in ${task.projectRel?.title || "Project"}`
+  );
+
+  revalidatePath("/portal/projects");
+  revalidatePath("/portal");
+  revalidatePath("/admin/projects");
+
+  return { success: true, task };
 }
 
 export async function scheduleMeeting(data: {

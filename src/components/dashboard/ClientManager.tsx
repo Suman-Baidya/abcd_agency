@@ -493,7 +493,7 @@ export function ClientManager({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
-            Clients
+            Client Accounts
           </h1>
           <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
             Manage your client accounts, engagements, and business relationships.

@@ -377,43 +377,43 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
           <Button variant="primary" size="sm" href="/admin/users" className="text-xs shrink-0">
-            Review Users Table
+Review Users Table
           </Button>
         </div>
       )}
 
-      {/* KPI Metrics Cards - Clickable to respective dashboard pages */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* Primary KPI Grid (2x2 on mobile, 4x1 on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Revenue -> Finance */}
         <Link href="/admin/finance" className="block group focus-visible:outline-none">
-          <Card className="p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
+          <Card className="p-3.5 sm:p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+              <p className="text-[10px] sm:text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
                 Total Revenue
               </p>
-              <div className="w-7 h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
                 <span className="text-sm font-bold text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors">
                   ₹
                 </span>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0A0A0A] dark:text-white">
+              <p className="text-lg sm:text-2xl font-bold text-[#0A0A0A] dark:text-white truncate">
                 {formattedTotalRevenue}
               </p>
               {revenueGrowthPercent !== null ? (
-                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                <p className="text-[10px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                   </svg>
-                  {revenueGrowthPercent >= 0 ? `+${revenueGrowthPercent}%` : `${revenueGrowthPercent}%`} from last month
+                  {revenueGrowthPercent >= 0 ? `+${revenueGrowthPercent}%` : `${revenueGrowthPercent}%`}
                 </p>
               ) : (
-                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                <p className="text-[10px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {completedIncomeTxs.length} payments received
+                  {completedIncomeTxs.length} payments
                 </p>
               )}
             </div>
@@ -422,23 +422,23 @@ export default async function AdminDashboardPage() {
 
         {/* Active Projects -> Projects */}
         <Link href="/admin/projects" className="block group focus-visible:outline-none">
-          <Card className="p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
+          <Card className="p-3.5 sm:p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+              <p className="text-[10px] sm:text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
                 Active Projects
               </p>
-              <div className="w-7 h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0A0A0A] dark:text-white">
+              <p className="text-lg sm:text-2xl font-bold text-[#0A0A0A] dark:text-white">
                 +{activeProjectsCount > 0 ? activeProjectsCount : totalProjectsCount}
               </p>
-              <p className="text-xs font-medium text-[#737373] dark:text-neutral-400 mt-1">
-                {onTrackCount > 0 ? `${onTrackCount} on track` : `${totalProjectsCount} total projects`}
+              <p className="text-[10px] sm:text-xs font-medium text-[#737373] dark:text-neutral-400 mt-0.5 sm:mt-1 truncate">
+                {onTrackCount > 0 ? `${onTrackCount} on track` : `${totalProjectsCount} total`}
               </p>
             </div>
           </Card>
@@ -446,26 +446,26 @@ export default async function AdminDashboardPage() {
 
         {/* Total Clients -> Clients */}
         <Link href="/admin/clients" className="block group focus-visible:outline-none">
-          <Card className="p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
+          <Card className="p-3.5 sm:p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+              <p className="text-[10px] sm:text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
                 Total Clients
               </p>
-              <div className="w-7 h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0A0A0A] dark:text-white">
+              <p className="text-lg sm:text-2xl font-bold text-[#0A0A0A] dark:text-white">
                 {totalClientsCount}
               </p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+              <p className="text-[10px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1 flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
-                +{activeClientsCount} active clients
+                +{activeClientsCount} active
               </p>
             </div>
           </Card>
@@ -473,31 +473,31 @@ export default async function AdminDashboardPage() {
 
         {/* Inquiries -> Inquiries */}
         <Link href="/admin/inquiries" className="block group focus-visible:outline-none">
-          <Card className="p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
+          <Card className="p-3.5 sm:p-5 flex flex-col justify-between h-full transition-all duration-200 group-hover:border-[#0A0A0A] dark:group-hover:border-white group-hover:shadow-sm">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+              <p className="text-[10px] sm:text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
                 Inquiries
               </p>
-              <div className="w-7 h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#F5F5F5] dark:bg-[#262626] group-hover:bg-[#0A0A0A] dark:group-hover:bg-white flex items-center justify-center transition-colors">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0A0A0A] dark:text-white">
+              <p className="text-lg sm:text-2xl font-bold text-[#0A0A0A] dark:text-white">
                 {totalInquiriesCount}
               </p>
-              <p className="text-xs font-medium text-[#737373] dark:text-neutral-400 mt-1 flex items-center gap-1.5">
+              <p className="text-[10px] sm:text-xs font-medium text-[#737373] dark:text-neutral-400 mt-0.5 sm:mt-1 flex items-center gap-1.5 truncate">
                 {unreadInquiriesCount > 0 ? (
                   <>
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <span className="text-red-600 dark:text-red-400 font-semibold">
-                      {unreadInquiriesCount} unread message{unreadInquiriesCount > 1 ? "s" : ""}
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+                    <span className="text-red-600 dark:text-red-400 font-semibold truncate">
+                      {unreadInquiriesCount} unread
                     </span>
                   </>
                 ) : (
-                  <span className="text-neutral-500">All messages caught up</span>
+                  <span className="text-neutral-500 truncate">All caught up</span>
                 )}
               </p>
             </div>

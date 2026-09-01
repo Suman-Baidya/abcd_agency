@@ -11,9 +11,10 @@ import { db } from "@/lib/prisma";
 
 import { getAvailableClients } from "./actions";
 import { parseCurrencyToNumber } from "@/lib/sync-financials";
+import { AdminProjectViewSwitcher } from "@/components/dashboard/AdminProjectViewSwitcher";
 
 export const metadata = {
-  title: "Projects — ABCD Agency",
+  title: "Project Deliverables — ABCD Agency",
 };
 
 export default async function ProjectsPage({
@@ -44,7 +45,7 @@ export default async function ProjectsPage({
   else if (sort === "z-a") orderBy = { title: "desc" };
   else if (sort === "progress") orderBy = { progress: "desc" };
 
-  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allProjectsForBudget] = await Promise.all([
+  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allProjectsForBudget, allTasks, allProjectsUnfiltered] = await Promise.all([
     db.project.findMany({
       where,
       orderBy,
@@ -55,7 +56,7 @@ export default async function ProjectsPage({
           select: { id: true, name: true, email: true }
         },
         _count: {
-          select: { revisionRequests: true }
+          select: { revisionRequests: true, tasks: true }
         }
       }
     }),
@@ -71,6 +72,20 @@ export default async function ProjectsPage({
     }),
     getAvailableClients(),
     db.project.findMany({ select: { budgetRaw: true, budget: true } }),
+    db.projectTask.findMany({
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      include: {
+        projectRel: {
+          select: { id: true, title: true, client: true, status: true, progress: true },
+        },
+      },
+    }),
+    db.project.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        clientRel: { select: { id: true, name: true, email: true } },
+      },
+    }),
   ]);
 
   const totalBudgetRaw = allProjectsForBudget.reduce(
@@ -105,7 +120,7 @@ export default async function ProjectsPage({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
-            Projects
+            Project Deliverables
           </h1>
           <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
             Manage and monitor all agency projects.
@@ -125,49 +140,56 @@ export default async function ProjectsPage({
         <StatCard label="Total Budget" value={formattedBudgetStat} />
       </div>
 
-      {/* Projects Table */}
-      <Card className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
-        <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A]">
-          <Suspense fallback={<div className="h-10 w-full bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md"></div>}>
-            <ProjectFilters statusCounts={statusCounts} />
-          </Suspense>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#262626] dark:text-neutral-300">
-            <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#525252] dark:text-[#A3A3A3] bg-[#F9F9F9] dark:bg-[#0E0E0E] border-b border-[#E5E5E5] dark:border-[#262626]">
-              <tr>
-                <th className="px-5 py-3.5 w-12 text-center">SL</th>
-                <th className="px-5 py-3.5 w-80">Project Details</th>
-                <th className="px-5 py-3.5 text-center">Status</th>
-                <th className="px-5 py-3.5 w-24">Progress</th>
-                <th className="px-5 py-3.5">Budget & Paid</th>
-                <th className="px-5 py-3.5">Deadline</th>
-                <th className="px-5 py-3.5 text-right w-24">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
-              {projects.length > 0 ? projects.map((project: any, index: number) => (
-                <ProjectTableRow 
-                  key={project.id} 
-                  project={project} 
-                  serialNumber={(page - 1) * limit + index + 1} 
-                  categories={categoryNames}
-                  clients={clients}
-                />
-              )) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-[#737373]">
-                    No projects found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <Suspense fallback={<div className="h-16 border-t border-[#E5E5E5] dark:border-[#262626]"></div>}>
-          <ProjectPagination totalItems={totalProjects} />
-        </Suspense>
-      </Card>
+      {/* Projects Switcher (Table vs Smart Kanban) */}
+      <AdminProjectViewSwitcher
+        projects={allProjectsUnfiltered}
+        tasks={allTasks}
+        clients={clients}
+        dataTableComponent={
+          <Card className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
+            <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A]">
+              <Suspense fallback={<div className="h-10 w-full bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md"></div>}>
+                <ProjectFilters statusCounts={statusCounts} />
+              </Suspense>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-[#262626] dark:text-neutral-300">
+                <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#525252] dark:text-[#A3A3A3] bg-[#F9F9F9] dark:bg-[#0E0E0E] border-b border-[#E5E5E5] dark:border-[#262626]">
+                  <tr>
+                    <th className="px-5 py-3.5 w-12 text-center">SL</th>
+                    <th className="px-5 py-3.5 w-80">Project Details</th>
+                    <th className="px-5 py-3.5 text-center">Status</th>
+                    <th className="px-5 py-3.5 w-24">Progress</th>
+                    <th className="px-5 py-3.5">Budget & Paid</th>
+                    <th className="px-5 py-3.5">Deadline</th>
+                    <th className="px-5 py-3.5 text-right w-24">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
+                  {projects.length > 0 ? projects.map((project: any, index: number) => (
+                    <ProjectTableRow 
+                      key={project.id} 
+                      project={project} 
+                      serialNumber={(page - 1) * limit + index + 1} 
+                      categories={categoryNames}
+                      clients={clients}
+                    />
+                  )) : (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-8 text-center text-[#737373]">
+                        No projects found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <Suspense fallback={<div className="h-16 border-t border-[#E5E5E5] dark:border-[#262626]"></div>}>
+              <ProjectPagination totalItems={totalProjects} />
+            </Suspense>
+          </Card>
+        }
+      />
     </div>
   );
 }

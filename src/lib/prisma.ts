@@ -27,7 +27,7 @@ function createPrismaClient(): PrismaClient {
 }
 
 export function getDb(): PrismaClient {
-  if (!globalThis.prisma) {
+  if (!globalThis.prisma || !(globalThis.prisma as any).projectTask) {
     globalThis.prisma = createPrismaClient();
   }
   return globalThis.prisma;
@@ -47,6 +47,7 @@ export const db = new Proxy({} as any, {
   client: any;
   transaction: any;
   project: any;
+  projectTask: any;
   inquiry: any;
   siteConfig: any;
   category: any;

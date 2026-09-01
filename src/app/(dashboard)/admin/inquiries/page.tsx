@@ -7,7 +7,7 @@ import { InquiryFilters } from "./InquiryFilters";
 import { ProjectPagination } from "@/components/dashboard/ProjectPagination";
 
 export const metadata = {
-  title: "Inquiries — ABCD Agency",
+  title: "Client Inquiries — ABCD Agency",
 };
 
 const TAB_CONFIG = [
@@ -139,7 +139,7 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
-            Inquiries
+            Client Inquiries
           </h1>
           <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
             Manage incoming project inquiries and consultation requests.

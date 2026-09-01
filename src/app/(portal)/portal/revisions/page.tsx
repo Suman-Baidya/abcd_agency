@@ -407,8 +407,8 @@ export default function PortalRevisionsPage() {
 
       {/* New Revision Modal */}
       {showFormModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-xl animate-in zoom-in-95 duration-200 scrollbar-thin">
             <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3">
               <h3 className="text-sm font-bold text-[#0A0A0A] dark:text-white">Submit New Revision Ticket</h3>
               <button
@@ -498,8 +498,8 @@ export default function PortalRevisionsPage() {
 
       {/* Ticket Details Modal */}
       {selectedRevision && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-xl animate-in zoom-in-95 duration-200 scrollbar-thin">
             <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3">
               <h3 className="text-sm font-bold text-[#0A0A0A] dark:text-white">Revision Ticket Details</h3>
               <button
