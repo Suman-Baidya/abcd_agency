@@ -31,8 +31,93 @@ model SiteConfig {
   
   // Settings
   enableWhatsappWidget Boolean @default(true)
+  requireEmailVerification Boolean @default(false)
   
   updatedAt       DateTime @updatedAt
+}
+
+model User {
+  id              String         @id @default(cuid())
+  name            String
+  companyName     String
+  email           String         @unique
+  password        String
+  phone           String?
+  isWhatsappSame  Boolean        @default(true)
+  whatsapp        String?
+  industry        String?
+  location        String?
+  website         String?
+  role            String         @default("USER") // "USER" | "CLIENT" | "ADMIN" | "SUPER_ADMIN"
+  status          String         @default("Active") // "Active" | "Prospect" | "Suspended"
+  isVerified      Boolean        @default(false)
+  isViewed        Boolean        @default(false)
+  verificationOtp String?
+  otpExpiresAt    DateTime?
+  clientId        String?        @unique
+  clientRel       Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  
+  lastLoginAt     DateTime?
+  lastLogoutAt    DateTime?
+  lastActiveAt    DateTime?
+  
+  activities      UserActivity[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model UserActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  userRel     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String   // "REGISTER", "LOGIN", "LOGOUT", "INQUIRY_SUBMITTED", "PROFILE_UPDATED", "VIEW_SERVICES", etc.
+  description String?
+  ipAddress   String?
+  device      String?
+  createdAt   DateTime @default(now())
+}
+
+model ClientDocument {
+  id          String   @id @default(cuid())
+  clientId    String
+  clientRel   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title       String
+  fileUrl     String
+  fileType    String   @default("PDF") // PDF, Image, Archive, Document
+  size        String   @default("1.2 MB")
+  uploadedBy  String   @default("Agency Team")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RevisionRequest {
+  id          String   @id @default(cuid())
+  clientId    String
+  clientRel   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId   String?
+  projectRel  Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title       String
+  description String   @db.Text
+  priority    String   @default("Medium") // High, Medium, Low
+  status      String   @default("Pending") // Pending, In Review, In Progress, Resolved
+  response    String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ClientMeeting {
+  id          String   @id @default(cuid())
+  clientId    String
+  clientRel   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title       String
+  date        String
+  time        String
+  duration    String   @default("30 mins")
+  meetingLink String?
+  status      String   @default("Scheduled") // Scheduled, Completed, Cancelled
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Inquiry {
@@ -115,7 +200,8 @@ model Project {
   paidRaw     Int      @default(0)
   deadline    String   @default("")
   
-  transactions Transaction[]
+  transactions     Transaction[]
+  revisionRequests RevisionRequest[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -147,8 +233,12 @@ model Client {
   notes          String?  @db.Text
   joinedDate     DateTime @default(now())
   
-  projects       Project[]
-  transactions   Transaction[]
+  userRel          User?
+  projects         Project[]
+  transactions     Transaction[]
+  documents        ClientDocument[]
+  revisionRequests RevisionRequest[]
+  meetings         ClientMeeting[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

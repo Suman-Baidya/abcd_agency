@@ -227,11 +227,11 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
               name="category" 
               defaultValue={project?.category || ""} 
               required 
-              className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none cursor-pointer" 
+              className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none cursor-pointer" 
             >
-              <option value="" disabled>Select a Category</option>
+              <option value="" disabled className="bg-white dark:bg-[#111111] text-[#737373] dark:text-neutral-400">Select a Category</option>
               {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c} className="bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white">{c}</option>
               ))}
             </select>
           </div>
@@ -275,11 +275,11 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">Status</label>
-            <select name="status" defaultValue={project?.status || "On Track"} className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none cursor-pointer">
-              <option value="On Track">On Track</option>
-              <option value="In Review">In Review</option>
-              <option value="Delayed">Delayed</option>
-              <option value="On Hold">On Hold</option>
+            <select name="status" defaultValue={project?.status || "On Track"} className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none cursor-pointer">
+              <option value="On Track" className="bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white">On Track</option>
+              <option value="In Review" className="bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white">In Review</option>
+              <option value="Delayed" className="bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white">Delayed</option>
+              <option value="On Hold" className="bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white">On Hold</option>
             </select>
           </div>
           <div className="space-y-2">

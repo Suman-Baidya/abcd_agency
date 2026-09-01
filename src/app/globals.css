@@ -41,6 +41,24 @@ body {
   color-scheme: dark;
 }
 
+select {
+  color-scheme: light;
+}
+
+.dark select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #FFFFFF;
+  color: #0A0A0A;
+}
+
+.dark select option {
+  background-color: #111111;
+  color: #FFFFFF;
+}
+
 .dark body {
   background-color: #0A0A0A;
   color: #FFFFFF;

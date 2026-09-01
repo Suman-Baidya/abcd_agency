@@ -1,7 +1,9 @@
 import React from "react";
+import Link from "next/link";
 import { Project } from "@prisma/client";
 import { Badge } from "@/components/ui/Badge";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, RotateCcw } from "lucide-react";
+import { formatProjectDeadline } from "@/lib/formatDate";
 
 interface ProjectViewDetailsProps {
   project: Project;
@@ -10,27 +12,12 @@ interface ProjectViewDetailsProps {
 }
 
 export function ProjectViewDetails({ project, onEdit, onDelete }: ProjectViewDetailsProps) {
-  let timelineDisplay = project.deadline || "TBD";
-  if (project.deadline && project.deadline.includes("{")) {
-    try {
-      const dates = JSON.parse(project.deadline);
-      if (dates.startDate && dates.endDate) {
-        const start = new Date(dates.startDate);
-        const end = new Date(dates.endDate);
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        const startStr = `${pad(start.getDate())}/${pad(start.getMonth() + 1)}/${start.getFullYear()}`;
-        const endStr = `${pad(end.getDate())}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
-        timelineDisplay = `${startStr} - ${endStr}`;
-      }
-    } catch (e) {
-      // Keep legacy string format
-    }
-  }
+  const timelineDisplay = formatProjectDeadline(project.deadline).fullDisplay;
 
   return (
     <div className="space-y-10">
       {/* Header Info & Actions */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h2 className="text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">{project.title}</h2>
@@ -39,6 +26,16 @@ export function ProjectViewDetails({ project, onEdit, onDelete }: ProjectViewDet
             )}
           </div>
           <p className="text-[#737373] dark:text-neutral-400 text-lg">{project.tagline}</p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/admin/revisions?projectId=${project.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] hover:border-black dark:hover:border-white text-[#0A0A0A] dark:text-white transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+            Revision Requests
+          </Link>
         </div>
       </div>
 

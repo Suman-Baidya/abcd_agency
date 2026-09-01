@@ -53,6 +53,9 @@ export default async function ProjectsPage({
       include: {
         clientRel: {
           select: { id: true, name: true, email: true }
+        },
+        _count: {
+          select: { revisionRequests: true }
         }
       }
     }),

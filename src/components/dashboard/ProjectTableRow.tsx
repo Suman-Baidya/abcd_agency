@@ -4,7 +4,7 @@ import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, RotateCcw } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ProjectEditForm } from "./ProjectEditForm";
 import { ProjectViewDetails } from "./ProjectViewDetails";
@@ -98,6 +98,16 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
             </span>
             {project.isFeatured && (
               <Badge variant="outline" size="sm" className="ml-2 text-[9px] shrink-0">Featured</Badge>
+            )}
+            {project._count?.revisionRequests > 0 && (
+              <Link
+                href={`/admin/revisions?projectId=${project.id}`}
+                className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors shrink-0"
+                title={`${project._count.revisionRequests} active revision requests`}
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                {project._count.revisionRequests} Rev{project._count.revisionRequests > 1 ? "s" : ""}
+              </Link>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-1 min-w-0">

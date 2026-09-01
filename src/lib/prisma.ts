@@ -27,7 +27,7 @@ function createPrismaClient(): PrismaClient {
 }
 
 export function getDb(): PrismaClient {
-  if (!globalThis.prisma || !(globalThis.prisma as any).transaction) {
+  if (!globalThis.prisma) {
     globalThis.prisma = createPrismaClient();
   }
   return globalThis.prisma;

@@ -10,8 +10,9 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col bg-[#FBFBFB] dark:bg-[#0A0A0A] transition-colors duration-200">
-      <header className="absolute top-0 w-full p-4 sm:p-6 lg:p-8 flex items-center justify-between z-10">
-        <Link href="/" className="flex items-center group">
+      {/* Floating fixed corner elements (No navbar bar, stays in place when scrolling) */}
+      <header className="fixed top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-center justify-between z-50 pointer-events-none">
+        <Link href="/" className="flex items-center group pointer-events-auto">
           <Image
             src="/images/Black_Logo.png"
             alt="ABCD Agency Logo"
@@ -29,10 +30,12 @@ export default function AuthLayout({
             style={{ width: "auto" }}
           />
         </Link>
-        <ThemeToggle />
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </header>
       
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4 py-8">
         {children}
       </main>
     </div>

@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { logUserActivity } from "@/lib/auth-session";
 
 export interface ClientInput {
   name: string;
@@ -371,8 +372,48 @@ export async function createClient(data: ClientInput) {
       },
     });
 
+    // Auto-create/sync corresponding user in User table
+    try {
+      const existingUser = await db.user.findUnique({
+        where: { email: data.email.trim().toLowerCase() },
+      });
+
+      if (existingUser) {
+        await db.user.update({
+          where: { id: existingUser.id },
+          data: {
+            clientId: created.id,
+            role: "CLIENT",
+            status: "Active",
+          },
+        });
+      } else {
+        await db.user.create({
+          data: {
+            name: data.contactPerson?.trim() || data.name.trim(),
+            companyName: data.name.trim(),
+            email: data.email.trim().toLowerCase(),
+            password: "Client@" + Math.floor(1000 + Math.random() * 9000), // Default random client initial password
+            phone: data.phone?.trim() || null,
+            isWhatsappSame: isSame,
+            whatsapp: isSame ? null : (data.whatsapp?.trim() || null),
+            industry: data.industry?.trim() || null,
+            location: data.location?.trim() || null,
+            website: data.website?.trim() || null,
+            role: "CLIENT",
+            status: "Active",
+            isVerified: true,
+            clientId: created.id,
+          },
+        });
+      }
+    } catch (userSyncErr) {
+      console.warn("Failed to auto-sync user for new client:", userSyncErr);
+    }
+
     await syncClientAndProjectBalances(created.id);
 
+    revalidatePath("/admin/users");
     revalidatePath("/admin/clients");
     revalidatePath("/admin/projects");
     revalidatePath("/admin/finance");
@@ -442,14 +483,38 @@ export async function updateClientStatus(id: string, status: string) {
 
 export async function deleteClient(id: string) {
   try {
+    // 1. Reset any linked user account back to USER role and clear clientId
+    const linkedUser = await db.user.findFirst({
+      where: { clientId: id },
+    });
+
+    if (linkedUser) {
+      await db.user.update({
+        where: { id: linkedUser.id },
+        data: {
+          role: "USER",
+          clientId: null,
+        },
+      });
+
+      await logUserActivity(
+        linkedUser.id,
+        "CLIENT_REVERTED",
+        "Client record was removed; account reverted to standard user/prospect"
+      );
+    }
+
+    // 2. Delete the client record
     await db.client.delete({
       where: { id },
     });
 
+    revalidatePath("/admin/users");
     revalidatePath("/admin/clients");
     revalidatePath("/admin/projects");
     revalidatePath("/admin/finance");
     revalidatePath("/admin");
+    return { success: true };
   } catch (error: any) {
     console.error("Failed to delete client:", error);
     throw new Error(error?.message || "Failed to delete client from database");

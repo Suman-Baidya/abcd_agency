@@ -8,6 +8,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { PopoverMenu } from "@/components/ui/PopoverMenu";
 import {
   Search,
   Plus,
@@ -84,6 +85,8 @@ export function ClientManager({
   const [deletingClient, setDeletingClient] = useState<ClientItem | null>(null);
   const [openContactDropdownId, setOpenContactDropdownId] = useState<string | null>(null);
   const [openMoreDropdownId, setOpenMoreDropdownId] = useState<string | null>(null);
+  const contactButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const moreButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -728,6 +731,9 @@ export function ClientManager({
                           {/* 1. Contact Button */}
                           <div className="relative">
                             <button
+                              ref={(el) => {
+                                contactButtonRefs.current[client.id] = el;
+                              }}
                               onClick={() => {
                                 setOpenContactDropdownId(isContactOpen ? null : client.id);
                                 setOpenMoreDropdownId(null);
@@ -742,36 +748,53 @@ export function ClientManager({
                               <Contact className="w-3.5 h-3.5" />
                             </button>
 
-                            {isContactOpen && (
-                              <div className="absolute right-0 top-full mt-1.5 z-40 w-48 rounded-xl bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] shadow-xl p-1.5 animate-in fade-in zoom-in-95 duration-150">
+                            <PopoverMenu
+                              isOpen={isContactOpen}
+                              onClose={() => setOpenContactDropdownId(null)}
+                              anchorEl={contactButtonRefs.current[client.id] || null}
+                              align="right"
+                            >
+                              {(client.phone || client.whatsapp) ? (
                                 <a
-                                  href={`tel:${client.phone}`}
+                                  href={`tel:${client.phone || client.whatsapp}`}
                                   onClick={() => setOpenContactDropdownId(null)}
                                   className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
                                 >
                                   <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                   <span>Call Now</span>
                                 </a>
-                                <a
-                                  href={`https://wa.me/${getCleanPhone(whatsappTarget)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={() => setOpenContactDropdownId(null)}
-                                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenContactDropdownId(null);
+                                    toast.error(`No phone number available for ${client.name}`);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#737373] dark:text-neutral-400 hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors text-left cursor-pointer"
                                 >
-                                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  <span>WhatsApp</span>
-                                </a>
-                                <a
-                                  href={`mailto:${client.email}?subject=Touching base regarding ABCD Agency partnership`}
-                                  onClick={() => setOpenContactDropdownId(null)}
-                                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
-                                >
-                                  <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                  <span>Mail</span>
-                                </a>
-                              </div>
-                            )}
+                                  <Phone className="w-3.5 h-3.5 text-[#A3A3A3] dark:text-neutral-500" />
+                                  <span>Call Now</span>
+                                </button>
+                              )}
+                              <a
+                                href={`https://wa.me/${getCleanPhone(whatsappTarget)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setOpenContactDropdownId(null)}
+                                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>WhatsApp</span>
+                              </a>
+                              <a
+                                href={`mailto:${client.email}?subject=Touching base regarding ABCD Agency partnership`}
+                                onClick={() => setOpenContactDropdownId(null)}
+                                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
+                              >
+                                <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                <span>Mail</span>
+                              </a>
+                            </PopoverMenu>
                           </div>
 
                           {/* 2. Edit Button */}
@@ -795,6 +818,9 @@ export function ClientManager({
                           {/* 4. More Button */}
                           <div className="relative">
                             <button
+                              ref={(el) => {
+                                moreButtonRefs.current[client.id] = el;
+                              }}
                               onClick={() => {
                                 setOpenMoreDropdownId(isMoreOpen ? null : client.id);
                                 setOpenContactDropdownId(null);
@@ -809,43 +835,46 @@ export function ClientManager({
                               <MoreVertical className="w-3.5 h-3.5" />
                             </button>
 
-                            {isMoreOpen && (
-                              <div className="absolute right-0 top-full mt-1.5 z-40 w-48 rounded-xl bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] shadow-xl p-1.5 animate-in fade-in zoom-in-95 duration-150 text-left">
-                                <button
-                                  onClick={() => {
-                                    setSelectedClient(client);
-                                    setOpenMoreDropdownId(null);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer"
+                            <PopoverMenu
+                              isOpen={isMoreOpen}
+                              onClose={() => setOpenMoreDropdownId(null)}
+                              anchorEl={moreButtonRefs.current[client.id] || null}
+                              align="right"
+                            >
+                              <button
+                                onClick={() => {
+                                  setSelectedClient(client);
+                                  setOpenMoreDropdownId(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer text-left"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-[#737373]" />
+                                <span>View Profile</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(client.email);
+                                  toast.success("Email copied to clipboard");
+                                  setOpenMoreDropdownId(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer text-left"
+                              >
+                                <Copy className="w-3.5 h-3.5 text-[#737373]" />
+                                <span>Copy Email</span>
+                              </button>
+                              {client.website && (
+                                <a
+                                  href={client.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={() => setOpenMoreDropdownId(null)}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
                                 >
-                                  <Eye className="w-3.5 h-3.5 text-[#737373]" />
-                                  <span>View Profile</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(client.email);
-                                    toast.success("Email copied to clipboard");
-                                    setOpenMoreDropdownId(null);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer"
-                                >
-                                  <Copy className="w-3.5 h-3.5 text-[#737373]" />
-                                  <span>Copy Email</span>
-                                </button>
-                                {client.website && (
-                                  <a
-                                    href={client.website}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    onClick={() => setOpenMoreDropdownId(null)}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5 text-[#737373]" />
-                                    <span>Visit Website</span>
-                                  </a>
-                                )}
-                              </div>
-                            )}
+                                  <ExternalLink className="w-3.5 h-3.5 text-[#737373]" />
+                                  <span>Visit Website</span>
+                                </a>
+                              )}
+                            </PopoverMenu>
                           </div>
                         </div>
                       </td>

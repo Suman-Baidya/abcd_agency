@@ -1,4 +1,6 @@
 import React from "react";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth-session";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { getSiteConfig } from "@/lib/dbConfig";
@@ -11,20 +13,79 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+
+  if (!user || user.status === "Suspended") {
+    redirect("/login");
+  }
+
+  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+    redirect("/portal");
+  }
+
   const siteConfig = await getSiteConfig();
 
-  // Fetch unread inquiries for notifications
-  const unreadInquiries = await db.inquiry.findMany({
-    where: { status: "New" },
-    orderBy: { createdAt: "desc" },
-    take: 5, // latest 5 for the notification dropdown
-    select: { id: true, name: true, createdAt: true, projectType: true }
-  });
-  
-  // Total count might be more than 5, so we need a separate count query
-  const unreadCount = await db.inquiry.count({
-    where: { status: "New" },
-  });
+  // Fetch unread inquiries, new user registrations & pending revisions
+  const [unreadInquiries, newUsers, pendingRevisions, unreadInquiriesCount, newUsersCount, pendingRevisionsCount] = await Promise.all([
+    db.inquiry.findMany({
+      where: { status: "New" },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: { id: true, name: true, createdAt: true, projectType: true },
+    }),
+    db.user.findMany({
+      where: { role: "USER", isViewed: false } as any,
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: { id: true, name: true, companyName: true, createdAt: true },
+    }),
+    db.revisionRequest.findMany({
+      where: { status: { in: ["Pending", "New"] } },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: { id: true, title: true, createdAt: true, clientRel: { select: { name: true } } },
+    }),
+    db.inquiry.count({
+      where: { status: "New" },
+    }),
+    db.user.count({
+      where: { role: "USER", isViewed: false } as any,
+    }),
+    db.revisionRequest.count({
+      where: { status: { in: ["Pending", "New"] } },
+    }),
+  ]);
+
+  // Combine notifications
+  const allNotifications = [
+    ...unreadInquiries.map((inq: any) => ({
+      id: `inq-${inq.id}`,
+      name: inq.name,
+      title: `New Inquiry: ${inq.name}`,
+      subtitle: inq.projectType?.replace("-", " ") || "Consultation Request",
+      createdAt: inq.createdAt,
+      type: "inquiry" as const,
+      href: "/admin/inquiries",
+    })),
+    ...newUsers.map((u: any) => ({
+      id: `usr-${u.id}`,
+      name: u.companyName || u.name,
+      title: `New User: ${u.companyName || u.name}`,
+      subtitle: `Representative: ${u.name}`,
+      createdAt: u.createdAt,
+      type: "user" as const,
+      href: "/admin/users",
+    })),
+    ...pendingRevisions.map((rev: any) => ({
+      id: `rev-${rev.id}`,
+      name: rev.clientRel?.name || "Client",
+      title: `Revision Request: ${rev.title}`,
+      subtitle: `From ${rev.clientRel?.name || "Client"}`,
+      createdAt: rev.createdAt,
+      type: "inquiry" as const,
+      href: "/admin/revisions",
+    })),
+  ].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0A0A0A] transition-colors duration-200">
@@ -33,7 +94,9 @@ export default async function DashboardLayout({
         lightLogoUrl={siteConfig.lightLogoUrl} 
         darkLogoUrl={siteConfig.darkLogoUrl} 
         agencyName={siteConfig.agencyName} 
-        unreadInquiriesCount={unreadCount}
+        unreadInquiriesCount={unreadInquiriesCount}
+        newUsersCount={newUsersCount}
+        pendingRevisionsCount={pendingRevisionsCount}
       />
 
       {/* Main Content Wrapper */}
@@ -42,7 +105,9 @@ export default async function DashboardLayout({
           lightLogoUrl={siteConfig.lightLogoUrl} 
           darkLogoUrl={siteConfig.darkLogoUrl} 
           agencyName={siteConfig.agencyName} 
-          notifications={unreadInquiries}
+          userName={user?.name}
+          userRole={user?.role}
+          notifications={allNotifications}
         />
 
         {/* Scrollable Main Area */}

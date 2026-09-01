@@ -9,11 +9,12 @@ import {
   Phone,
   Zap,
   ChevronDown,
-  IndianRupee
+  IndianRupee,
+  KeyRound
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
-import { updateBrandingSettings, updateContactAndSocialSettings, updateWidgetSettings } from "./actions";
+import { updateBrandingSettings, updateContactAndSocialSettings, updateWidgetSettings, updateAuthSettings } from "./actions";
 
 const TABS = [
   { id: "branding", label: "Branding & Contact", icon: Palette },
@@ -66,6 +67,15 @@ export default function SettingsTabs({
       loading: 'Saving widget settings...',
       success: 'Widget settings saved!',
       error: 'Failed to save widget settings.',
+    });
+  };
+
+  const handleAuthSubmit = async (formData: FormData) => {
+    const promise = updateAuthSettings(formData);
+    toast.promise(promise, {
+      loading: 'Saving authentication settings...',
+      success: 'Authentication settings saved!',
+      error: 'Failed to save authentication settings.',
     });
   };
 
@@ -325,6 +335,43 @@ export default function SettingsTabs({
                   </label>
                 </div>
                 <div className="flex justify-end max-w-md">
+                  <Button variant="primary" size="sm" type="submit">Save Changes</Button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Accordion 5: Authentication & Verification Controls */}
+          <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
+            <button 
+              onClick={() => toggleSection("auth")}
+              className="w-full flex items-center justify-between p-4 px-5 text-left hover:bg-[#FBFBFB] dark:hover:bg-[#111111] transition-colors focus-visible:outline-none"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
+                  <KeyRound className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Authentication & Verification Controls</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Control email OTP verification on registration (Default: Inactive/Off).</p>
+                </div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "auth" ? "rotate-180" : ""}`} />
+            </button>
+            
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "auth" ? "max-h-96 border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
+              <form action={handleAuthSubmit} className="p-6 space-y-5 bg-white dark:bg-[#0A0A0A]">
+                <div className="flex items-center justify-between max-w-xl mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white">Require Email OTP Verification</p>
+                    <p className="text-xs text-[#737373] mt-0.5">When active, newly registered clients must verify a 6-digit OTP sent to their email before accessing the portal. When inactive (default), users are instantly verified.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                    <input type="checkbox" name="requireEmailVerification" defaultChecked={initialConfig.requireEmailVerification} className="sr-only peer" />
+                    <div className="w-9 h-5 bg-[#E5E5E5] dark:bg-[#262626] peer-focus:ring-2 peer-focus:ring-[#0A0A0A] dark:peer-focus:ring-white rounded-full peer peer-checked:bg-[#0A0A0A] dark:peer-checked:bg-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-[#0A0A0A] after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+                <div className="flex justify-end max-w-xl">
                   <Button variant="primary" size="sm" type="submit">Save Changes</Button>
                 </div>
               </form>

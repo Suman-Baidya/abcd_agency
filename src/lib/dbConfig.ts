@@ -28,6 +28,7 @@ export const getSiteConfig = unstable_cache(
           behanceUrl: null as string | null,
           whatsappNumber: staticConfig.social.whatsapp,
           enableWhatsappWidget: true,
+          requireEmailVerification: false,
         };
       }
       
@@ -52,6 +53,7 @@ export const getSiteConfig = unstable_cache(
         behanceUrl: null as string | null,
         whatsappNumber: staticConfig.social.whatsapp,
         enableWhatsappWidget: true,
+        requireEmailVerification: false,
       };
     }
   },

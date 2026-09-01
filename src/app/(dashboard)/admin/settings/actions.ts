@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 export async function updateBrandingSettings(formData: FormData) {
   try {
@@ -18,6 +18,7 @@ export async function updateBrandingSettings(formData: FormData) {
       create: { id: "1", ...updateData }
     });
     
+    updateTag("site-config");
     revalidatePath("/", "layout");
   } catch (e) {
     console.error("Failed to update branding settings", e);
@@ -57,6 +58,7 @@ export async function updateContactAndSocialSettings(formData: FormData) {
       create: { id: "1", ...updateData }
     });
     
+    updateTag("site-config");
     revalidatePath("/", "layout");
   } catch (e) {
     console.error("Failed to update contact and social settings", e);
@@ -74,10 +76,30 @@ export async function updateWidgetSettings(formData: FormData) {
       create: { id: "1", enableWhatsappWidget }
     });
     
+    updateTag("site-config");
     revalidatePath("/", "layout");
   } catch (e) {
     console.error("Failed to update widget settings", e);
     throw new Error("Failed to update widget settings");
+  }
+}
+
+export async function updateAuthSettings(formData: FormData) {
+  try {
+    const requireEmailVerification = formData.get("requireEmailVerification") === "on";
+    
+    await db.siteConfig.upsert({
+      where: { id: "1" },
+      update: { requireEmailVerification },
+      create: { id: "1", requireEmailVerification }
+    });
+    
+    updateTag("site-config");
+    revalidatePath("/admin/settings");
+    revalidatePath("/", "layout");
+  } catch (e) {
+    console.error("Failed to update auth settings", e);
+    throw new Error("Failed to update auth settings");
   }
 }
 

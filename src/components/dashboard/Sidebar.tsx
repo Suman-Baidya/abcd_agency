@@ -4,15 +4,25 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { IndianRupee } from "lucide-react";
 
 interface SidebarProps {
   lightLogoUrl?: string | null;
   darkLogoUrl?: string | null;
   agencyName?: string;
   unreadInquiriesCount?: number;
+  newUsersCount?: number;
+  pendingRevisionsCount?: number;
 }
 
-export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency", unreadInquiriesCount = 0 }: SidebarProps) {
+export function Sidebar({ 
+  lightLogoUrl, 
+  darkLogoUrl, 
+  agencyName = "ABCD Agency", 
+  unreadInquiriesCount = 0,
+  newUsersCount = 0,
+  pendingRevisionsCount = 0,
+}: SidebarProps) {
   const pathname = usePathname();
   const [isSmartMenuOpen, setIsSmartMenuOpen] = useState(false);
 
@@ -54,23 +64,19 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
       )
     },
     { 
-      label: "Finance", 
-      href: "/admin/finance", 
+      label: "Revisions", 
+      href: "/admin/revisions", 
+      badgeCount: pendingRevisionsCount,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       )
     },
     { 
-      label: "Inquiries", 
-      href: "/admin/inquiries", 
-      icon: (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-      ),
-      badgeCount: unreadInquiriesCount
+      label: "Finance", 
+      href: "/admin/finance", 
+      icon: <IndianRupee className="w-5 h-5" strokeWidth={2} />
     },
   ];
 
@@ -79,6 +85,17 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
     {
       title: "Agency Operations",
       items: [
+        { 
+          label: "Users", 
+          description: "All users, activity logs & conversion",
+          href: "/admin/users", 
+          badgeCount: newUsersCount,
+          icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          )
+        },
         { 
           label: "Clients", 
           description: "Client accounts, balance & CRM",
@@ -100,14 +117,21 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
           )
         },
         { 
+          label: "Revisions", 
+          description: "Live client feedback & change requests",
+          href: "/admin/revisions", 
+          badgeCount: pendingRevisionsCount,
+          icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          )
+        },
+        { 
           label: "Finance", 
           description: "Cash flow, billings & expenses",
           href: "/admin/finance", 
-          icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )
+          icon: <IndianRupee className="w-5 h-5" strokeWidth={2} />
         },
         { 
           label: "Inquiries", 
@@ -153,10 +177,12 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
   // All flat items for desktop sidebar
   const allDesktopNavItems = [
     { label: "Overview", href: "/admin", icon: primaryNavItems[0].icon },
+    { label: "Users", href: "/admin/users", icon: smartMenuSections[0].items[0].icon, badgeCount: newUsersCount },
     { label: "Projects", href: "/admin/projects", icon: primaryNavItems[1].icon },
-    { label: "Clients", href: "/admin/clients", icon: smartMenuSections[0].items[0].icon },
-    { label: "Finance", href: "/admin/finance", icon: primaryNavItems[2].icon },
-    { label: "Inquiries", href: "/admin/inquiries", icon: primaryNavItems[3].icon, badgeCount: unreadInquiriesCount },
+    { label: "Clients", href: "/admin/clients", icon: smartMenuSections[0].items[1].icon },
+    { label: "Revisions", href: "/admin/revisions", icon: primaryNavItems[2].icon, badgeCount: pendingRevisionsCount },
+    { label: "Finance", href: "/admin/finance", icon: primaryNavItems[3].icon },
+    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[5].icon, badgeCount: unreadInquiriesCount },
     { label: "Profile", href: "/admin/profile", icon: smartMenuSections[1].items[0].icon },
     { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[1].icon },
   ];
@@ -213,11 +239,11 @@ export function Sidebar({ lightLogoUrl, darkLogoUrl, agencyName = "ABCD Agency",
                 {item.icon}
                 <div className="flex items-center justify-between flex-1">
                   <span>{item.label}</span>
-                  {item.label === "Inquiries" && unreadInquiriesCount > 0 && (
+                  {item.badgeCount && item.badgeCount > 0 ? (
                     <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                      {unreadInquiriesCount}
+                      {item.badgeCount}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </Link>
             );

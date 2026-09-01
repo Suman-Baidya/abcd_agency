@@ -34,8 +34,27 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
   const currentPage = Math.max(1, parseInt(page || "1", 10));
   const limit = Math.max(1, parseInt(limitParam || "10", 10));
 
+  // Automatic purge: delete inquiries that have been in Trash ("Closed") for > 15 days
+  const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+  try {
+    await db.inquiry.deleteMany({
+      where: {
+        status: "Closed",
+        updatedAt: { lte: fifteenDaysAgo },
+      },
+    });
+  } catch (err) {
+    console.error("Failed to auto-purge 15-day old trashed inquiries:", err);
+  }
+
   const statusFilter =
-    TAB_CONFIG.find((t) => t.label === currentTab)?.filter;
+    currentTab === "Trash"
+      ? "Closed"
+      : currentTab === "Unread"
+      ? "New"
+      : currentTab === "Replied"
+      ? "Replied"
+      : { not: "Closed" };
 
   const searchWhere = q
     ? {
@@ -51,7 +70,7 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
 
   const where = {
     ...searchWhere,
-    ...(statusFilter ? { status: statusFilter } : {}),
+    status: statusFilter,
   };
 
   let orderBy: any = { createdAt: "desc" };
@@ -69,7 +88,7 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
     inquiries,
   ] = await Promise.all([
     db.inquiry.count({ where }),
-    db.inquiry.count({ where: searchWhere }),
+    db.inquiry.count({ where: { ...searchWhere, status: { not: "Closed" } } }),
     db.inquiry.count({ where: { ...searchWhere, status: "New" } }),
     db.inquiry.count({ where: { ...searchWhere, status: "In Progress" } }),
     db.inquiry.count({ where: { ...searchWhere, status: "Replied" } }),
@@ -81,6 +100,31 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
       take: limit,
     }),
   ]);
+
+  // Fetch registered users to identify verified users
+  const inquiryEmails: string[] = Array.from(
+    new Set((inquiries as Array<{ email: string }>).map((i) => i.email.toLowerCase()))
+  );
+  const matchingUsers = inquiryEmails.length > 0
+    ? await db.user.findMany({
+        where: { email: { in: inquiryEmails } },
+        select: {
+          email: true,
+          isVerified: true,
+          role: true,
+          name: true,
+          companyName: true,
+          clientId: true,
+        },
+      })
+    : [];
+
+  const userMap = new Map(matchingUsers.map((u) => [u.email.toLowerCase(), u]));
+
+  const inquiriesWithUser = (inquiries as any[]).map((inq: any) => ({
+    ...inq,
+    registeredUser: userMap.get(inq.email.toLowerCase()) || null,
+  }));
 
   const tabCounts: Record<string, number> = {
     All: allCount,
@@ -157,8 +201,9 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
           </div>
         ) : (
           <InquiriesClient
-            inquiries={inquiries}
+            inquiries={inquiriesWithUser as any}
             startIndex={(currentPage - 1) * limit + 1}
+            currentTab={currentTab}
           />
         )}
 

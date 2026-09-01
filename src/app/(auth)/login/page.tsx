@@ -5,38 +5,97 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { loginUser } from "./actions";
+import { verifyOtpCode, resendOtpCode } from "../register/actions";
+import { CheckCircle2, UserPlus, PhoneCall, ArrowRight, Eye, EyeOff } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // OTP Modal State if user registered but unverified
+  const [otpState, setOtpState] = useState<{
+    isOpen: boolean;
+    userId: string;
+    email: string;
+    otpValue: string;
+    devOtp?: string;
+  }>({
+    isOpen: false,
+    userId: "",
+    email: "",
+    otpValue: "",
+  });
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Simulate short network delay
-    setTimeout(() => {
-      if (email === "suman.baidya.pro@gmail.com" && password === "Suman2002") {
-        router.push("/admin");
-      } else {
-        setError("Invalid email or password.");
+    try {
+      const res = await loginUser({ email, password });
+      if (!res.success) {
+        if (res.needsVerification && res.userId) {
+          setOtpState({
+            isOpen: true,
+            userId: res.userId,
+            email,
+            otpValue: "",
+          });
+          toast.error(res.error || "Email not verified.");
+        } else {
+          setError(res.error || "Invalid email or password.");
+        }
         setIsLoading(false);
+        return;
       }
-    }, 800);
+
+      toast.success("Signed in successfully!");
+      router.push(res.redirectTo || "/admin");
+    } catch (err: any) {
+      setError(err?.message || "Failed to sign in.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpState.otpValue || otpState.otpValue.length < 6) {
+      toast.error("Please enter the 6-digit code.");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await verifyOtpCode(otpState.userId, otpState.otpValue);
+      if (!res.success) {
+        toast.error(res.error || "Invalid code.");
+        setIsVerifyingOtp(false);
+        return;
+      }
+      toast.success("Email verified!");
+      router.push(res.redirectTo || "/portal");
+    } catch (e: any) {
+      toast.error("Verification failed.");
+      setIsVerifyingOtp(false);
+    }
   };
 
   return (
-    <div className="w-full max-w-md w-full">
+    <div className="w-full max-w-md mx-auto">
+      {/* Top Welcome Title */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
           Welcome back
         </h1>
         <p className="mt-2 text-sm text-[#737373] dark:text-neutral-400">
-          Enter your credentials to access the portal.
+          Enter your credentials to access the ABCD Agency portal.
         </p>
       </div>
 
@@ -82,15 +141,25 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] pl-4 pr-10 py-2.5 text-sm text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -100,23 +169,88 @@ export default function LoginPage() {
             className="w-full justify-center py-2.5"
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? "Signing in..." : "Sign in to Dashboard"}
           </Button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-[#E5E5E5] dark:border-[#262626]">
-          <p className="text-center text-xs text-[#737373] dark:text-neutral-400">
-            By signing in, you agree to our{" "}
-            <Link href="/terms" className="underline hover:text-[#0A0A0A] dark:hover:text-white">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline hover:text-[#0A0A0A] dark:hover:text-white">
-              Privacy Policy
-            </Link>.
-          </p>
+        {/* New user banner & Register Link */}
+        <div className="mt-8 pt-6 border-t border-[#E5E5E5] dark:border-[#262626] space-y-3">
+          <div className="p-3.5 bg-[#F9F9F9] dark:bg-[#151515] border border-[#EBEBEB] dark:border-[#262626] rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-[#0A0A0A] dark:text-white">New to ABCD Agency?</p>
+              <p className="text-[11px] text-[#737373] dark:text-neutral-400">Register your company to collaborate.</p>
+            </div>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Register
+            </Link>
+          </div>
+
+          {/* Contact Direct Link */}
+          <div className="flex items-center justify-between px-1 text-xs">
+            <span className="text-[#737373] dark:text-neutral-400">Need direct assistance?</span>
+            <Link
+              href="/contact"
+              className="font-medium text-[#0A0A0A] dark:text-white underline hover:opacity-80 flex items-center gap-1"
+            >
+              <PhoneCall className="w-3 h-3" />
+              Contact Our Team
+            </Link>
+          </div>
         </div>
       </Card>
+
+      {/* OTP Verification Modal */}
+      {otpState.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl shadow-2xl p-6 space-y-6">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-[#0A0A0A] dark:text-white">Verify Your Account</h3>
+              <p className="text-xs text-[#737373] dark:text-neutral-400 mt-1">
+                Enter the 6-digit verification code sent to <span className="font-semibold text-[#0A0A0A] dark:text-white">{otpState.email}</span>.
+              </p>
+            </div>
+
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <input
+                type="text"
+                maxLength={6}
+                autoFocus
+                required
+                value={otpState.otpValue}
+                onChange={(e) => setOtpState((prev) => ({ ...prev, otpValue: e.target.value.replace(/[^0-9]/g, "") }))}
+                placeholder="000000"
+                className="block w-full text-center tracking-[0.5em] font-mono text-2xl py-3 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] dark:focus:ring-white"
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full justify-center py-2.5"
+                disabled={isVerifyingOtp}
+              >
+                {isVerifyingOtp ? "Verifying..." : "Verify & Sign In"}
+              </Button>
+            </form>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setOtpState((prev) => ({ ...prev, isOpen: false }))}
+                className="text-xs text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

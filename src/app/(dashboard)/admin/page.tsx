@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { getFinanceTransactions } from "./finance/actions";
 import { getClientsWithProjectCounts } from "./clients/actions";
+import { getCurrentUser } from "@/lib/auth-session";
 import { db } from "@/lib/prisma";
 
 export const metadata = {
@@ -157,7 +158,7 @@ function formatProjectTimePeriod(
 
 interface ActivityItem {
   id: string;
-  type: "finance" | "inquiry" | "project";
+  type: "finance" | "inquiry" | "project" | "user";
   title: string;
   description: string;
   timestamp: Date;
@@ -166,7 +167,18 @@ interface ActivityItem {
 
 export default async function AdminDashboardPage() {
   // Optimized parallel queries: minimal selected fields, no redundant round trips
-  const [transactions, clients, allProjects, inquiries, totalInquiriesCount, unreadInquiriesCount] = await Promise.all([
+  const [
+    user,
+    transactions, 
+    clients, 
+    allProjects, 
+    inquiries, 
+    totalInquiriesCount, 
+    unreadInquiriesCount,
+    recentUsers,
+    newUsersCount,
+  ] = await Promise.all([
+    getCurrentUser(),
     getFinanceTransactions(),
     getClientsWithProjectCounts(),
     db.project.findMany({
@@ -197,6 +209,22 @@ export default async function AdminDashboardPage() {
     }),
     db.inquiry.count(),
     db.inquiry.count({ where: { status: "New" } }),
+    db.user.findMany({
+      where: { role: { in: ["USER", "CLIENT"] } },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: {
+        id: true,
+        name: true,
+        companyName: true,
+        email: true,
+        role: true,
+        location: true,
+        industry: true,
+        createdAt: true,
+      },
+    }),
+    db.user.count({ where: { role: "USER", isViewed: false } as any }),
   ]);
 
   // Derived in-memory from allProjects without an additional DB query
@@ -291,6 +319,18 @@ export default async function AdminDashboardPage() {
     });
   });
 
+  // Recent user registrations (top 3)
+  recentUsers.slice(0, 3).forEach((u: any) => {
+    activityList.push({
+      id: `usr-${u.id}`,
+      type: "user",
+      title: `User: ${u.companyName || u.name}`,
+      description: `${u.name} registered as ${u.role === "USER" ? "Prospect" : "Client"}${u.location ? ` (${u.location})` : ""}.`,
+      timestamp: new Date(u.createdAt),
+      href: "/admin/users",
+    });
+  });
+
   // Sort activities by most recent (in-memory sort of max 8 items)
   activityList.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   const recentActivities = activityList.slice(0, 4);
@@ -304,7 +344,7 @@ export default async function AdminDashboardPage() {
             Dashboard Overview
           </h1>
           <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
-            Welcome back, Suman. Here&apos;s a summary of your agency&apos;s operations.
+            Welcome back, {user?.name || "Suman"}. Here&apos;s a summary of your agency&apos;s operations.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -316,6 +356,31 @@ export default async function AdminDashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* New Registered Users Notification Alert Banner */}
+      {newUsersCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-[#F9F9F9] dark:bg-[#121212] flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in shadow-xs">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center font-bold text-sm shrink-0">
+              {newUsersCount}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h4 className="text-xs font-bold text-[#0A0A0A] dark:text-white uppercase tracking-wider">
+                  New User Registration{newUsersCount > 1 ? "s" : ""} Awaiting Review
+                </h4>
+              </div>
+              <p className="text-xs text-[#737373] dark:text-neutral-400 mt-0.5">
+                {newUsersCount} prospective account{newUsersCount > 1 ? "s" : ""} registered. Review contact details, inspect activity logs, or convert them into clients.
+              </p>
+            </div>
+          </div>
+          <Button variant="primary" size="sm" href="/admin/users" className="text-xs shrink-0">
+            Review Users Table
+          </Button>
+        </div>
+      )}
 
       {/* KPI Metrics Cards - Clickable to respective dashboard pages */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -473,6 +538,10 @@ export default async function AdminDashboardPage() {
                       ) : act.type === "inquiry" ? (
                         <svg className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      ) : act.type === "user" ? (
+                        <svg className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                       ) : (
                         <svg className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:text-white dark:group-hover:text-[#0A0A0A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
