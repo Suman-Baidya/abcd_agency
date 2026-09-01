@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Download, X, Smartphone, Monitor, Share2, PlusSquare, RefreshCw, WifiOff, Wifi, CheckCircle2, MoreVertical, ArrowUpRight } from "lucide-react";
+import { Download, X, Smartphone, Monitor, Share2, PlusSquare, RefreshCw, WifiOff, Wifi, MoreVertical, ArrowUpRight } from "lucide-react";
 import { Button } from "./Button";
 import toast from "react-hot-toast";
 
@@ -9,10 +9,9 @@ type GuidePlatform = "ios" | "android" | "desktop";
 
 export function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(true);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Custom Modal Guide State
   const [guideModal, setGuideModal] = useState<{ isOpen: boolean; platform: GuidePlatform }>({
@@ -30,7 +29,9 @@ export function PWAInstallBanner() {
   const [showOnlineToast, setShowOnlineToast] = useState(false);
 
   useEffect(() => {
-    // A. Online / Offline Network Listeners
+    setMounted(true);
+
+    // 1. Online / Offline Network Listeners
     const handleOnline = () => {
       setIsOffline(false);
       setShowOnlineToast(true);
@@ -49,7 +50,7 @@ export function PWAInstallBanner() {
       window.addEventListener("offline", handleOffline);
     }
 
-    // B. Register Service Worker
+    // 2. Register Service Worker
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
@@ -94,46 +95,34 @@ export function PWAInstallBanner() {
       });
     }
 
-    // C. Standalone Check
+    // 3. Standalone Check
     const isRunningStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as any).standalone === true ||
+      window.matchMedia("(display-mode: fullscreen)").matches;
 
     setIsStandalone(isRunningStandalone);
     if (isRunningStandalone) return;
 
-    // D. Dismissal check
+    // 4. Check dismissal history (show again after 3 days if dismissed)
     const dismissedTimestamp = localStorage.getItem("abcd_pwa_dismissed");
     if (dismissedTimestamp) {
       const parsedTime = parseInt(dismissedTimestamp, 10);
-      if (Date.now() - parsedTime < 7 * 24 * 60 * 60 * 1000) {
-        return;
+      if (Date.now() - parsedTime < 3 * 24 * 60 * 60 * 1000) {
+        setIsDismissed(true);
       }
     }
 
-    setIsDismissed(false);
-
-    // E. Detect Device
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isAppleMobile = /iphone|ipad|ipod/.test(userAgent);
-    const isSafari = /safari/.test(userAgent) && !/chrome|crios|crmo/.test(userAgent);
-
-    if (isAppleMobile && isSafari) {
-      setIsIOS(true);
-      setIsInstallable(true);
-    }
-
-    // F. Chromium beforeinstallprompt
+    // 5. Chromium beforeinstallprompt event capture
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setIsInstallable(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     const handleAppInstalled = () => {
-      setIsInstallable(false);
+      setIsDismissed(true);
       setDeferredPrompt(null);
       localStorage.setItem("abcd_pwa_installed", "true");
       toast.success("ABCD App installed successfully! Access it anytime from your home screen or desktop.");
@@ -159,9 +148,14 @@ export function PWAInstallBanner() {
     }
   };
 
-  // Install handler with custom alert/modal
+  // Install handler
   const handleInstallClick = async () => {
-    if (isIOS) {
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
+    const isAppleMobile = /iphone|ipad|ipod/.test(userAgent);
+    const isAppleDesktop = /macintosh|mac os x/.test(userAgent) && !/chrome|crios/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+
+    if (isAppleMobile) {
       setGuideModal({ isOpen: true, platform: "ios" });
       return;
     }
@@ -172,27 +166,31 @@ export function PWAInstallBanner() {
         const { outcome } = await deferredPrompt.userChoice;
         setDeferredPrompt(null);
         if (outcome === "accepted") {
-          setIsInstallable(false);
+          setIsDismissed(true);
           toast.success("Installing ABCD App...");
         }
+        return;
       } catch (err) {
-        setGuideModal({ isOpen: true, platform: "desktop" });
+        console.debug("Native prompt error, opening fallback modal", err);
       }
-      return;
     }
 
-    // Fallback: Open tailored custom guide modal
-    const isMobile = /android|iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-    setGuideModal({
-      isOpen: true,
-      platform: isMobile ? "android" : "desktop",
-    });
+    // Fallback: Open tailored custom guide modal based on device
+    if (isAndroid) {
+      setGuideModal({ isOpen: true, platform: "android" });
+    } else {
+      setGuideModal({ isOpen: true, platform: "desktop" });
+    }
   };
 
   const handleDismiss = () => {
     setIsDismissed(true);
     localStorage.setItem("abcd_pwa_dismissed", Date.now().toString());
   };
+
+  if (!mounted || isStandalone) {
+    return null;
+  }
 
   return (
     <>
@@ -255,7 +253,7 @@ export function PWAInstallBanner() {
             <button
               type="button"
               onClick={() => setUpdateAvailable(false)}
-              className="text-neutral-400 hover:text-white dark:text-neutral-500 dark:hover:text-black p-1 rounded-md"
+              className="text-neutral-400 hover:text-white dark:text-neutral-500 dark:hover:text-black p-1 rounded-md cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -263,8 +261,8 @@ export function PWAInstallBanner() {
         </div>
       )}
 
-      {/* 4. Native PWA Install Banner */}
-      {!isStandalone && !isDismissed && isInstallable && !updateAvailable && (
+      {/* 4. Universal PWA Install Floating Banner (Desktop & Mobile) */}
+      {!isDismissed && !updateAvailable && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-88 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className="bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] border border-[#262626] dark:border-[#E5E5E5] p-4 rounded-2xl shadow-2xl flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
@@ -302,7 +300,7 @@ export function PWAInstallBanner() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="text-neutral-400 hover:text-white dark:text-neutral-500 dark:hover:text-black p-1 rounded-md transition-colors"
+              className="text-neutral-400 hover:text-white dark:text-neutral-500 dark:hover:text-black p-1 rounded-md transition-colors cursor-pointer"
               title="Dismiss"
             >
               <X className="w-4 h-4" />
@@ -311,7 +309,7 @@ export function PWAInstallBanner() {
         </div>
       )}
 
-      {/* 5. Custom Install Guide Alert Modal */}
+      {/* 5. Custom Install Guide Alert Modal (Across all browsers: Chrome, Edge, Safari, Firefox) */}
       {guideModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200">
@@ -357,7 +355,7 @@ export function PWAInstallBanner() {
                       <div>
                         <span className="font-bold text-[#0A0A0A] dark:text-white block">Add to Home Screen</span>
                         <span className="text-[#737373] flex items-center gap-1 mt-0.5">
-                          Scroll and tap <PlusSquare className="w-3 h-3 inline" /> &quot;Add to Home Screen&quot;.
+                          Scroll and tap <PlusSquare className="w-3.5 h-3.5 inline" /> &quot;Add to Home Screen&quot;.
                         </span>
                       </div>
                     </div>
@@ -389,7 +387,7 @@ export function PWAInstallBanner() {
                         1
                       </div>
                       <div>
-                        <span className="font-bold text-[#0A0A0A] dark:text-white block">Open Chrome Menu</span>
+                        <span className="font-bold text-[#0A0A0A] dark:text-white block">Open Browser Menu</span>
                         <span className="text-[#737373] flex items-center gap-1 mt-0.5">
                           Tap <MoreVertical className="w-3 h-3 inline" /> in the top right corner.
                         </span>
@@ -411,11 +409,11 @@ export function PWAInstallBanner() {
                 </>
               )}
 
-              {/* Desktop Instructions (Chrome / Edge / Windows / Mac) */}
+              {/* Desktop Instructions (Chrome / Edge / Brave / Safari / Firefox on Windows & Mac) */}
               {guideModal.platform === "desktop" && (
                 <>
                   <p className="text-[#737373] dark:text-neutral-400 leading-relaxed">
-                    Install ABCD App as a native desktop application:
+                    Install ABCD App as a native standalone application:
                   </p>
                   <div className="space-y-2.5">
                     <div className="flex items-start gap-3 p-3 bg-[#F9F9F9] dark:bg-[#161616] rounded-xl border border-[#E5E5E5] dark:border-[#262626]">
@@ -423,9 +421,9 @@ export function PWAInstallBanner() {
                         1
                       </div>
                       <div>
-                        <span className="font-bold text-[#0A0A0A] dark:text-white block">Check Address Bar</span>
+                        <span className="font-bold text-[#0A0A0A] dark:text-white block">Look for the Install Icon</span>
                         <span className="text-[#737373] flex items-center gap-1 mt-0.5">
-                          Click the <Download className="w-3 h-3 inline" /> or <ArrowUpRight className="w-3 h-3 inline" /> install icon in your browser address bar.
+                          Click the <Download className="w-3 h-3 inline" /> or <ArrowUpRight className="w-3 h-3 inline" /> icon in your browser address bar (top right).
                         </span>
                       </div>
                     </div>
@@ -435,9 +433,9 @@ export function PWAInstallBanner() {
                         2
                       </div>
                       <div>
-                        <span className="font-bold text-[#0A0A0A] dark:text-white block">Click Install</span>
+                        <span className="font-bold text-[#0A0A0A] dark:text-white block">Or via Browser Menu</span>
                         <span className="text-[#737373] mt-0.5">
-                          The app will be added to your Windows Start Menu or macOS Launchpad.
+                          Click Menu (⋮) &rarr; &quot;Install ABCD Agency&quot; to pin to your Windows Start Menu or Mac Launchpad.
                         </span>
                       </div>
                     </div>
