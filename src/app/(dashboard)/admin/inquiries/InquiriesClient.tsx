@@ -22,7 +22,9 @@ import {
   Phone, 
   MessageCircle,
   Eye,
-  ShieldCheck
+  ShieldCheck,
+  Building2,
+  Layers
 } from "lucide-react";
 
 export interface Inquiry {
@@ -315,8 +317,8 @@ function InquiryModal({
             <section className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] dark:text-neutral-500">Project Details</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailRow icon={<span className="font-bold">🏢</span>} label="Business Type" value={inquiry.businessType} />
-                <DetailRow icon={<span className="font-bold">⚡</span>} label="Engagement" value={PROJECT_LABELS[inquiry.projectType] || inquiry.projectType} />
+                <DetailRow icon={<Building2 className="w-3.5 h-3.5" />} label="Business Type" value={inquiry.businessType} />
+                <DetailRow icon={<Layers className="w-3.5 h-3.5" />} label="Engagement" value={PROJECT_LABELS[inquiry.projectType] || inquiry.projectType} />
                 <DetailRow icon={<span className="font-bold">₹</span>} label="Budget" value={inquiry.budget} />
               </div>
               <div>

@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 
 import { getSiteConfig } from "@/lib/dbConfig";
 
+import { Toaster } from "react-hot-toast";
+import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
+
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();
   const favicon = config.faviconUrl || "/favicon.ico";
@@ -23,15 +26,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${config.agencyName} — Software Development & Digital Consulting`,
     description: "Full-stack agency building modern web applications, SaaS products, and digital systems for high-growth businesses.",
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: config.agencyName || "ABCD Agency",
+    },
     icons: {
       icon: favicon,
       shortcut: favicon,
-      apple: favicon,
+      apple: "/images/abcd_sqr_icon.jpg",
     },
   };
 }
-
-import { Toaster } from "react-hot-toast";
 
 export default async function RootLayout({
   children,
@@ -50,7 +57,10 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href={favicon} sizes="any" />
         <link rel="shortcut icon" href={favicon} />
-        <link rel="apple-touch-icon" href={favicon} />
+        <link rel="apple-touch-icon" href="/images/abcd_sqr_icon.jpg" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#0A0A0A" />
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white font-sans selection:bg-[#0A0A0A] selection:text-white dark:selection:bg-white dark:selection:text-[#0A0A0A] transition-colors duration-200">
         <Toaster 
@@ -83,6 +93,7 @@ export default async function RootLayout({
           }} 
         />
         {children}
+        <PWAInstallBanner />
       </body>
     </html>
   );

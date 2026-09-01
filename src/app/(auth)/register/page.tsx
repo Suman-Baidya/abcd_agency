@@ -31,6 +31,8 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
 
+  const [honeypot, setHoneypot] = useState("");
+
   // OTP Modal State
   const [otpState, setOtpState] = useState<{
     isOpen: boolean;
@@ -59,14 +61,79 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    if (!formData.companyName.trim()) {
-      setError("Company or Client Name is required.");
+    // 1. Honeypot anti-spam
+    if (honeypot.trim().length > 0) {
+      setError("Registration rejected. Suspicious activity detected.");
       return;
     }
-    if (!formData.email.trim()) {
+
+    // 2. Company Name
+    if (!formData.companyName.trim() || formData.companyName.trim().length < 2) {
+      setError("Please enter a valid Company or Client Name (at least 2 characters).");
+      return;
+    }
+
+    // 3. Contact Person Full Name (Must have at least 2 words)
+    const contactPerson = formData.contactPerson.trim();
+    if (!contactPerson) {
+      setError("Contact Person name is required.");
+      return;
+    }
+    const nameWords = contactPerson.split(/\s+/).filter((w) => w.length > 0);
+    if (nameWords.length < 2) {
+      setError("Please provide your full contact name with at least 2 words (e.g. John Doe).");
+      return;
+    }
+    if (nameWords.some((w) => w.length < 2)) {
+      setError("Each part of your name must have at least 2 characters.");
+      return;
+    }
+    if (!/^[a-zA-Z\s.'-]+$/.test(contactPerson)) {
+      setError("Contact person name can only contain letters, spaces, and hyphens.");
+      return;
+    }
+
+    // 4. Email validation
+    const email = formData.email.trim().toLowerCase();
+    if (!email) {
       setError("Email address is required.");
       return;
     }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      setError("Please provide a valid email address (e.g. name@company.com).");
+      return;
+    }
+
+    // 5. Phone validation (10 to 15 digits)
+    const phoneDigits = formData.phone.replace(/[^0-9]/g, "");
+    if (!formData.phone.trim() || phoneDigits.length < 10 || phoneDigits.length > 15) {
+      setError("Please enter a valid 10 to 15-digit Phone Number with country code.");
+      return;
+    }
+
+    // 6. WhatsApp validation (if different from phone)
+    if (!isWhatsappSame) {
+      const whatsappDigits = formData.whatsapp.replace(/[^0-9]/g, "");
+      if (!formData.whatsapp.trim() || whatsappDigits.length < 10 || whatsappDigits.length > 15) {
+        setError("Please enter a valid 10 to 15-digit WhatsApp Number.");
+        return;
+      }
+    }
+
+    // 7. Industry validation
+    if (!formData.industry.trim() || formData.industry.trim().length < 2) {
+      setError("Industry / Domain is required (e.g. FinTech, SaaS, Healthcare, E-Commerce).");
+      return;
+    }
+
+    // 8. Location validation
+    if (!formData.location.trim() || formData.location.trim().length < 3) {
+      setError("Location is required (City, Country, e.g. Bangalore, India).");
+      return;
+    }
+
+    // 9. Password validation
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long.");
       return;
@@ -90,6 +157,7 @@ export default function RegisterPage() {
         location: formData.location,
         website: formData.website,
         password: formData.password,
+        honeypot: honeypot,
       });
 
       if (!res.success) {
@@ -166,7 +234,7 @@ export default function RegisterPage() {
           Create Your Account
         </h1>
         <p className="mt-1.5 text-xs sm:text-sm text-[#737373] dark:text-neutral-400 max-w-md mx-auto">
-          Register to collaborate with our team.
+          Register to collaborate with our engineering team and access your client portal.
         </p>
       </div>
 
@@ -177,8 +245,22 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Section 1: Organization Details */}
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+          {/* Honeypot anti-spam trap for bots */}
+          <div aria-hidden="true" className="opacity-0 pointer-events-none absolute -left-[9999px] h-0 overflow-hidden">
+            <label htmlFor="website_trap_field">Do not fill this</label>
+            <input
+              id="website_trap_field"
+              type="text"
+              name="website_trap_field"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
+
+          {/* Section 1: Organization & Contact Info */}
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#737373] dark:text-neutral-400 border-b border-[#E5E5E5] dark:border-[#262626] pb-2 mb-4">
               1. Organization & Contact Info
@@ -186,7 +268,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">
-                  Company / Client Name <span className="text-red-500">*</span>
+                  Company / Organization Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737373]">
@@ -206,7 +288,7 @@ export default function RegisterPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">
-                  Contact Person / Representative
+                  Contact Person (Full Name) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737373]">
@@ -215,12 +297,14 @@ export default function RegisterPage() {
                   <input
                     type="text"
                     name="contactPerson"
+                    required
                     value={formData.contactPerson}
                     onChange={handleChange}
-                    placeholder="e.g. John Doe"
+                    placeholder="e.g. John Doe (At least 2 words)"
                     className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
                   />
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">Full legal name (First & Last name)</span>
               </div>
 
               <div>
@@ -237,15 +321,16 @@ export default function RegisterPage() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="john@acme.com"
+                    placeholder="john@company.com"
                     className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
                   />
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">Work or personal active email</span>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">
-                  Phone Number
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737373]">
@@ -254,12 +339,14 @@ export default function RegisterPage() {
                   <input
                     type="tel"
                     name="phone"
+                    required
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+91 98765 43210"
                     className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
                   />
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">10 to 15 digits with country code</span>
               </div>
             </div>
 
@@ -280,22 +367,29 @@ export default function RegisterPage() {
               {!isWhatsappSame && (
                 <div>
                   <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">
-                    WhatsApp Number (Optional)
+                    WhatsApp Number <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    name="whatsapp"
-                    value={formData.whatsapp}
-                    onChange={handleChange}
-                    placeholder="e.g. +91 98123 45678"
-                    className="block w-full max-w-sm px-3 py-2 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
-                  />
+                  <div className="relative max-w-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737373]">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="tel"
+                      name="whatsapp"
+                      required={!isWhatsappSame}
+                      value={formData.whatsapp}
+                      onChange={handleChange}
+                      placeholder="+91 98123 45678"
+                      className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#737373] mt-1 block">Dedicated WhatsApp contact for direct updates</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Section 2: Industry & Web Presence */}
+          {/* Section 2: Industry & Business Details */}
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#737373] dark:text-neutral-400 border-b border-[#E5E5E5] dark:border-[#262626] pb-2 mb-4">
               2. Industry & Business Details
@@ -303,7 +397,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">
-                  Industry / Domain
+                  Industry / Domain <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737373]">
@@ -312,17 +406,19 @@ export default function RegisterPage() {
                   <input
                     type="text"
                     name="industry"
+                    required
                     value={formData.industry}
                     onChange={handleChange}
-                    placeholder="e.g. FinTech / Healthcare"
+                    placeholder="e.g. FinTech / SaaS"
                     className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
                   />
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">Domain or sector</span>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">
-                  Location (City, Country)
+                  Location (City, Country) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737373]">
@@ -331,12 +427,14 @@ export default function RegisterPage() {
                   <input
                     type="text"
                     name="location"
+                    required
                     value={formData.location}
                     onChange={handleChange}
                     placeholder="e.g. Bangalore, India"
                     className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
                   />
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">City and country</span>
               </div>
 
               <div>
@@ -356,6 +454,7 @@ export default function RegisterPage() {
                     className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:border-[#0A0A0A] dark:focus:border-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-colors"
                   />
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">Online web presence</span>
               </div>
             </div>
           </div>
@@ -393,6 +492,7 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">Minimum 6 characters</span>
               </div>
 
               <div>
@@ -422,6 +522,7 @@ export default function RegisterPage() {
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <span className="text-[10px] text-[#737373] mt-1 block">Must match password</span>
               </div>
             </div>
           </div>
@@ -429,7 +530,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             variant="primary"
-            className="w-full justify-center py-3 text-sm font-semibold"
+            className="w-full justify-center py-3 text-sm font-semibold cursor-pointer"
             disabled={isLoading}
           >
             {isLoading ? "Creating Your Account..." : "Complete Registration & Access Portal"}

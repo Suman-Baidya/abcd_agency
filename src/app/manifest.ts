@@ -1,0 +1,56 @@
+import { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "ABCD Agency",
+    short_name: "ABCD Agency",
+    description: "Digital Solutions, Sprint Deliverables & Client Platform",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#0A0A0A",
+    theme_color: "#0A0A0A",
+    orientation: "portrait-primary",
+    icons: [
+      {
+        src: "/images/abcd_sqr_icon.jpg",
+        sizes: "192x192",
+        type: "image/jpeg",
+        purpose: "any",
+      },
+      {
+        src: "/images/abcd_sqr_icon.jpg",
+        sizes: "512x512",
+        type: "image/jpeg",
+        purpose: "maskable",
+      },
+      {
+        src: "/images/abcd_sqr_icon.jpg",
+        sizes: "any",
+        type: "image/jpeg",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Client Portal",
+        short_name: "Portal",
+        description: "Open Client Portal & Dashboard",
+        url: "/portal",
+        icons: [{ src: "/images/abcd_sqr_icon.jpg", sizes: "96x96" }],
+      },
+      {
+        name: "Project Deliverables",
+        short_name: "Projects",
+        description: "View live Kanban sprint progress",
+        url: "/portal/projects",
+        icons: [{ src: "/images/abcd_sqr_icon.jpg", sizes: "96x96" }],
+      },
+      {
+        name: "Submit Inquiry",
+        short_name: "Inquiry",
+        description: "Submit a new project inquiry",
+        url: "/portal/inquiries",
+        icons: [{ src: "/images/abcd_sqr_icon.jpg", sizes: "96x96" }],
+      },
+    ],
+  };
+}

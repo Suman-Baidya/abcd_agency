@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Database } from "lucide-react";
 
 export function Hero() {
   return (
@@ -96,7 +97,7 @@ export function Hero() {
                 <div className="p-4 rounded-lg bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-md border border-[#0A0A0A] dark:border-white text-[#0A0A0A] dark:text-white flex items-center justify-center font-bold text-xs">
-                      ⚡
+                      <Database className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="font-semibold text-xs font-sans">Serverless DB &amp; Prisma</p>
