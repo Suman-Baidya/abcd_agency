@@ -206,8 +206,17 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/careers" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
-                  Careers &amp; Network
+                <Link href="/careers" className="inline-flex items-center gap-1.5 text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
+                  <span>Careers</span>
+                  {!siteConfig.enableCareers ? (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#1A1A1A] text-[#737373] dark:text-[#A3A3A3] tracking-tight">
+                      {siteConfig.careersStatusText || "Closed"}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold tracking-tight">
+                      Hiring
+                    </span>
+                  )}
                 </Link>
               </li>
             </ul>
@@ -251,16 +260,34 @@ export async function Footer() {
               Legal &amp; Security
             </p>
             <ul className="space-y-2.5 text-xs">
-              <li>
-                <Link href="/privacy" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
-                  Terms of Service
-                </Link>
-              </li>
+              {siteConfig.enablePrivacyPolicy !== false && (
+                <li>
+                  <Link href="/privacy" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
+                    Privacy Policy
+                  </Link>
+                </li>
+              )}
+              {siteConfig.enableTermsOfService !== false && (
+                <li>
+                  <Link href="/terms" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
+                    Terms of Service
+                  </Link>
+                </li>
+              )}
+              {siteConfig.enableRefundPolicy && (
+                <li>
+                  <Link href="/refund" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
+                    Refund Policy
+                  </Link>
+                </li>
+              )}
+              {siteConfig.enableCookiePolicy && (
+                <li>
+                  <Link href="/cookies" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
+                    Cookie Policy
+                  </Link>
+                </li>
+              )}
               <li>
                 <span className="text-[#737373] dark:text-[#A3A3A3]">
                   NDA Guarantee
@@ -279,12 +306,26 @@ export async function Footer() {
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#737373] dark:text-[#A3A3A3]">
           <p>© {currentYear} ABCD Agency (abcdagency.com). All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
-              Terms
-            </Link>
+            {siteConfig.enablePrivacyPolicy !== false && (
+              <Link href="/privacy" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
+                Privacy
+              </Link>
+            )}
+            {siteConfig.enableTermsOfService !== false && (
+              <Link href="/terms" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
+                Terms
+              </Link>
+            )}
+            {siteConfig.enableRefundPolicy && (
+              <Link href="/refund" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
+                Refunds
+              </Link>
+            )}
+            {siteConfig.enableCookiePolicy && (
+              <Link href="/cookies" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
+                Cookies
+              </Link>
+            )}
             <Link href="/contact" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">
               Contact
             </Link>

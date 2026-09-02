@@ -1,30 +1,22 @@
 import React from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { FileCheck, Calendar, ShieldCheck } from "lucide-react";
+import { CreditCard, Calendar, ShieldCheck } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
+import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Terms of Service — ABCD Agency",
-  description: "Our mutual terms of service, intellectual property ownership guarantees, and professional engineering engagement standards.",
+  title: "Refund & Cancellation Policy — ABCD Agency",
+  description: "Our milestone settlement framework, deposit guidelines, and sprint cancellation remediation terms.",
 };
 
-const DEFAULT_TERMS_CONTENT = `## 1. Engagement Scope
-All software engineering, design, and consulting engagements conducted by ABCD Agency are governed by formal Statement of Work (SOW) documents outlining explicit deliverables, milestones, sprint cycles, and acceptance criteria.
+const DEFAULT_REFUND_CONTENT = `## 1. Milestone Settlement Model
+All engineering and consulting services provided by ABCD Agency follow milestone-based deliverable sign-offs. Payments made for verified sprint milestones are non-refundable once approved and deployed.
 
-## 2. Intellectual Property (IP) Ownership
-Upon receipt of full payment for agreed milestones, 100% of all intellectual property, source code, database architectures, and graphical assets created specifically for the client are irrevocably transferred to the client.
+## 2. Deposit & Cancellation
+Initial deposits covering sprint preparation and discovery architecture may be refunded up to 70% if cancellation occurs prior to development kickoff.
 
-## 3. Warranty & Code Quality
-We deliver code in compliance with modern production standards (strict TypeScript, unit and integration tests, automated CI/CD). Fixed-scope projects include a 30-day post-launch warranty for bug fixes relating to agreed specifications.
-
-## 4. Payment Terms & Milestone Invoicing
-Invoices are issued on a milestone or sprint basis as defined in the project scope. Payments are due within 14 calendar days of milestone verification.
-
-## 5. Mutual Confidentiality
-Both parties agree to protect and maintain the confidentiality of all proprietary technical, financial, and strategic information exchanged throughout the lifecycle of the engagement.
-
-## 6. Inquiries
-For legal and contractual questions, reach out directly to legal@abcdagency.com.`;
+## 3. Defect Remediation Warranty
+Fixed-scope engagements include a 30-day warranty. In the event of code deviations from the agreed SOW, our team remediates issues with maximum priority without additional charge.`;
 
 function renderLegalBody(content: string) {
   const sections = content.split(/(?=^##\s+)/m).filter(Boolean);
@@ -61,25 +53,30 @@ function renderLegalBody(content: string) {
   });
 }
 
-export default async function TermsPage() {
+export default async function RefundPage() {
   const siteConfig = await getSiteConfig();
-  const effectiveDate = siteConfig.termsOfServiceEffectiveDate || "August 2026";
-  const content = siteConfig.termsOfServiceContent || DEFAULT_TERMS_CONTENT;
+  
+  if (!siteConfig.enableRefundPolicy) {
+    notFound();
+  }
+
+  const effectiveDate = siteConfig.refundPolicyEffectiveDate || "August 2026";
+  const content = siteConfig.refundPolicyContent || DEFAULT_REFUND_CONTENT;
 
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       <PageHeader
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Terms of Service", href: "/terms" },
+          { label: "Refund Policy", href: "/refund" },
         ]}
-        title="Terms of Service"
-        description="Our mutual terms of service, intellectual property ownership guarantees, and professional engineering engagement standards."
-        icon={<FileCheck className="w-32 h-32" />}
+        title="Refund Policy"
+        description="Our milestone settlement framework, deposit guidelines, and sprint cancellation remediation terms."
+        icon={<CreditCard className="w-32 h-32" />}
       />
 
       <div className="py-16 sm:py-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Effective Date & IP Guarantee Badge */}
+        {/* Effective Date & Guarantee Badge */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 mb-10 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111]">
           <div className="flex items-center gap-2 text-xs text-[#737373] dark:text-neutral-400">
             <Calendar className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white" />
@@ -87,7 +84,7 @@ export default async function TermsPage() {
           </div>
           <div className="flex items-center gap-1.5 text-xs text-[#737373] dark:text-neutral-400">
             <ShieldCheck className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white" />
-            <span>100% IP Transfer On Settlement</span>
+            <span>30-Day Defect Remediation Warranty</span>
           </div>
         </div>
 

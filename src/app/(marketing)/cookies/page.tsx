@@ -1,30 +1,22 @@
 import React from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { FileCheck, Calendar, ShieldCheck } from "lucide-react";
+import { Cookie, Calendar, Lock } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
+import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Terms of Service — ABCD Agency",
-  description: "Our mutual terms of service, intellectual property ownership guarantees, and professional engineering engagement standards.",
+  title: "Cookie Policy — ABCD Agency",
+  description: "Essential telemetry, zero third-party data tracking, and browser session persistence policies.",
 };
 
-const DEFAULT_TERMS_CONTENT = `## 1. Engagement Scope
-All software engineering, design, and consulting engagements conducted by ABCD Agency are governed by formal Statement of Work (SOW) documents outlining explicit deliverables, milestones, sprint cycles, and acceptance criteria.
+const DEFAULT_COOKIE_CONTENT = `## 1. Essential Cookies Only
+ABCD Agency strictly utilizes functional and session cookies required for authentication, user session persistence, and portal navigation.
 
-## 2. Intellectual Property (IP) Ownership
-Upon receipt of full payment for agreed milestones, 100% of all intellectual property, source code, database architectures, and graphical assets created specifically for the client are irrevocably transferred to the client.
+## 2. No Third-Party Tracking
+We do not sell personal browsing behavior or telemetry to third-party ad networks. Analytics are aggregated and anonymized strictly to measure platform performance.
 
-## 3. Warranty & Code Quality
-We deliver code in compliance with modern production standards (strict TypeScript, unit and integration tests, automated CI/CD). Fixed-scope projects include a 30-day post-launch warranty for bug fixes relating to agreed specifications.
-
-## 4. Payment Terms & Milestone Invoicing
-Invoices are issued on a milestone or sprint basis as defined in the project scope. Payments are due within 14 calendar days of milestone verification.
-
-## 5. Mutual Confidentiality
-Both parties agree to protect and maintain the confidentiality of all proprietary technical, financial, and strategic information exchanged throughout the lifecycle of the engagement.
-
-## 6. Inquiries
-For legal and contractual questions, reach out directly to legal@abcdagency.com.`;
+## 3. Managing Browser Preferences
+You may configure your browser settings to reject non-essential cookies at any time without impacting public browsing access.`;
 
 function renderLegalBody(content: string) {
   const sections = content.split(/(?=^##\s+)/m).filter(Boolean);
@@ -61,33 +53,38 @@ function renderLegalBody(content: string) {
   });
 }
 
-export default async function TermsPage() {
+export default async function CookiesPage() {
   const siteConfig = await getSiteConfig();
-  const effectiveDate = siteConfig.termsOfServiceEffectiveDate || "August 2026";
-  const content = siteConfig.termsOfServiceContent || DEFAULT_TERMS_CONTENT;
+  
+  if (!siteConfig.enableCookiePolicy) {
+    notFound();
+  }
+
+  const effectiveDate = siteConfig.cookiePolicyEffectiveDate || "August 2026";
+  const content = siteConfig.cookiePolicyContent || DEFAULT_COOKIE_CONTENT;
 
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       <PageHeader
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Terms of Service", href: "/terms" },
+          { label: "Cookie Policy", href: "/cookies" },
         ]}
-        title="Terms of Service"
-        description="Our mutual terms of service, intellectual property ownership guarantees, and professional engineering engagement standards."
-        icon={<FileCheck className="w-32 h-32" />}
+        title="Cookie Policy"
+        description="Essential telemetry, zero third-party data tracking, and browser session persistence policies."
+        icon={<Cookie className="w-32 h-32" />}
       />
 
       <div className="py-16 sm:py-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Effective Date & IP Guarantee Badge */}
+        {/* Effective Date & Privacy Badge */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 mb-10 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111]">
           <div className="flex items-center gap-2 text-xs text-[#737373] dark:text-neutral-400">
             <Calendar className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white" />
             <span>Effective Date: <strong className="text-[#0A0A0A] dark:text-white font-medium">{effectiveDate}</strong></span>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-[#737373] dark:text-neutral-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white" />
-            <span>100% IP Transfer On Settlement</span>
+            <Lock className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white" />
+            <span>Zero Third-Party Ad Tracking</span>
           </div>
         </div>
 

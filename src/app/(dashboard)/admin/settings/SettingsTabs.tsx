@@ -10,22 +10,32 @@ import {
   Zap,
   ChevronDown,
   IndianRupee,
-  KeyRound
+  KeyRound,
+  Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
-import { updateBrandingSettings, updateContactAndSocialSettings, updateWidgetSettings, updateAuthSettings } from "./actions";
-
-const TABS = [
-  { id: "branding", label: "Branding & Contact", icon: Palette },
-  { id: "blog", label: "Blog", icon: BookOpen },
-  { id: "legal", label: "Legal Pages", icon: ShieldCheck },
-  { id: "documents", label: "Documents", icon: FileText },
-  { id: "pricing", label: "Pricing", icon: IndianRupee },
-];
+import { 
+  updateBrandingSettings, 
+  updateContactAndSocialSettings, 
+  updateWidgetSettings, 
+  updateAuthSettings,
+  updateCareersSettings
+} from "./actions";
 
 import toast from "react-hot-toast";
 import { PricingTabContent } from "./PricingTabContent";
+import { CareersTabContent } from "./CareersTabContent";
+import { LegalTabContent } from "./LegalTabContent";
+
+const TABS = [
+  { id: "branding", label: "Branding", icon: Palette },
+  { id: "careers", label: "Careers", icon: Briefcase },
+  { id: "pricing", label: "Pricing", icon: IndianRupee },
+  { id: "legal", label: "Legal Pages", icon: ShieldCheck },
+  { id: "blog", label: "Blog", icon: BookOpen },
+  { id: "documents", label: "Documents", icon: FileText },
+];
 
 export default function SettingsTabs({ 
   initialConfig,
@@ -79,6 +89,15 @@ export default function SettingsTabs({
     });
   };
 
+  const handleCareersSubmit = async (formData: FormData) => {
+    const promise = updateCareersSettings(formData);
+    toast.promise(promise, {
+      loading: 'Saving careers & hiring settings...',
+      success: 'Careers settings saved!',
+      error: 'Failed to save careers settings.',
+    });
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
       {/* Header */}
@@ -87,7 +106,7 @@ export default function SettingsTabs({
           Site Management
         </h1>
         <p className="text-sm text-[#737373] mt-1">
-          Configure the global landing page, branding, and navigation.
+          Configure global site settings, branding, dynamic careers, and legal policies.
         </p>
       </div>
 
@@ -100,27 +119,26 @@ export default function SettingsTabs({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
-                isActive 
-                  ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-md"
-                  : "text-[#737373] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] dark:hover:text-white dark:hover:bg-[#111111]"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                isActive
+                  ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
+                  : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#111111]"
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? "opacity-100" : "opacity-70"}`} />
-              {tab.label}
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content: Branding & Contact */}
       {activeTab === "branding" && (
         <div className="space-y-4">
-          
-          {/* Accordion 1: Visual Identity */}
+          {/* Accordion 1: General Branding */}
           <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button 
-              onClick={() => toggleSection("visual")}
+              onClick={() => toggleSection("general")}
               className="w-full flex items-center justify-between p-4 px-5 text-left hover:bg-[#FBFBFB] dark:hover:bg-[#111111] transition-colors focus-visible:outline-none"
             >
               <div className="flex items-center gap-4">
@@ -128,51 +146,54 @@ export default function SettingsTabs({
                   <Palette className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Visual Identity</h3>
-                  <p className="text-xs text-[#737373] mt-0.5">Site name, logo, and brand colors.</p>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">General Branding</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Agency title, dark/light logos, and favicon.</p>
                 </div>
               </div>
-              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "visual" ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "general" ? "rotate-180" : ""}`} />
             </button>
             
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "visual" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
-              <form action={handleBrandingSubmit} className="p-6 space-y-8 bg-white dark:bg-[#0A0A0A]">
-                <div>
-                  <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">Agency Name</label>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "general" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
+              <form action={handleBrandingSubmit} className="p-6 space-y-5 bg-white dark:bg-[#0A0A0A]">
+                <div className="space-y-1.5 max-w-md">
+                  <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Agency Name</label>
                   <input
                     type="text"
                     name="agencyName"
                     defaultValue={initialConfig.agencyName}
-                    className="w-full max-w-md px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                  <ImageUploadInput 
-                    name="lightLogoUrl" 
-                    label="Light Mode Logo" 
-                    defaultValue={initialConfig.lightLogoUrl} 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                  <ImageUploadInput
+                    name="lightLogoUrl"
+                    label="Light Mode Logo"
+                    defaultValue={initialConfig.lightLogoUrl}
                   />
-                  <ImageUploadInput 
-                    name="darkLogoUrl" 
-                    label="Dark Mode Logo" 
-                    defaultValue={initialConfig.darkLogoUrl} 
-                  />
-                  <ImageUploadInput 
-                    name="faviconUrl" 
-                    label="Favicon" 
-                    defaultValue={initialConfig.faviconUrl} 
+                  <ImageUploadInput
+                    name="darkLogoUrl"
+                    label="Dark Mode Logo"
+                    defaultValue={initialConfig.darkLogoUrl}
                   />
                 </div>
 
-                <div className="flex justify-end pt-2">
+                <div className="max-w-md">
+                  <ImageUploadInput
+                    name="faviconUrl"
+                    label="Favicon (32x32 PNG/ICO)"
+                    defaultValue={initialConfig.faviconUrl}
+                  />
+                </div>
+
+                <div className="flex justify-end max-w-xl">
                   <Button variant="primary" size="sm" type="submit">Save Changes</Button>
                 </div>
               </form>
             </div>
           </div>
 
-          {/* Accordion 2: Contact & Social Presence */}
+          {/* Accordion 2: Contact Information */}
           <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button 
               onClick={() => toggleSection("contact")}
@@ -183,128 +204,139 @@ export default function SettingsTabs({
                   <Phone className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Contact & Social Presence</h3>
-                  <p className="text-xs text-[#737373] mt-0.5">Direct support channels and community links.</p>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Contact Information</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Primary email, phone numbers, and WhatsApp line.</p>
                 </div>
               </div>
               <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "contact" ? "rotate-180" : ""}`} />
             </button>
             
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "contact" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
-              <form action={handleContactSubmit} className="p-6 bg-white dark:bg-[#0A0A0A]">
-                <div>
-                  <div className="space-y-10">
-                    {/* Contact Fields */}
-                    <div className="space-y-5">
-                      <h4 className="text-sm font-semibold text-[#0A0A0A] dark:text-white border-b border-[#E5E5E5] dark:border-[#262626] pb-2">Direct Contact</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">Contact Email</label>
-                          <input
-                            type="email"
-                            name="contactEmail"
-                            defaultValue={initialConfig.contactEmail}
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">Phone</label>
-                          <input
-                            type="tel"
-                            name="contactPhone"
-                            defaultValue={initialConfig.contactPhone}
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">WhatsApp Number</label>
-                          <input
-                            type="tel"
-                            name="whatsappNumber"
-                            defaultValue={initialConfig.whatsappNumber ? initialConfig.whatsappNumber.replace(/[^0-9]/g, "") : ""}
-                            placeholder="e.g. +919876543210"
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {/* Social Fields */}
-                    <div className="space-y-5">
-                      <h4 className="text-sm font-semibold text-[#0A0A0A] dark:text-white border-b border-[#E5E5E5] dark:border-[#262626] pb-2">Social Links</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">YouTube URL</label>
-                          <input
-                            type="url"
-                            name="youtubeUrl"
-                            defaultValue={initialConfig.youtubeUrl || ""}
-                            placeholder="https://youtube.com/..."
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">Facebook URL</label>
-                          <input
-                            type="url"
-                            name="facebookUrl"
-                            defaultValue={initialConfig.facebookUrl || ""}
-                            placeholder="https://facebook.com/..."
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">Instagram URL</label>
-                          <input
-                            type="url"
-                            name="instagramUrl"
-                            defaultValue={initialConfig.instagramUrl || ""}
-                            placeholder="https://instagram.com/..."
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">LinkedIn URL</label>
-                          <input
-                            type="url"
-                            name="linkedinUrl"
-                            defaultValue={initialConfig.linkedinUrl || ""}
-                            placeholder="https://linkedin.com/..."
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">X (Twitter) URL</label>
-                          <input
-                            type="url"
-                            name="twitterUrl"
-                            defaultValue={initialConfig.twitterUrl || ""}
-                            placeholder="https://x.com/..."
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#0A0A0A] dark:text-white mb-1.5">Behance URL</label>
-                          <input
-                            type="url"
-                            name="behanceUrl"
-                            defaultValue={initialConfig.behanceUrl || ""}
-                            placeholder="https://behance.net/..."
-                            className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
+              <form action={handleContactSubmit} className="p-6 space-y-5 bg-white dark:bg-[#0A0A0A]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Contact Email</label>
+                    <input
+                      type="email"
+                      name="contactEmail"
+                      defaultValue={initialConfig.contactEmail}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
                   </div>
-                  
-                  <div className="flex justify-end mt-8 border-t border-[#E5E5E5] dark:border-[#262626] pt-6">
-                    <Button variant="primary" size="sm" type="submit">Save Changes</Button>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Contact Phone</label>
+                    <input
+                      type="text"
+                      name="contactPhone"
+                      defaultValue={initialConfig.contactPhone}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
                   </div>
+                </div>
+
+                <div className="space-y-1.5 max-w-md">
+                  <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">WhatsApp Business Number (with country code)</label>
+                  <input
+                    type="text"
+                    name="whatsappNumber"
+                    defaultValue={initialConfig.whatsappNumber}
+                    placeholder="e.g. 919876543210"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                  />
+                </div>
+
+                <div className="flex justify-end max-w-xl">
+                  <Button variant="primary" size="sm" type="submit">Save Changes</Button>
                 </div>
               </form>
             </div>
           </div>
 
-          {/* Accordion 4: Floating Widget Controls */}
+          {/* Accordion 3: Social Links */}
+          <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
+            <button 
+              onClick={() => toggleSection("social")}
+              className="w-full flex items-center justify-between p-4 px-5 text-left hover:bg-[#FBFBFB] dark:hover:bg-[#111111] transition-colors focus-visible:outline-none"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Social Links</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">LinkedIn, Twitter/X, Instagram, Behance, YouTube.</p>
+                </div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "social" ? "rotate-180" : ""}`} />
+            </button>
+            
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSection === "social" ? "max-h-[800px] border-t border-[#E5E5E5] dark:border-[#262626] opacity-100" : "max-h-0 opacity-0"}`}>
+              <form action={handleContactSubmit} className="p-6 space-y-4 bg-white dark:bg-[#0A0A0A]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">LinkedIn URL</label>
+                    <input
+                      type="url"
+                      name="linkedinUrl"
+                      defaultValue={initialConfig.linkedinUrl}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Twitter / X URL</label>
+                    <input
+                      type="url"
+                      name="twitterUrl"
+                      defaultValue={initialConfig.twitterUrl}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Facebook URL</label>
+                    <input
+                      type="url"
+                      name="facebookUrl"
+                      defaultValue={initialConfig.facebookUrl}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Instagram URL</label>
+                    <input
+                      type="url"
+                      name="instagramUrl"
+                      defaultValue={initialConfig.instagramUrl}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">YouTube URL</label>
+                    <input
+                      type="url"
+                      name="youtubeUrl"
+                      defaultValue={initialConfig.youtubeUrl}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">Behance URL</label>
+                    <input
+                      type="url"
+                      name="behanceUrl"
+                      defaultValue={initialConfig.behanceUrl}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-transparent text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end max-w-xl">
+                  <Button variant="primary" size="sm" type="submit">Save Changes</Button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Accordion 4: Interactive Widgets */}
           <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button 
               onClick={() => toggleSection("widgets")}
@@ -315,8 +347,8 @@ export default function SettingsTabs({
                   <Zap className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Floating Widget Controls</h3>
-                  <p className="text-xs text-[#737373] mt-0.5">WhatsApp and AI Chatbot visibility and configuration.</p>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Interactive Widgets</h3>
+                  <p className="text-xs text-[#737373] mt-0.5">Toggle WhatsApp floating chat bubble and other embeds.</p>
                 </div>
               </div>
               <ChevronDown className={`w-4 h-4 text-[#737373] transition-transform duration-300 ${expandedSection === "widgets" ? "rotate-180" : ""}`} />
@@ -352,7 +384,7 @@ export default function SettingsTabs({
                   <KeyRound className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Authentication & Verification Controls</h3>
+                  <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tracking-tight">Authentication &amp; Verification Controls</h3>
                   <p className="text-xs text-[#737373] mt-0.5">Control email OTP verification on registration (Default: Inactive/Off).</p>
                 </div>
               </div>
@@ -377,15 +409,26 @@ export default function SettingsTabs({
               </form>
             </div>
           </div>
-          
         </div>
       )}
+
+      {/* Tab Content: Careers */}
+      {activeTab === "careers" && (
+        <CareersTabContent initialConfig={initialConfig} />
+      )}
       
+      {/* Tab Content: Pricing */}
       {activeTab === "pricing" && (
         <PricingTabContent pricingPackages={pricingPackages} pricingServices={pricingServices} />
       )}
 
-      {activeTab !== "branding" && activeTab !== "pricing" && (
+      {/* Tab Content: Legal Pages */}
+      {activeTab === "legal" && (
+        <LegalTabContent initialConfig={initialConfig} />
+      )}
+
+      {/* Other Placeholder Tabs */}
+      {activeTab !== "branding" && activeTab !== "careers" && activeTab !== "pricing" && activeTab !== "legal" && (
         <div className="py-16 flex flex-col items-center justify-center text-center border border-dashed border-[#E5E5E5] dark:border-[#262626] rounded-2xl bg-white dark:bg-transparent">
           <p className="text-[#737373] text-sm">Settings for {TABS.find(t => t.id === activeTab)?.label} are coming soon.</p>
         </div>

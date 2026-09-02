@@ -33,6 +33,28 @@ model SiteConfig {
   enableWhatsappWidget Boolean @default(true)
   requireEmailVerification Boolean @default(false)
   
+  // Careers Settings
+  enableCareers        Boolean @default(false)
+  careersStatusText    String  @default("Currently Closed")
+  careersNotice        String? @default("We are not actively hiring for full-time positions at the moment, but we welcome open applications for future engineering and design sprints.")
+  
+  // Legal Pages Content & Visibility
+  enablePrivacyPolicy         Boolean  @default(true)
+  privacyPolicyContent        String?  @db.Text
+  privacyPolicyEffectiveDate  String?  @default("August 2026")
+  
+  enableTermsOfService        Boolean  @default(true)
+  termsOfServiceContent       String?  @db.Text
+  termsOfServiceEffectiveDate String?  @default("August 2026")
+  
+  enableRefundPolicy          Boolean  @default(false)
+  refundPolicyContent         String?  @db.Text
+  refundPolicyEffectiveDate   String?  @default("August 2026")
+  
+  enableCookiePolicy          Boolean  @default(false)
+  cookiePolicyContent         String?  @db.Text
+  cookiePolicyEffectiveDate   String?  @default("August 2026")
+  
   updatedAt       DateTime @updatedAt
 }
 
