@@ -168,13 +168,13 @@ export default function PortalDocumentsPage() {
           </p>
         </div>
 
-        <Button variant="secondary" size="sm" href="mailto:support@abcdagency.com">
+        <Button id="documents-request-btn" variant="secondary" size="sm" href="mailto:support@abcdagency.com">
           Request File Access
         </Button>
       </div>
 
       {/* StatCards KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="documents-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Documents" value={totalDocsCount} color="default" />
         <StatCard label="PDF Specifications" value={pdfDocsCount} color="emerald" />
         <StatCard label="Design & Source Archives" value={archiveDocsCount} color="amber" />
@@ -182,11 +182,11 @@ export default function PortalDocumentsPage() {
       </div>
 
       {/* Documents Table Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="documents-table-card" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Table Controls Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="documents-type-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {[
               { id: "all", label: "All", count: totalDocsCount },
               { id: "pdf", label: "PDF Documents", count: pdfDocsCount },

@@ -295,6 +295,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
         </div>
         <div className="flex items-center gap-2.5">
           <Button
+            id="admin-users-export-btn"
             variant="secondary"
             size="sm"
             onClick={handleExportCSV}
@@ -307,7 +308,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       </div>
 
       {/* KPI Stats Section (Standardized StatCard Design & Height) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div id="admin-users-kpi" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Accounts" value={users.length} />
         <StatCard label="New Prospects" value={prospectsCount} color="amber" />
         <StatCard label="Active Clients" value={clientsCount} color="emerald" />
@@ -315,11 +316,11 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       </div>
 
       {/* Users Table Container Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="admin-users-table" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Filter & Search Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="admin-users-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {(
               [
                 { id: "all", label: "All Users" },
@@ -359,7 +360,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
           </div>
 
           {/* Search & Sort Controls */}
-          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <div id="admin-users-search" className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             {/* Search Input */}
             <div className="relative flex-1 sm:w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />

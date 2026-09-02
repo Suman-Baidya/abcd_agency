@@ -6,7 +6,8 @@ import { NavLinks } from "./NavLinks";
 import { QuickContactIcons } from "./QuickContactIcons";
 import { MobileMenu } from "./MobileMenu";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Button } from "@/components/ui/Button";
+import { AuthNavButton } from "./AuthNavButton";
+import { InstallAppButton } from "@/components/ui/InstallAppButton";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export async function Navbar() {
@@ -46,8 +47,8 @@ export async function Navbar() {
             </Link>
           </div>
 
-          {/* Right: Everything Aligned on the Right per Reference Layout */}
-          <div className="flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+          {/* Right: Navigation Links + Action Group */}
+          <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
             {/* Desktop Navigation Links */}
             <NavLinks />
 
@@ -55,20 +56,22 @@ export async function Navbar() {
               <QuickContactIcons siteConfig={siteConfig} />
             </div>
 
-            {/* Login CTA Button */}
-            <div className="hidden sm:block">
-              <Button
-                href="/login"
-                variant="primary"
-                size="sm"
-                className="font-semibold dark:bg-white dark:text-[#0A0A0A] dark:border-white dark:hover:bg-[#E5E5E5]"
-              >
-                Login
-              </Button>
-            </div>
+            {/* Desktop Actions Group: Login/Dashboard + Download Icon + Theme Toggle (Compact Gap) */}
+            <div className="flex items-center gap-2">
+              {/* Login / Dashboard CTA Button */}
+              <div className="hidden sm:block">
+                <AuthNavButton />
+              </div>
 
-            {/* Theme Toggle Button (Light/Dark Switcher) */}
-            <ThemeToggle />
+              {/* Install App Quick Action (Desktop Icon Only) */}
+              <InstallAppButton
+                variant="icon"
+                className="hidden sm:inline-flex"
+              />
+
+              {/* Theme Toggle Button (Light/Dark Switcher) */}
+              <ThemeToggle />
+            </div>
 
             {/* Mobile Hamburger Overlay (<768px) */}
             <MobileMenu siteConfig={siteConfig} />

@@ -1020,6 +1020,7 @@ export function FinanceManager({
             Export Report
           </Button>
           <Button
+            id="admin-finance-create-btn"
             variant="primary"
             size="sm"
             onClick={() => {
@@ -1036,7 +1037,7 @@ export function FinanceManager({
       </div>
 
       {/* KPI Stats Section */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div id="admin-finance-kpi" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Inflow" value={stats.totalIncome} color="emerald" />
         <StatCard label="Total Outflow" value={stats.totalExpense} />
         <StatCard label="Net Profit" value={stats.netProfit} color={stats.rawProfit >= 0 ? "emerald" : "amber"} />
@@ -1044,11 +1045,11 @@ export function FinanceManager({
       </div>
 
       {/* Main Transactions Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="admin-finance-table" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Filter Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Type Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="admin-finance-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {(["All", "Income", "Expense", "Pending"] as const).map((type) => {
               const isSelected = selectedType === type;
               const count = typeCounts[type];
@@ -1081,7 +1082,7 @@ export function FinanceManager({
           </div>
 
           {/* Search, Category & Sort Controls */}
-          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <div id="admin-finance-search" className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             {/* Search */}
             <div className="relative flex-1 sm:w-64">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />

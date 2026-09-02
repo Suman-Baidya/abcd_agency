@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { InstallAppButton } from "@/components/ui/InstallAppButton";
+import { ContextTourButton } from "@/components/dashboard/ContextTourButton";
 
 interface Notification {
   id: string;
@@ -145,20 +147,20 @@ export function Topbar({
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+      <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             aria-label="Toggle notifications"
-            className="relative p-2 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-full"
+            className="relative w-9 h-9 flex items-center justify-center rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white cursor-pointer"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             {unreadNotifications.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white dark:border-[#0A0A0A]"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 border border-white dark:border-[#0A0A0A]"></span>
               </span>
             )}
           </button>
@@ -262,6 +264,8 @@ export function Topbar({
             </div>
           )}
         </div>
+        <ContextTourButton />
+        <InstallAppButton variant="icon" />
         <ThemeToggle />
         <button
           onClick={async () => {
@@ -269,7 +273,7 @@ export function Topbar({
             await logoutUser();
             window.location.href = "/login";
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white border border-[#E5E5E5] dark:border-[#262626] hover:bg-[#F5F5F5] dark:hover:bg-[#202020] rounded-lg transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 h-9 text-xs font-semibold text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] rounded-lg transition-colors cursor-pointer"
           title="Sign out of account"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

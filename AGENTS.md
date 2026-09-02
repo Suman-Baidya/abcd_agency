@@ -45,10 +45,13 @@ Every UI change must obey this system. Do not introduce new colors, fonts, or sp
 - Headings: `font-semibold` or `font-bold`, tight tracking (`tracking-tight`).
 - Body: `font-normal`, `text-gray-700`/`text-gray-500` for secondary copy.
 
-### Components
+### Components & Guided Tours
 - Build once in `components/ui/` (buttons, inputs, cards, modals, tables, badges) and reuse everywhere — never inline one-off styled elements.
 - **Section Headers**: Always use the `SectionHeader` component (`src/components/ui/SectionHeader.tsx`) for page and section titles to maintain consistency. It enforces the `Subtitle > Title > Description` hierarchy with precise tracking and spacing. Use `as="h1"` for the hero/top page header, and default (`as="h2"`) for all sub-sections.
 - **Inner Page Headers**: All inner/sub pages (not the homepage) must use the `PageHeader` component (`src/components/ui/PageHeader.tsx`) for their top hero section. This gives a compact dark-band design (monospace tag + ruled separator + measured title) that is clearly distinct from the homepage Hero's large display text. Never use `SectionHeader as="h1"` on inner pages.
+- **Interactive Page Tours (Driver.js)**: Whenever a new dashboard page (in `/portal` or `/admin`) or major feature section is added:
+  1. Assign descriptive HTML IDs (`id="<page>-<element>"`) to 3–5 key interactive DOM targets (e.g. action buttons, KPI grids, filter tabs, tables).
+  2. Add the corresponding 3–5 step spotlight configuration to `src/components/dashboard/ContextTourButton.tsx` in `getTourConfigForPath(pathname)` so that users instantly get an interactive element-by-element guided tour.
 - Buttons: solid black on white (primary), outline black (secondary), ghost (tertiary). No filled colored buttons.
 - All interactive elements need visible focus states (`focus-visible:ring-2 ring-black`) for accessibility.
 
@@ -170,4 +173,5 @@ types/
 - [ ] Inputs validated with `zod`
 - [ ] No secrets hardcoded; `.env.example` updated if new vars added
 - [ ] Reused existing `components/ui/` primitives instead of new one-offs
+- [ ] If creating a new dashboard page/feature: assigned `id="..."` attributes to key elements and registered a 3–5 step spotlight tour in `ContextTourButton.tsx`
 - [ ] TypeScript has no `any` / no type errors

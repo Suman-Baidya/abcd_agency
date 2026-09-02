@@ -2,14 +2,18 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "ABCD Agency",
     short_name: "ABCD Agency",
     description: "Digital Solutions, Sprint Deliverables & Client Platform",
     start_url: "/",
+    scope: "/",
     display: "standalone",
+    display_override: ["standalone", "window-controls-overlay", "minimal-ui"],
     background_color: "#0A0A0A",
     theme_color: "#0A0A0A",
     orientation: "portrait-primary",
+    categories: ["business", "productivity", "utilities"],
     icons: [
       {
         src: "/images/abcd_sqr_icon.jpg",
@@ -27,6 +31,11 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/images/abcd_sqr_icon.jpg",
         sizes: "any",
         type: "image/jpeg",
+      },
+      {
+        src: "/images/Black_Logo.png",
+        sizes: "512x512",
+        type: "image/png",
       },
     ],
     shortcuts: [

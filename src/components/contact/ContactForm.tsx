@@ -277,7 +277,7 @@ function MultiSelect({
    Main Form
 ════════════════════════════════════════════════ */
 export function ContactForm() {
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "offline-saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState("");
 
   const {
@@ -303,11 +303,45 @@ export function ContactForm() {
   const selectedBusiness = watch("businessType");
   const nameValue = watch("name");
 
+  // Auto-sync offline draft upon internet reconnection
+  useEffect(() => {
+    const checkAndSyncOfflineInquiry = async () => {
+      if (typeof window !== "undefined" && navigator.onLine) {
+        const saved = localStorage.getItem("abcd_offline_inquiry");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const res = await submitInquiry(parsed);
+            if (res.success) {
+              localStorage.removeItem("abcd_offline_inquiry");
+              setStatus("success");
+              toast.success("Your offline inquiry has been synced and sent!", { id: "offline-sync-toast" });
+            }
+          } catch {}
+        }
+      }
+    };
+
+    window.addEventListener("online", checkAndSyncOfflineInquiry);
+    checkAndSyncOfflineInquiry();
+    return () => window.removeEventListener("online", checkAndSyncOfflineInquiry);
+  }, []);
+
   const onSubmit = async (data: ContactFormData) => {
+    // 1. Check if user is offline
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      localStorage.setItem("abcd_offline_inquiry", JSON.stringify(data));
+      setStatus("offline-saved");
+      toast.success("Saved offline. Will auto-send when reconnected!", { id: "offline-saved-toast" });
+      return;
+    }
+
+    // 2. Normal online submission
     setStatus("submitting");
     try {
       const res = await submitInquiry(data);
       if (res.success) {
+        localStorage.removeItem("abcd_offline_inquiry");
         setStatus("success");
       } else {
         setStatus("error");
@@ -315,9 +349,10 @@ export function ContactForm() {
         toast.error("Failed to submit inquiry.");
       }
     } catch {
-      setStatus("error");
-      setSubmitMessage("An unexpected error occurred.");
-      toast.error("Failed to submit inquiry.");
+      // If network failed during fetch
+      localStorage.setItem("abcd_offline_inquiry", JSON.stringify(data));
+      setStatus("offline-saved");
+      toast.error("Network issue. Draft saved offline to sync automatically.", { id: "offline-fallback-toast" });
     }
   };
 
@@ -336,6 +371,29 @@ export function ContactForm() {
         </p>
         <Button variant="secondary" size="md" onClick={() => { reset(); setStatus("idle"); }}>
           Submit Another Request
+        </Button>
+      </div>
+    );
+  }
+
+  /* ─── Offline Saved Draft ─── */
+  if (status === "offline-saved") {
+    return (
+      <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#111111] p-8 sm:p-12 text-center animate-in fade-in duration-200">
+        <div className="w-12 h-12 rounded-full bg-[#0A0A0A] dark:bg-white flex items-center justify-center mx-auto mb-6">
+          <svg className="w-6 h-6 text-white dark:text-[#0A0A0A]" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">
+          Saved Offline
+        </div>
+        <h3 className="text-2xl font-bold tracking-tight text-[#0A0A0A] dark:text-white mb-2">Inquiry Saved on Your Device</h3>
+        <p className="text-sm text-[#737373] dark:text-neutral-400 max-w-md mx-auto mb-8 leading-relaxed">
+          You are currently offline. Your inquiry details have been saved securely. It will automatically submit the moment your internet connection reconnects.
+        </p>
+        <Button variant="secondary" size="md" onClick={() => setStatus("idle")}>
+          Edit Inquiry Details
         </Button>
       </div>
     );

@@ -1,5 +1,5 @@
 import React from "react";
-import { Mail, MessageCircle, Phone } from "lucide-react";
+import { Mail, MessageCircle } from "lucide-react";
 
 export function QuickContactIcons({ siteConfig }: { siteConfig: any }) {
   return (
@@ -13,18 +13,6 @@ export function QuickContactIcons({ siteConfig }: { siteConfig: any }) {
           className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white"
         >
           <Mail className="w-3.5 h-3.5" />
-        </a>
-      )}
-
-      {/* Phone */}
-      {siteConfig.contactPhone && (
-        <a
-          href={`tel:${siteConfig.contactPhone}`}
-          title="Call Us"
-          aria-label="Call ABCD Agency"
-          className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white"
-        >
-          <Phone className="w-3.5 h-3.5" />
         </a>
       )}
 

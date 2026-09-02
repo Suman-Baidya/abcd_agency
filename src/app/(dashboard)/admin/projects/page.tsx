@@ -126,14 +126,14 @@ export default async function ProjectsPage({
             Manage and monitor all agency projects.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div id="admin-projects-actions" className="flex items-center gap-2">
           <CategoryManager categories={projectCategories} />
           <NewProjectButton categories={categoryNames} clients={clients} />
         </div>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div id="admin-projects-kpi" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Projects" value={totalAll} />
         <StatCard label="On Track" value={statusCounts["On Track"] || 0} color="emerald" />
         <StatCard label="Delayed" value={statusCounts["Delayed"] || 0} color="amber" />
@@ -141,12 +141,13 @@ export default async function ProjectsPage({
       </div>
 
       {/* Projects Switcher (Table vs Smart Kanban) */}
-      <AdminProjectViewSwitcher
-        projects={allProjectsUnfiltered}
-        tasks={allTasks}
-        clients={clients}
-        dataTableComponent={
-          <Card className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
+      <div id="admin-projects-container">
+        <AdminProjectViewSwitcher
+          projects={allProjectsUnfiltered}
+          tasks={allTasks}
+          clients={clients}
+          dataTableComponent={
+            <Card id="admin-projects-table-card" className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
             <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A]">
               <Suspense fallback={<div className="h-10 w-full bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md"></div>}>
                 <ProjectFilters statusCounts={statusCounts} />
@@ -190,6 +191,7 @@ export default async function ProjectsPage({
           </Card>
         }
       />
+      </div>
     </div>
   );
 }

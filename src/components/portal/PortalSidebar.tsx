@@ -166,9 +166,19 @@ export function PortalSidebar({
             const isActive = item.href === "/portal"
               ? pathname === "/portal"
               : pathname === item.href || pathname?.startsWith(`${item.href}/`);
+
+            let tourId = undefined;
+            if (item.href === "/portal") tourId = "portal-tour-overview";
+            else if (item.href === "/portal/projects") tourId = "portal-tour-projects";
+            else if (item.href === "/portal/services") tourId = "portal-tour-services";
+            else if (item.href === "/portal/inquiries") tourId = "portal-tour-inquiries";
+            else if (item.href === "/portal/revisions") tourId = "portal-tour-revisions";
+            else if (item.href === "/portal/billing") tourId = "portal-tour-finance";
+
             return (
               <Link
                 key={item.href}
+                id={tourId}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white ${
                   isActive

@@ -510,6 +510,7 @@ export function ClientManager({
             Export CSV
           </Button>
           <Button
+            id="admin-clients-add-btn"
             variant="primary"
             size="sm"
             onClick={() => setIsAddModalOpen(true)}
@@ -522,7 +523,7 @@ export function ClientManager({
       </div>
 
       {/* KPI Stats Section */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div id="admin-clients-kpi" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Clients" value={stats.total} />
         <StatCard label="Active Accounts" value={stats.active} color="emerald" />
         <StatCard label="Prospects" value={stats.prospects} />
@@ -530,11 +531,11 @@ export function ClientManager({
       </div>
 
       {/* Clients List Table Container Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="admin-clients-table" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Filter Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="admin-clients-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {(["All", "Active", "Prospect", "Inactive"] as const).map((status) => {
               const isSelected = selectedStatus === status;
               const count = statusCounts[status];
@@ -567,7 +568,7 @@ export function ClientManager({
           </div>
 
           {/* Search & Sort Controls */}
-          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <div id="admin-clients-search" className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             {/* Search Input */}
             <div className="relative flex-1 sm:w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />

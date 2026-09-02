@@ -236,11 +236,6 @@ export function RevisionManager({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md bg-[#F0F0F0] dark:bg-[#202020] text-[#737373] dark:text-neutral-400 border border-[#E5E5E5] dark:border-[#333333]">
-              LIVE CLIENT REQUEST DESK
-            </span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
             Revisions & Client Feedback
           </h1>
@@ -250,7 +245,7 @@ export function RevisionManager({
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-[#F5F5F5] dark:bg-[#151515] rounded-xl border border-[#E5E5E5] dark:border-[#262626] shrink-0">
+        <div id="admin-revisions-view-toggle" className="flex items-center gap-1 p-1 bg-[#F5F5F5] dark:bg-[#151515] rounded-xl border border-[#E5E5E5] dark:border-[#262626] shrink-0">
           <button
             onClick={() => setViewMode("table")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -277,7 +272,7 @@ export function RevisionManager({
       </div>
 
       {/* KPI StatCards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="admin-revisions-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Tickets" value={totalCount} color="default" />
         <StatCard label="Action Required" value={pendingCount} color="amber" />
         <StatCard label="In Progress" value={inReviewCount} color="blue" />
@@ -285,11 +280,11 @@ export function RevisionManager({
       </div>
 
       {/* Main Container Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="admin-revisions-table" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Top Filter Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+          <div id="admin-revisions-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
             {[
               { id: "all", label: "All", count: totalCount },
               { id: "pending", label: "Pending", count: pendingCount },
@@ -324,7 +319,7 @@ export function RevisionManager({
           </div>
 
           {/* Search, Filters & Sort Controls */}
-          <div className="flex flex-wrap lg:flex-nowrap items-center gap-2.5">
+          <div id="admin-revisions-search" className="flex flex-wrap lg:flex-nowrap items-center gap-2.5">
             {/* Search bar */}
             <div className="relative flex-1 sm:w-64">
               <Search className="w-4 h-4 text-[#737373] absolute left-3 top-1/2 -translate-y-1/2" />

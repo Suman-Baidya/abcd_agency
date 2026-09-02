@@ -56,11 +56,22 @@ export default async function RootLayout({
     >
       <head>
         <link rel="icon" href={favicon} sizes="any" />
-        <link rel="shortcut icon" href={favicon} />
         <link rel="apple-touch-icon" href="/images/abcd_sqr_icon.jpg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#0A0A0A" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.__deferredPrompt = null;
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.__deferredPrompt = e;
+                window.dispatchEvent(new CustomEvent('pwa_prompt_ready'));
+              });
+            `,
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white font-sans selection:bg-[#0A0A0A] selection:text-white dark:selection:bg-white dark:selection:text-[#0A0A0A] transition-colors duration-200">
         <Toaster 

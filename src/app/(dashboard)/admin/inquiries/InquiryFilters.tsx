@@ -74,7 +74,7 @@ export function InquiryFilters({ tabCounts }: InquiryFiltersProps) {
   return (
     <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
       {/* Left side: Tab type status filter */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+      <div id="admin-inquiries-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
         {TABS.map((t) => {
           const isSelected = currentTab === t.label;
           const count = tabCounts[t.label];
@@ -107,7 +107,7 @@ export function InquiryFilters({ tabCounts }: InquiryFiltersProps) {
       </div>
 
       {/* Right side: Search & Sort controls */}
-      <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+      <div id="admin-inquiries-search" className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
         {/* Search Input Controls */}
         <div className="relative flex-1 sm:w-72">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />

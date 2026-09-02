@@ -156,7 +156,7 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div id="admin-inquiries-kpi" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Inquiries" value={allCount} />
         <StatCard label="Unread" value={newCount} color="red" />
         <StatCard label="In Progress" value={inProgressCount} color="amber" />
@@ -164,9 +164,9 @@ export default async function InquiriesPage({ searchParams }: PageProps) {
       </div>
 
       {/* Main Table / List Container */}
-      <Card className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
+      <Card id="admin-inquiries-card" className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626] shadow-sm">
         {/* Table Top Toolbar */}
-        <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A]">
+        <div id="admin-inquiries-filters" className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A]">
           <Suspense fallback={<div className="h-10 w-full bg-[#F5F5F5] dark:bg-[#111111] animate-pulse rounded-md" />}>
             <InquiryFilters tabCounts={tabCounts} />
           </Suspense>

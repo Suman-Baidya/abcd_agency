@@ -160,6 +160,7 @@ export default function PortalMeetingsPage() {
         </div>
 
         <Button
+          id="meetings-book-btn"
           variant="primary"
           size="sm"
           onClick={() => setShowBookModal(true)}
@@ -171,7 +172,7 @@ export default function PortalMeetingsPage() {
       </div>
 
       {/* StatCards KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="meetings-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Sessions" value={totalMeetingsCount} color="default" />
         <StatCard label="Upcoming Calls" value={upcomingMeetingsCount} color="emerald" />
         <StatCard label="Completed Sessions" value={completedMeetingsCount} color="default" />
@@ -179,11 +180,11 @@ export default function PortalMeetingsPage() {
       </div>
 
       {/* Meetings Table Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="meetings-table-card" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Table Controls Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Tab Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="meetings-status-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {[
               { id: "all", label: "All", count: totalMeetingsCount },
               { id: "upcoming", label: "Upcoming", count: upcomingMeetingsCount },

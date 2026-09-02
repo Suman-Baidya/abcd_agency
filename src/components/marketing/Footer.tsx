@@ -4,6 +4,8 @@ import Image from "next/image";
 import { NewsletterForm } from "./NewsletterForm";
 import { getSiteConfig } from "@/lib/dbConfig";
 
+import { InstallAppButton } from "@/components/ui/InstallAppButton";
+
 export async function Footer() {
   const siteConfig = await getSiteConfig();
   const currentYear = new Date().getFullYear();
@@ -231,6 +233,9 @@ export async function Footer() {
                 <Link href="/contact" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
                   Book a Consultation
                 </Link>
+              </li>
+              <li>
+                <InstallAppButton label="Install Desktop / Mobile App" />
               </li>
               <li>
                 <a href={`mailto:${siteConfig.contactEmail}`} className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">

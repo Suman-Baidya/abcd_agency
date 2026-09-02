@@ -48,7 +48,7 @@ export default async function PortalDashboardPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div id="portal-tour-header" className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
             Dashboard Overview
@@ -58,7 +58,7 @@ export default async function PortalDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div id="portal-header-actions" className="flex items-center gap-3">
           {isProspect ? (
             <Button variant="primary" size="sm" href="/portal/inquiries">
               <Send className="w-3.5 h-3.5 mr-1" />
@@ -83,7 +83,7 @@ export default async function PortalDashboardPage() {
       {isProspect && (
         <div className="space-y-8">
           {/* KPI StatCards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div id="portal-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label="Total Briefs" value={userInquiries.length} color="default" />
             <StatCard 
               label="Under Review" 
@@ -101,7 +101,7 @@ export default async function PortalDashboardPage() {
           {/* ===================================================================== */}
           {/* PREMIUM ONBOARDING ROADMAP SECTION */}
           {/* ===================================================================== */}
-          <div className="p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] shadow-xs space-y-6">
+          <div id="portal-onboarding-section" className="p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] shadow-xs space-y-6">
             {/* Roadmap Header & Progress Indicator */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5E5] dark:border-[#242424] pb-4">
               <div className="space-y-1">
@@ -362,7 +362,7 @@ export default async function PortalDashboardPage() {
       {!isProspect && client && (
         <div className="space-y-8">
           {/* Key Metrics */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div id="portal-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label="Active Projects" value={client.projects.length} color="default" />
             <StatCard label="Total Invested" value={client.totalSpend || "₹0"} color="emerald" />
             <StatCard label="Pending Balance" value={client.dueBalance || "₹0"} color={client.dueBalance && client.dueBalance !== "₹0" ? "amber" : "default"} />
@@ -370,7 +370,7 @@ export default async function PortalDashboardPage() {
           </div>
 
           {/* Active Projects List */}
-          <div className="space-y-4">
+          <div id="portal-client-projects" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-[#0A0A0A] dark:text-white">Active Projects</h2>
               <Link href="/portal/projects" className="text-xs font-semibold text-[#737373] hover:underline">
@@ -424,7 +424,7 @@ export default async function PortalDashboardPage() {
           </div>
 
           {/* Quick Action Matrix for Clients */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div id="portal-quick-matrix" className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Link
               href="/portal/documents"
               className="p-4 bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-xl hover:border-black dark:hover:border-white transition-colors text-center space-y-2"

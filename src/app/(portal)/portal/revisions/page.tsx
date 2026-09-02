@@ -182,6 +182,7 @@ export default function PortalRevisionsPage() {
         </div>
 
         <Button
+          id="revision-new-btn"
           variant="primary"
           size="sm"
           onClick={() => setShowFormModal(true)}
@@ -193,7 +194,7 @@ export default function PortalRevisionsPage() {
       </div>
 
       {/* StatCards KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="revision-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Tickets" value={totalRevisionsCount} color="default" />
         <StatCard label="In Progress / QA" value={inProgressRevisions} color="amber" />
         <StatCard label="Implemented" value={implementedRevisions} color="emerald" />
@@ -201,11 +202,11 @@ export default function PortalRevisionsPage() {
       </div>
 
       {/* Revisions Table Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="revision-table-card" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Table Controls Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Tab Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="revision-status-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {[
               { id: "all", label: "All", count: totalRevisionsCount },
               { id: "active", label: "Active", count: inProgressRevisions },

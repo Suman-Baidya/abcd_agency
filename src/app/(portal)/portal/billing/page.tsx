@@ -142,13 +142,13 @@ export default function PortalBillingPage() {
           </p>
         </div>
 
-        <Button variant="secondary" size="sm" href="mailto:billing@abcdagency.com">
+        <Button id="billing-support-btn" variant="secondary" size="sm" href="mailto:billing@abcdagency.com">
           Billing Support
         </Button>
       </div>
 
       {/* StatCards Financial KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="billing-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Invoiced" value={client?.totalSpend || "₹0"} color="default" />
         <StatCard label="Payments Completed" value={client?.totalSpend || "₹0"} color="emerald" />
         <StatCard label="Outstanding Balance" value={client?.dueBalance || "₹0"} color={client?.dueBalance && client?.dueBalance !== "₹0" ? "amber" : "default"} />
@@ -156,7 +156,7 @@ export default function PortalBillingPage() {
       </div>
 
       {/* Transactions Table Card */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="billing-table-card" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Table Controls Toolbar */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Tab Pills */}

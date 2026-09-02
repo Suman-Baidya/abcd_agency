@@ -355,7 +355,7 @@ export default function PortalProjectsPage() {
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-[#F5F5F5] dark:bg-[#151515] rounded-xl border border-[#E5E5E5] dark:border-[#262626]">
+        <div id="projects-view-toggle" className="flex items-center gap-1 p-1 bg-[#F5F5F5] dark:bg-[#151515] rounded-xl border border-[#E5E5E5] dark:border-[#262626]">
           <button
             onClick={() => setViewMode("table")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -382,7 +382,7 @@ export default function PortalProjectsPage() {
       </div>
 
       {/* StatCards KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="projects-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Projects" value={totalProjects} color="default" />
         <StatCard label="Active Sprints" value={inProgressProjects} color="amber" />
         <StatCard label="In QA Review" value={inReviewProjects} color="blue" />
@@ -392,10 +392,10 @@ export default function PortalProjectsPage() {
       {/* ========================================================================= */}
       {/* 1. DATA TABLE VIEW */}
       {/* ========================================================================= */}
-      <Card className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
+      <Card id="projects-table-card" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
           {/* Status Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div id="projects-status-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {[
               { id: "all", label: "All", count: totalProjects },
               { id: "active", label: "In Progress", count: inProgressProjects },
