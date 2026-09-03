@@ -44,6 +44,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 4. Protected onboarding route
+  if (pathname === "/onboarding") {
+    if (!session) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
@@ -53,5 +60,6 @@ export const config = {
     "/portal/:path*",
     "/login",
     "/register",
+    "/onboarding",
   ],
 };

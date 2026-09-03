@@ -126,8 +126,8 @@ function validateRegistrationInput(data: RegisterInput): string | null {
   }
 
   // 9. Password validation
-  if (!data.password || data.password.length < 6) {
-    return "Password must be at least 6 characters long.";
+  if (!data.password || data.password.length < 8) {
+    return "Password must be at least 8 characters long.";
   }
 
   return null;

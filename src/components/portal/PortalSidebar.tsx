@@ -202,14 +202,30 @@ export function PortalSidebar({
 
         {/* Bottom User Card (Matching Super Admin Sidebar) */}
         <div className="p-4 border-t border-[#E5E5E5] dark:border-[#262626]">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-xs font-bold shrink-0">
-              {initials}
+          <div className="flex items-center justify-between gap-2 px-2 py-1">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-xs font-bold shrink-0">
+                {initials}
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-bold text-[#0A0A0A] dark:text-white truncate">{user.name}</p>
+                <p className="text-[10px] text-[#737373] dark:text-neutral-400 truncate">{user.email}</p>
+              </div>
             </div>
-            <div className="truncate">
-              <p className="text-xs font-bold text-[#0A0A0A] dark:text-white truncate">{user.name}</p>
-              <p className="text-[10px] text-[#737373] dark:text-neutral-400 truncate">{user.email}</p>
-            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const { logoutUser } = await import("@/app/(auth)/login/actions");
+                await logoutUser();
+                window.location.href = "/login";
+              }}
+              className="p-1.5 text-[#737373] hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors shrink-0"
+              title="Sign Out"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
           </div>
         </div>
       </aside>

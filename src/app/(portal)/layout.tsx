@@ -19,6 +19,12 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
+  // If user registered with Google and hasn't finished business onboarding
+  const isIncompleteProfile = user.role === "USER" && (!user.phone || !user.companyName || user.companyName === "Individual Client" || !user.industry);
+  if (isIncompleteProfile) {
+    redirect("/onboarding");
+  }
+
   const siteConfig = await getSiteConfig();
 
   // Resolve client ID with fallback for clients without direct clientId on User

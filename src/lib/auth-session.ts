@@ -11,6 +11,9 @@ export interface SessionUser {
   phone?: string | null;
   isWhatsappSame?: boolean;
   whatsapp?: string | null;
+  industry?: string | null;
+  location?: string | null;
+  website?: string | null;
   role: "USER" | "CLIENT" | "ADMIN" | "SUPER_ADMIN";
   status: string;
   isVerified: boolean;
@@ -38,28 +41,46 @@ export function verifyPassword(password: string, stored: string): boolean {
     // Backwards compatibility for existing plain text database passwords
     return password === stored;
   }
-  const parts = stored.split(":");
-  if (parts.length !== 3) return false;
-  const [, salt, hash] = parts;
-  const testHash = crypto.scryptSync(password, salt, 64).toString("hex");
-  return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(testHash, "hex"));
+
+  try {
+    const [, salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    const computedHash = crypto.scryptSync(password, salt, 64).toString("hex");
+    return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(computedHash, "hex"));
+  } catch {
+    return false;
+  }
 }
 
-export async function createSession(userId: string, role: string = "USER", rememberMe: boolean = true) {
+export async function createSession(
+  userId: string,
+  role: string = "USER",
+  rememberMeOrSeconds: boolean | number = true
+): Promise<string> {
   const cookieStore = await cookies();
-  const expiresInSeconds = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24; // 30 days vs 1 day
-  const token = await signSessionToken({ uid: userId, role }, expiresInSeconds);
+  const maxAgeSeconds =
+    typeof rememberMeOrSeconds === "number"
+      ? rememberMeOrSeconds
+      : rememberMeOrSeconds
+      ? 60 * 60 * 24 * 30
+      : 60 * 60 * 24; // 30 days vs 1 day
 
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
+  const token = await signSessionToken({ uid: userId, role }, maxAgeSeconds);
+
+  cookieStore.set({
+    name: SESSION_COOKIE_NAME,
+    value: token,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    maxAge: maxAgeSeconds,
     path: "/",
-    ...(rememberMe ? { maxAge: expiresInSeconds } : {}),
   });
+
+  return token;
 }
 
-export async function destroySession() {
+export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
@@ -99,6 +120,9 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
         phone: true,
         isWhatsappSame: true,
         whatsapp: true,
+        industry: true,
+        location: true,
+        website: true,
         role: true,
         status: true,
         isVerified: true,

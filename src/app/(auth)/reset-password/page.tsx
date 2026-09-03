@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { performPasswordReset } from "./actions";
+import { PasswordStrengthMeter } from "@/components/ui/PasswordStrengthMeter";
 import { Eye, EyeOff, CheckCircle2, ShieldAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -154,6 +155,9 @@ function ResetPasswordForm() {
                   </button>
                 </div>
               </div>
+
+              {/* Real-time Password Strength Meter */}
+              <PasswordStrengthMeter password={newPassword} className="pt-1" />
             </div>
 
             <Button
