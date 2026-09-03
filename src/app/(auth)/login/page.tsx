@@ -1,19 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { loginUser } from "./actions";
-import { verifyOtpCode, resendOtpCode } from "../register/actions";
-import { CheckCircle2, UserPlus, PhoneCall, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { verifyOtpCode } from "../register/actions";
+import { CheckCircle2, UserPlus, PhoneCall, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+
+  // Validate callbackUrl to prevent open redirects (must be relative path starting with / and not //)
+  const safeCallbackUrl =
+    rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
+      ? rawCallbackUrl
+      : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +49,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await loginUser({ email, password });
+      const res = await loginUser({ email, password, rememberMe });
       if (!res.success) {
         if (res.needsVerification && res.userId) {
           setOtpState({
@@ -57,7 +67,9 @@ export default function LoginPage() {
       }
 
       toast.success("Signed in successfully!");
-      router.push(res.redirectTo || "/admin");
+      const target = safeCallbackUrl || res.redirectTo || "/admin";
+      router.push(target);
+      router.refresh();
     } catch (err: any) {
       setError(err?.message || "Failed to sign in.");
       setIsLoading(false);
@@ -80,8 +92,10 @@ export default function LoginPage() {
         return;
       }
       toast.success("Email verified!");
-      router.push(res.redirectTo || "/portal");
-    } catch (e: any) {
+      const target = safeCallbackUrl || res.redirectTo || "/portal";
+      router.push(target);
+      router.refresh();
+    } catch {
       toast.error("Verification failed.");
       setIsVerifyingOtp(false);
     }
@@ -160,6 +174,19 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            {/* Remember Me Option */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 text-xs font-medium text-[#737373] dark:text-neutral-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded-xs border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white focus:ring-[#0A0A0A] dark:focus:ring-white accent-[#0A0A0A] dark:accent-white"
+                />
+                <span>Remember this device (30 days)</span>
+              </label>
             </div>
           </div>
 
@@ -252,5 +279,13 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="w-full max-w-md mx-auto h-96 flex items-center justify-center text-xs text-[#737373]">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

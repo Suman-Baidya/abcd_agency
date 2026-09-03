@@ -25,8 +25,16 @@ export default async function DashboardLayout({
 
   const siteConfig = await getSiteConfig();
 
-  // Fetch unread inquiries, new user registrations & pending revisions
-  const [unreadInquiries, newUsers, pendingRevisions, unreadInquiriesCount, newUsersCount, pendingRevisionsCount] = await Promise.all([
+  // Fetch unread inquiries, new user registrations, pending revisions & security alerts
+  const [
+    unreadInquiries,
+    newUsers,
+    pendingRevisions,
+    recentSecurityAlerts,
+    unreadInquiriesCount,
+    newUsersCount,
+    pendingRevisionsCount
+  ] = await Promise.all([
     db.inquiry.findMany({
       where: { status: "New" },
       orderBy: { createdAt: "desc" },
@@ -44,6 +52,12 @@ export default async function DashboardLayout({
       orderBy: { createdAt: "desc" },
       take: 4,
       select: { id: true, title: true, createdAt: true, clientRel: { select: { name: true } } },
+    }),
+    db.userActivity.findMany({
+      where: { action: { in: ["SECURITY_ALERT", "BOT_TRAPPED"] } },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: { id: true, action: true, description: true, ipAddress: true, createdAt: true },
     }),
     db.inquiry.count({
       where: { status: "New" },
@@ -85,12 +99,22 @@ export default async function DashboardLayout({
       type: "inquiry" as const,
       href: "/admin/revisions",
     })),
+    ...recentSecurityAlerts.map((alert: any) => ({
+      id: `sec-${alert.id}`,
+      name: alert.ipAddress || "Security Guard",
+      title: alert.action === "BOT_TRAPPED" ? "⚠️ Bot Attack Blocked" : "🚨 Suspicious Login Alert",
+      subtitle: alert.description || "Unusual traffic blocked by system",
+      createdAt: alert.createdAt,
+      type: "inquiry" as const,
+      href: "/admin/users",
+    })),
   ].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0A0A0A] transition-colors duration-200">
       {/* Sidebar for desktop */}
       <Sidebar 
+        user={user}
         lightLogoUrl={siteConfig.lightLogoUrl} 
         darkLogoUrl={siteConfig.darkLogoUrl} 
         agencyName={siteConfig.agencyName} 

@@ -1,13 +1,28 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { createSession, logUserActivity } from "@/lib/auth-session";
+import { createSession, logUserActivity, verifyPassword, hashPassword } from "@/lib/auth-session";
+import { loginLimiter, getClientIp } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 
-export async function loginUser(formData: { email: string; password?: string }) {
+export async function loginUser(formData: { email: string; password?: string; rememberMe?: boolean }) {
   try {
     const cleanEmail = formData.email.trim().toLowerCase();
     const cleanPassword = formData.password?.trim() || "";
+    const rememberMe = formData.rememberMe !== undefined ? formData.rememberMe : true;
+
+    // 0. Rate limiting check per IP + email
+    const clientIp = await getClientIp();
+    const rateLimitKey = `${clientIp}:${cleanEmail}`;
+
+    const limitStatus = loginLimiter.check(rateLimitKey);
+    if (!limitStatus.allowed) {
+      const mins = Math.ceil(limitStatus.retryAfterSeconds / 60);
+      return {
+        success: false,
+        error: `Too many failed login attempts. Please wait ${mins} minute${mins > 1 ? "s" : ""} before trying again.`,
+      };
+    }
 
     // 1. Check if super admin master login
     if (
@@ -22,10 +37,10 @@ export async function loginUser(formData: { email: string; password?: string }) 
       if (!adminUser) {
         adminUser = await db.user.create({
           data: {
-            name: "Suman Baidya",
+            name: cleanEmail.includes("suman") ? "Suman Baidya" : "Agency Admin",
             companyName: "ABCD Agency",
             email: cleanEmail,
-            password: cleanPassword,
+            password: hashPassword(cleanPassword),
             role: "SUPER_ADMIN",
             status: "Active",
             isVerified: true,
@@ -33,13 +48,24 @@ export async function loginUser(formData: { email: string; password?: string }) 
           },
         });
       } else {
+        const updateData: any = {
+          lastLoginAt: new Date(),
+          lastActiveAt: new Date(),
+        };
+        // Auto-upgrade password if still plain text
+        if (!adminUser.password.startsWith("scrypt:")) {
+          updateData.password = hashPassword(cleanPassword);
+        }
         await db.user.update({
           where: { id: adminUser.id },
-          data: { lastLoginAt: new Date(), lastActiveAt: new Date() },
+          data: updateData,
         });
       }
 
-      await createSession(adminUser.id);
+      // Successful login resets rate limit counter
+      loginLimiter.reset(rateLimitKey);
+
+      await createSession(adminUser.id, adminUser.role, rememberMe);
       await logUserActivity(adminUser.id, "LOGIN", "Super Admin logged in");
 
       return {
@@ -55,12 +81,38 @@ export async function loginUser(formData: { email: string; password?: string }) 
     });
 
     if (!user) {
+      const strikeRes = loginLimiter.record(rateLimitKey);
+      if (!strikeRes.allowed) {
+        const admin = await db.user.findFirst({ where: { role: "SUPER_ADMIN" }, select: { id: true } });
+        if (admin) {
+          await logUserActivity(
+            admin.id,
+            "SECURITY_ALERT",
+            `Brute force attack on non-existent account (${cleanEmail}) from IP: ${clientIp}`,
+            undefined,
+            clientIp
+          ).catch(() => {});
+        }
+      }
       return { success: false, error: "No account found with this email address." };
     }
 
-    // Check password
-    if (user.password !== cleanPassword) {
-      return { success: false, error: "Incorrect password. Please try again." };
+    // Check password (supports scrypt hashes and backwards-compatible plaintext)
+    const isPasswordValid = verifyPassword(cleanPassword, user.password);
+    if (!isPasswordValid) {
+      const strikeRes = loginLimiter.record(rateLimitKey);
+      if (!strikeRes.allowed) {
+        await logUserActivity(
+          user.id,
+          "SECURITY_ALERT",
+          `Account locked (5 failed password attempts) from IP: ${clientIp}`,
+          undefined,
+          clientIp
+        ).catch(() => {});
+      }
+      const remaining = limitStatus.remaining - 1;
+      const warning = remaining > 0 && remaining <= 2 ? ` (${remaining} attempt${remaining > 1 ? "s" : ""} remaining)` : "";
+      return { success: false, error: `Incorrect password. Please try again.${warning}` };
     }
 
     // Check verification status
@@ -77,16 +129,24 @@ export async function loginUser(formData: { email: string; password?: string }) 
       return { success: false, error: "Your account is currently suspended. Please contact support." };
     }
 
-    // Update lastLogin
+    // Successful login resets rate limit counter
+    loginLimiter.reset(rateLimitKey);
+
+    // Upgrade plaintext password to scrypt hash on successful login
+    const updateData: any = {
+      lastLoginAt: new Date(),
+      lastActiveAt: new Date(),
+    };
+    if (!user.password.startsWith("scrypt:")) {
+      updateData.password = hashPassword(cleanPassword);
+    }
+
     await db.user.update({
       where: { id: user.id },
-      data: {
-        lastLoginAt: new Date(),
-        lastActiveAt: new Date(),
-      },
+      data: updateData,
     });
 
-    await createSession(user.id);
+    await createSession(user.id, user.role, rememberMe);
     await logUserActivity(user.id, "LOGIN", `User logged into portal as ${user.role}`);
 
     const destination = user.role === "SUPER_ADMIN" || user.role === "ADMIN" ? "/admin" : "/portal";
@@ -105,5 +165,6 @@ export async function loginUser(formData: { email: string; password?: string }) 
 export async function logoutUser() {
   const { destroySession } = await import("@/lib/auth-session");
   await destroySession();
+  revalidatePath("/", "layout");
   return { success: true };
 }

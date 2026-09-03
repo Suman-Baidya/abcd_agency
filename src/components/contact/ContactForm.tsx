@@ -279,6 +279,8 @@ function MultiSelect({
 export function ContactForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "offline-saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const [formLoadedAt] = useState(() => Date.now());
 
   const {
     register,
@@ -337,16 +339,26 @@ export function ContactForm() {
     }
 
     // 2. Normal online submission
+    if (honeypot.trim().length > 0) {
+      // Silently fool bots
+      setStatus("success");
+      return;
+    }
+
     setStatus("submitting");
     try {
-      const res = await submitInquiry(data);
+      const res = await submitInquiry({
+        ...data,
+        honeypot,
+        formLoadedAt,
+      });
       if (res.success) {
         localStorage.removeItem("abcd_offline_inquiry");
         setStatus("success");
       } else {
         setStatus("error");
         setSubmitMessage(res.error || "Something went wrong.");
-        toast.error("Failed to submit inquiry.");
+        toast.error(res.error || "Failed to submit inquiry.");
       }
     } catch {
       // If network failed during fetch
@@ -401,6 +413,23 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-10">
+      {/* Honeypot Trap - Invisible to humans, catches automated bot crawlers */}
+      <div
+        className="opacity-0 absolute -top-[9999px] -left-[9999px] h-0 w-0 overflow-hidden pointer-events-none"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        <label htmlFor="company_secondary_fax">Do not fill this field</label>
+        <input
+          id="company_secondary_fax"
+          type="text"
+          name="company_secondary_fax"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+        />
+      </div>
 
       {status === "error" && (
         <div className="p-4 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50">

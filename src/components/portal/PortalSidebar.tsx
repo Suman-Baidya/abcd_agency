@@ -311,6 +311,35 @@ export function PortalSidebar({
                 );
               })}
             </div>
+
+            {/* Sticky Action Footer */}
+            <div className="pt-3 border-t border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] flex items-center justify-between gap-3">
+              <Link
+                href="/"
+                onClick={() => setIsSmartMenuOpen(false)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-[#E5E5E5] dark:border-[#262626] text-xs font-semibold text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#262626] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Live Site
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsSmartMenuOpen(false);
+                  const { logoutUser } = await import("@/app/(auth)/login/actions");
+                  await logoutUser();
+                  window.location.href = "/login";
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#F5F5F5] dark:bg-[#1F1F1F] text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       )}

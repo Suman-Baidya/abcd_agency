@@ -7,6 +7,11 @@ import { usePathname } from "next/navigation";
 import { IndianRupee } from "lucide-react";
 
 interface SidebarProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+  } | null;
   lightLogoUrl?: string | null;
   darkLogoUrl?: string | null;
   agencyName?: string;
@@ -16,6 +21,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ 
+  user,
   lightLogoUrl, 
   darkLogoUrl, 
   agencyName = "ABCD Agency", 
@@ -25,6 +31,16 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [isSmartMenuOpen, setIsSmartMenuOpen] = useState(false);
+
+  const displayName = user?.name || "Admin Workspace";
+  const displayEmail = user?.email || "admin@abcdagency.com";
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "AD";
 
   // Close smart menu when navigating
   useEffect(() => {
@@ -254,11 +270,11 @@ export function Sidebar({
         <div className="p-4 border-t border-[#E5E5E5] dark:border-[#262626]">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-8 h-8 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-xs font-bold shrink-0">
-              SB
+              {initials}
             </div>
             <div className="truncate">
-              <p className="text-xs font-bold text-[#0A0A0A] dark:text-white truncate">Suman Baidya</p>
-              <p className="text-[10px] text-[#737373] dark:text-neutral-400 truncate">suman.baidya.pro@gmail.com</p>
+              <p className="text-xs font-bold text-[#0A0A0A] dark:text-white truncate">{displayName}</p>
+              <p className="text-[10px] text-[#737373] dark:text-neutral-400 truncate">{displayEmail}</p>
             </div>
           </div>
         </div>
@@ -465,16 +481,21 @@ export function Sidebar({
                 </svg>
                 View Live Site
               </Link>
-              <Link
-                href="/login"
-                onClick={() => setIsSmartMenuOpen(false)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#F5F5F5] dark:bg-[#1F1F1F] text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsSmartMenuOpen(false);
+                  const { logoutUser } = await import("@/app/(auth)/login/actions");
+                  await logoutUser();
+                  window.location.href = "/login";
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#F5F5F5] dark:bg-[#1F1F1F] text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 Sign Out
-              </Link>
+              </button>
             </div>
 
           </div>

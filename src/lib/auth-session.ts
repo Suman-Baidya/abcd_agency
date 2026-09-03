@@ -1,5 +1,7 @@
 import { cookies, headers } from "next/headers";
+import crypto from "crypto";
 import { db } from "./prisma";
+import { signSessionToken, verifySessionToken } from "./auth-token";
 
 export interface SessionUser {
   id: string;
@@ -13,34 +15,66 @@ export interface SessionUser {
   status: string;
   isVerified: boolean;
   clientId?: string | null;
+  lastActiveAt?: Date | null;
 }
 
-const SESSION_COOKIE_NAME = "abcd_auth_token";
+export const SESSION_COOKIE_NAME = "abcd_auth_token";
 
-export async function createSession(userId: string) {
+/**
+ * Securely hashes passwords using scrypt with random salt.
+ */
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `scrypt:${salt}:${hash}`;
+}
+
+/**
+ * Verifies a password against an scrypt hash or plaintext fallback for legacy records.
+ */
+export function verifyPassword(password: string, stored: string): boolean {
+  if (!stored) return false;
+  if (!stored.startsWith("scrypt:")) {
+    // Backwards compatibility for existing plain text database passwords
+    return password === stored;
+  }
+  const parts = stored.split(":");
+  if (parts.length !== 3) return false;
+  const [, salt, hash] = parts;
+  const testHash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(testHash, "hex"));
+}
+
+export async function createSession(userId: string, role: string = "USER", rememberMe: boolean = true) {
   const cookieStore = await cookies();
-  // 30 days session
-  cookieStore.set(SESSION_COOKIE_NAME, userId, {
+  const expiresInSeconds = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24; // 30 days vs 1 day
+  const token = await signSessionToken({ uid: userId, role }, expiresInSeconds);
+
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+    ...(rememberMe ? { maxAge: expiresInSeconds } : {}),
   });
 }
 
 export async function destroySession() {
   const cookieStore = await cookies();
-  const userId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (userId) {
-    try {
-      await logUserActivity(userId, "LOGOUT", "User logged out of the application");
-      await db.user.update({
-        where: { id: userId },
-        data: { lastLogoutAt: new Date() },
-      });
-    } catch (e) {
-      console.warn("Failed to log logout activity:", e);
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (token) {
+    const session = await verifySessionToken(token);
+    const userId = session?.uid;
+    if (userId) {
+      try {
+        await logUserActivity(userId, "LOGOUT", "User logged out of the application");
+        await db.user.update({
+          where: { id: userId },
+          data: { lastLogoutAt: new Date() },
+        });
+      } catch (e) {
+        console.warn("Failed to log logout activity:", e);
+      }
     }
   }
   cookieStore.delete(SESSION_COOKIE_NAME);
@@ -49,11 +83,14 @@ export async function destroySession() {
 export async function getCurrentUser(): Promise<SessionUser | null> {
   try {
     const cookieStore = await cookies();
-    const userId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    if (!userId) return null;
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    if (!token) return null;
+
+    const session = await verifySessionToken(token);
+    if (!session?.uid) return null;
 
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { id: session.uid },
       select: {
         id: true,
         name: true,
@@ -66,6 +103,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
         status: true,
         isVerified: true,
         clientId: true,
+        lastActiveAt: true,
       },
     });
 
@@ -76,11 +114,14 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       return null;
     }
 
-    // Update lastActiveAt in background
-    db.user.update({
-      where: { id: userId },
-      data: { lastActiveAt: new Date() },
-    }).catch(() => {});
+    // Throttle lastActiveAt update in background to only update if > 10 mins have passed
+    const TEN_MINUTES_MS = 10 * 60 * 1000;
+    if (!user.lastActiveAt || Date.now() - new Date(user.lastActiveAt).getTime() > TEN_MINUTES_MS) {
+      db.user.update({
+        where: { id: user.id },
+        data: { lastActiveAt: new Date() },
+      }).catch(() => {});
+    }
 
     return user as SessionUser;
   } catch (error) {

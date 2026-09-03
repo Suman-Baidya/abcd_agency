@@ -2,7 +2,9 @@
 
 import { db } from "@/lib/prisma";
 import { getSiteConfig } from "@/lib/dbConfig";
-import { createSession, logUserActivity } from "@/lib/auth-session";
+import { createSession, logUserActivity, hashPassword } from "@/lib/auth-session";
+import { registerLimiter, otpVerifyLimiter, otpResendLimiter, getClientIp } from "@/lib/rate-limit";
+import { checkSpamShield, isDisposableEmail } from "@/lib/spam-protection";
 import { revalidatePath } from "next/cache";
 
 export interface RegisterInput {
@@ -17,24 +19,8 @@ export interface RegisterInput {
   website?: string;
   password: string;
   honeypot?: string;
+  formLoadedAt?: number;
 }
-
-const DISPOSABLE_EMAIL_DOMAINS = new Set([
-  "mailinator.com",
-  "tempmail.com",
-  "10minutemail.com",
-  "guerrillamail.com",
-  "throwawaymail.com",
-  "sharklasers.com",
-  "yopmail.com",
-  "trashmail.com",
-  "getairmail.com",
-  "dispostable.com",
-  "fakeinbox.com",
-  "temp-mail.org",
-  "tempmailaddress.com",
-  "mohmal.com",
-]);
 
 const DUMMY_PHONE_PATTERNS = [
   "0000000000",
@@ -53,9 +39,15 @@ const DUMMY_PHONE_PATTERNS = [
 ];
 
 function validateRegistrationInput(data: RegisterInput): string | null {
-  // 1. Honeypot check (bot detection)
-  if (data.honeypot && data.honeypot.trim().length > 0) {
-    return "Registration rejected. Suspicious activity detected.";
+  // 1. Anti-spam shield (honeypot, sub-second speed, disposable email)
+  const spamResult = checkSpamShield({
+    honeypot: data.honeypot,
+    formLoadedAt: data.formLoadedAt,
+    email: data.email,
+    minElapsedMs: 2000,
+  });
+  if (spamResult.isSpam) {
+    return spamResult.reason || "Registration rejected. Suspicious activity detected.";
   }
 
   // 2. Company Name
@@ -89,8 +81,7 @@ function validateRegistrationInput(data: RegisterInput): string | null {
   if (!emailRegex.test(email)) {
     return "Please provide a valid email address (e.g. name@company.com).";
   }
-  const emailDomain = email.split("@")[1];
-  if (emailDomain && DISPOSABLE_EMAIL_DOMAINS.has(emailDomain)) {
+  if (isDisposableEmail(email)) {
     return "Disposable or temporary email addresses are not allowed. Please use a valid personal or business email.";
   }
 
@@ -144,6 +135,16 @@ function validateRegistrationInput(data: RegisterInput): string | null {
 
 export async function registerUser(data: RegisterInput) {
   try {
+    const clientIp = await getClientIp();
+    const regStatus = registerLimiter.record(clientIp);
+    if (!regStatus.allowed) {
+      const mins = Math.ceil(regStatus.retryAfterSeconds / 60);
+      return {
+        success: false,
+        error: `Too many registration attempts from this network. Please try again in ${mins} minute${mins > 1 ? "s" : ""}.`,
+      };
+    }
+
     const validationError = validateRegistrationInput(data);
     if (validationError) {
       return { success: false, error: validationError };
@@ -188,7 +189,7 @@ export async function registerUser(data: RegisterInput) {
         name: cleanContactPerson,
         companyName: cleanCompany,
         email: cleanEmail,
-        password: data.password, // In a real production app, bcrypt hash here
+        password: hashPassword(data.password),
         phone: cleanPhone,
         isWhatsappSame: isSameWhatsapp,
         whatsapp: whatsappVal,
@@ -224,7 +225,7 @@ export async function registerUser(data: RegisterInput) {
     }
 
     // If OTP is off, establish session immediately
-    await createSession(user.id);
+    await createSession(user.id, user.role);
     await logUserActivity(user.id, "LOGIN", "Automatic initial session login");
 
     revalidatePath("/admin/users");
@@ -243,6 +244,18 @@ export async function registerUser(data: RegisterInput) {
 
 export async function verifyOtpCode(userId: string, enteredCode: string) {
   try {
+    const clientIp = await getClientIp();
+    const rateLimitKey = `${clientIp}:${userId}`;
+
+    const verifyCheck = otpVerifyLimiter.check(rateLimitKey);
+    if (!verifyCheck.allowed) {
+      const mins = Math.ceil(verifyCheck.retryAfterSeconds / 60);
+      return {
+        success: false,
+        error: `Too many failed verification attempts. Please wait ${mins} minute${mins > 1 ? "s" : ""} before trying again.`,
+      };
+    }
+
     const user = await db.user.findUnique({
       where: { id: userId },
     });
@@ -252,11 +265,13 @@ export async function verifyOtpCode(userId: string, enteredCode: string) {
     }
 
     if (user.isVerified) {
-      await createSession(user.id);
+      otpVerifyLimiter.reset(rateLimitKey);
+      await createSession(user.id, user.role);
       return { success: true, redirectTo: "/portal" };
     }
 
     if (!user.verificationOtp || user.verificationOtp !== enteredCode.trim()) {
+      otpVerifyLimiter.record(rateLimitKey);
       return { success: false, error: "Invalid verification code. Please check and try again." };
     }
 
@@ -276,8 +291,11 @@ export async function verifyOtpCode(userId: string, enteredCode: string) {
       },
     });
 
+    // Reset rate limiter on success
+    otpVerifyLimiter.reset(rateLimitKey);
+
     await logUserActivity(user.id, "EMAIL_VERIFIED", "User successfully verified email via OTP");
-    await createSession(user.id);
+    await createSession(user.id, user.role);
 
     revalidatePath("/admin/users");
 
@@ -290,6 +308,18 @@ export async function verifyOtpCode(userId: string, enteredCode: string) {
 
 export async function resendOtpCode(userId: string) {
   try {
+    const clientIp = await getClientIp();
+    const rateLimitKey = `${clientIp}:${userId}`;
+
+    const resendCheck = otpResendLimiter.record(rateLimitKey);
+    if (!resendCheck.allowed) {
+      const mins = Math.ceil(resendCheck.retryAfterSeconds / 60);
+      return {
+        success: false,
+        error: `Please wait ${mins} minute${mins > 1 ? "s" : ""} before requesting another verification code.`,
+      };
+    }
+
     const user = await db.user.findUnique({
       where: { id: userId },
     });

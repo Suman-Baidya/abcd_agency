@@ -13,6 +13,8 @@ export const contactFormSchema = z.object({
   businessType: z.string().min(1, "Please select a business type"),
   services: z.array(z.string()).min(1, "Please select at least one service"),
   message: z.string().min(10, "Please provide a brief project overview (at least 10 characters)"),
+  honeypot: z.string().optional(),
+  formLoadedAt: z.number().optional(),
 }).refine((data) => {
   if (!data.isWhatsappSame && (!data.whatsapp || !/^[6-9]\d{9}$/.test(data.whatsapp))) {
     return false;

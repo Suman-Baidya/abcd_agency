@@ -32,6 +32,7 @@ export default function RegisterPage() {
   });
 
   const [honeypot, setHoneypot] = useState("");
+  const [formLoadedAt] = useState(() => Date.now());
 
   // OTP Modal State
   const [otpState, setOtpState] = useState<{
@@ -158,6 +159,7 @@ export default function RegisterPage() {
         website: formData.website,
         password: formData.password,
         honeypot: honeypot,
+        formLoadedAt: formLoadedAt,
       });
 
       if (!res.success) {
