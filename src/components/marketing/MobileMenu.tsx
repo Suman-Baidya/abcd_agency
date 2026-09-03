@@ -121,8 +121,8 @@ export function MobileMenu({ siteConfig }: { siteConfig: any }) {
           </div>
         </div>
 
-        {/* Compact Navigation Links (Clean & readable under 100vh) */}
-        <nav className="flex flex-col gap-1.5 py-4 my-auto overflow-y-auto" aria-label="Mobile links">
+        {/* Navigation Links (Large, elegant typography & clear active indicator) */}
+        <nav className="flex flex-col gap-2 py-6 my-auto overflow-y-auto" aria-label="Mobile links">
           {navItems.map((item) => {
             const isActive =
               item.href === "/"
@@ -134,36 +134,42 @@ export function MobileMenu({ siteConfig }: { siteConfig: any }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className={`text-sm sm:text-base tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-lg flex items-center justify-between px-3 py-2.5 ${
+                className={`text-lg sm:text-xl tracking-tight transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xl flex items-center justify-between px-4 py-3 ${
                   isActive
-                    ? "font-bold bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A]"
-                    : "font-medium text-[#0A0A0A] dark:text-neutral-200 hover:bg-[#F5F5F5] dark:hover:bg-[#161616]"
+                    ? "font-bold bg-[#F5F5F5] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-white border border-[#E5E5E5] dark:border-[#2E2E2E]"
+                    : "font-semibold text-[#525252] dark:text-neutral-300 hover:text-[#0A0A0A] dark:hover:text-white hover:bg-[#F5F5F5]/70 dark:hover:bg-[#141414] border border-transparent"
                 }`}
               >
                 <span>{item.label}</span>
-                {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#0A0A0A]" />
+                {isActive ? (
+                  <span className="flex items-center gap-1.5 text-xs font-mono font-medium text-[#737373] dark:text-neutral-400">
+                    <span className="w-2 h-2 rounded-full bg-[#0A0A0A] dark:bg-white" />
+                  </span>
+                ) : (
+                  <svg className="w-4 h-4 text-[#A3A3A3] dark:text-neutral-600 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom Actions (Compact 2-col CTA + Contacts) */}
-        <div className="pt-3 border-t border-[#E5E5E5] dark:border-[#262626] flex flex-col gap-3 w-full shrink-0">
-          {/* Action Buttons in 2 columns to preserve vertical height */}
-          <div className="grid grid-cols-2 gap-2.5">
+        {/* Bottom Actions (Generous 2-col CTA + Contacts) */}
+        <div className="pt-4 border-t border-[#E5E5E5] dark:border-[#262626] flex flex-col gap-3.5 w-full shrink-0">
+          {/* Action Buttons: high-contrast, comfortable touch targets */}
+          <div className="grid grid-cols-2 gap-3">
             <AuthNavButton
               variant="secondary"
-              size="sm"
-              className="w-full text-center justify-center font-semibold text-xs h-10"
+              size="md"
+              className="w-full text-center justify-center font-bold text-sm h-12 rounded-xl"
               onClick={() => setIsOpen(false)}
             />
             <Button
               href="/contact"
               variant="primary"
-              size="sm"
-              className="w-full text-center justify-center font-bold text-xs h-10"
+              size="md"
+              className="w-full text-center justify-center font-bold text-sm h-12 rounded-xl shadow-sm"
               onClick={() => setIsOpen(false)}
             >
               Book a Call

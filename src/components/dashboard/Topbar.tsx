@@ -166,102 +166,109 @@ export function Topbar({
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-72 md:w-84 bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E5E5] dark:border-[#262626]">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm text-[#0A0A0A] dark:text-white">Notifications</h3>
+            <>
+              {/* Mobile backdrop to dismiss when tapping outside */}
+              <div
+                className="sm:hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 transition-opacity animate-in fade-in"
+                onClick={() => setShowNotifications(false)}
+              />
+              <div className="fixed left-3 right-3 sm:left-auto sm:right-0 sm:absolute top-14 sm:top-full sm:mt-2 w-auto sm:w-84 max-w-md sm:max-w-none bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E5E5] dark:border-[#262626]">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-[#0A0A0A] dark:text-white">Notifications</h3>
+                    {unreadNotifications.length > 0 && (
+                      <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.2 rounded-full">
+                        {unreadNotifications.length}
+                      </span>
+                    )}
+                  </div>
                   {unreadNotifications.length > 0 && (
-                    <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.2 rounded-full">
-                      {unreadNotifications.length}
-                    </span>
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-[11px] font-semibold text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white transition-colors cursor-pointer"
+                    >
+                      Clear all
+                    </button>
                   )}
                 </div>
-                {unreadNotifications.length > 0 && (
-                  <button
-                    onClick={markAllAsRead}
-                    className="text-[11px] font-semibold text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white transition-colors cursor-pointer"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
-              <div className="max-h-[320px] overflow-y-auto divide-y divide-[#F5F5F5] dark:divide-[#1A1A1A]">
-                {unreadNotifications.length > 0 ? (
-                  unreadNotifications.map((notif) => (
-                    <Link
-                      key={notif.id}
-                      href={notif.href || (isClientPortal ? "/portal/revisions" : notif.type === "user" ? "/admin/users" : "/admin/inquiries")}
-                      onClick={() => {
-                        markAsRead(notif.id);
-                        setShowNotifications(false);
-                      }}
-                      className="block px-4 py-3 hover:bg-[#F9F9F9] dark:hover:bg-[#1A1A1A] transition-colors group"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-bold text-[#0A0A0A] dark:text-white group-hover:underline line-clamp-1">
-                          {notif.title || (notif.type === "user" ? `New User: ${notif.name}` : `New Inquiry: ${notif.name}`)}
+                <div className="max-h-[320px] overflow-y-auto divide-y divide-[#F5F5F5] dark:divide-[#1A1A1A]">
+                  {unreadNotifications.length > 0 ? (
+                    unreadNotifications.map((notif) => (
+                      <Link
+                        key={notif.id}
+                        href={notif.href || (isClientPortal ? "/portal/revisions" : notif.type === "user" ? "/admin/users" : "/admin/inquiries")}
+                        onClick={() => {
+                          markAsRead(notif.id);
+                          setShowNotifications(false);
+                        }}
+                        className="block px-4 py-3 hover:bg-[#F9F9F9] dark:hover:bg-[#1A1A1A] transition-colors group"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs font-bold text-[#0A0A0A] dark:text-white group-hover:underline line-clamp-1">
+                            {notif.title || (notif.type === "user" ? `New User: ${notif.name}` : `New Inquiry: ${notif.name}`)}
+                          </p>
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mt-1" />
+                        </div>
+                        <p className="text-[11px] text-[#737373] dark:text-neutral-400 line-clamp-2 mt-0.5 leading-relaxed">
+                          {notif.subtitle || (notif.projectType ? notif.projectType.replace("-", " ") : "New update available")}
                         </p>
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mt-1" />
-                      </div>
-                      <p className="text-[11px] text-[#737373] dark:text-neutral-400 line-clamp-2 mt-0.5 leading-relaxed">
-                        {notif.subtitle || (notif.projectType ? notif.projectType.replace("-", " ") : "New update available")}
-                      </p>
-                      <div className="flex items-center justify-between mt-1.5 text-[10px] text-[#A3A3A3] dark:text-neutral-500 font-mono">
-                        <span>{notif.name}</span>
-                        <span>
-                          {new Date(notif.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="px-4 py-8 text-center space-y-1">
-                    <p className="text-xs font-semibold text-[#0A0A0A] dark:text-white">All caught up!</p>
-                    <p className="text-[11px] text-[#737373] dark:text-neutral-400">No unread notifications right now.</p>
-                  </div>
-                )}
+                        <div className="flex items-center justify-between mt-1.5 text-[10px] text-[#A3A3A3] dark:text-neutral-500 font-mono">
+                          <span>{notif.name}</span>
+                          <span>
+                            {new Date(notif.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center space-y-1">
+                      <p className="text-xs font-semibold text-[#0A0A0A] dark:text-white">All caught up!</p>
+                      <p className="text-[11px] text-[#737373] dark:text-neutral-400">No unread notifications right now.</p>
+                    </div>
+                  )}
+                </div>
+                <div className="p-2.5 border-t border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between text-xs font-semibold px-3 bg-[#FBFBFB] dark:bg-[#141414] rounded-b-xl">
+                  {isClientPortal ? (
+                    <>
+                      <Link
+                        href="/portal/revisions"
+                        onClick={() => setShowNotifications(false)}
+                        className="text-[#0A0A0A] dark:text-white hover:underline"
+                      >
+                        Revisions Hub →
+                      </Link>
+                      <Link
+                        href="/portal/projects"
+                        onClick={() => setShowNotifications(false)}
+                        className="text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white transition-colors"
+                      >
+                        Projects →
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/admin/revisions"
+                        onClick={() => setShowNotifications(false)}
+                        className="text-[#0A0A0A] dark:text-white hover:underline"
+                      >
+                        Revisions →
+                      </Link>
+                      <Link
+                        href="/admin/inquiries"
+                        onClick={() => setShowNotifications(false)}
+                        className="text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white transition-colors"
+                      >
+                        Inquiries →
+                      </Link>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="p-2.5 border-t border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between text-xs font-semibold px-3 bg-[#FBFBFB] dark:bg-[#141414] rounded-b-xl">
-                {isClientPortal ? (
-                  <>
-                    <Link
-                      href="/portal/revisions"
-                      onClick={() => setShowNotifications(false)}
-                      className="text-[#0A0A0A] dark:text-white hover:underline"
-                    >
-                      Revisions Hub →
-                    </Link>
-                    <Link
-                      href="/portal/projects"
-                      onClick={() => setShowNotifications(false)}
-                      className="text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white transition-colors"
-                    >
-                      Projects →
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/admin/revisions"
-                      onClick={() => setShowNotifications(false)}
-                      className="text-[#0A0A0A] dark:text-white hover:underline"
-                    >
-                      Revisions →
-                    </Link>
-                    <Link
-                      href="/admin/inquiries"
-                      onClick={() => setShowNotifications(false)}
-                      className="text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white transition-colors"
-                    >
-                      Inquiries →
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
+            </>
           )}
         </div>
         <ContextTourButton />

@@ -289,7 +289,7 @@ export default async function PortalServicesPage() {
                 <div className="p-6 pt-0">
                   <Link
                     href="/portal/inquiries"
-                    className={`w-full py-3 px-4 text-xs font-bold text-center rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`w-full py-3 px-4 text-xs font-bold text-center rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
                       isFeatured
                         ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 shadow-md hover:scale-[1.01]"
                         : "border border-[#0A0A0A] dark:border-white bg-white dark:bg-[#151515] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-[#0A0A0A]"
@@ -362,7 +362,7 @@ export default async function PortalServicesPage() {
 
                   <Link
                     href="/portal/inquiries"
-                    className="w-full py-2.5 px-3 text-xs font-bold text-center rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#161616] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-[#0A0A0A] transition-all flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 px-3 text-xs font-bold text-center rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#161616] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-[#0A0A0A] transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
                   >
                     <span>Request Pod Retainer</span>
                     <ChevronRight className="w-3.5 h-3.5" />

@@ -141,7 +141,7 @@ function LoginForm() {
           <a
             href={`/api/auth/google?callbackUrl=${encodeURIComponent(safeCallbackUrl || "/portal")}`}
             onClick={() => setIsGoogleLoading(true)}
-            className={`w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-sm font-semibold text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#151515] transition-colors shadow-sm focus-visible:ring-2 ring-black ${
+            className={`w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] text-sm font-semibold text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#151515] transition-colors shadow-sm focus-visible:ring-2 ring-black whitespace-nowrap ${
               isGoogleLoading ? "opacity-75 pointer-events-none" : ""
             }`}
           >
