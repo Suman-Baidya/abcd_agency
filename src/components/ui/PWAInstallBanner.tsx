@@ -367,9 +367,8 @@ export function PWAInstallBanner() {
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-88 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className="bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] border border-[#262626] dark:border-[#E5E5E5] p-4 rounded-2xl shadow-2xl flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-black/10 flex items-center justify-center shrink-0">
-                <Smartphone className="w-4 h-4 text-white dark:text-[#0A0A0A] sm:hidden" />
-                <Monitor className="w-4 h-4 text-white dark:text-[#0A0A0A] hidden sm:block" />
+              <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 border border-neutral-700/60 dark:border-neutral-200/60 bg-[#0A0A0A] flex items-center justify-center">
+                <img src="/images/abcd_square_logo.png" alt="ABCD Agency App" className="w-full h-full object-cover" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -422,8 +421,8 @@ export function PWAInstallBanner() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] flex items-center justify-center shrink-0">
-                  <Download className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 border border-[#E5E5E5] dark:border-[#262626] bg-[#0A0A0A] flex items-center justify-center">
+                  <img src="/images/abcd_square_logo.png" alt="ABCD Agency" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold tracking-tight">

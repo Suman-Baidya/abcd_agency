@@ -83,7 +83,7 @@ function LoginForm() {
       }
 
       toast.success("Signed in successfully!");
-      const target = safeCallbackUrl || res.redirectTo || "/admin";
+      const target = (safeCallbackUrl && safeCallbackUrl !== "/app") ? safeCallbackUrl : (res.redirectTo || "/portal");
       router.push(target);
       router.refresh();
     } catch (err: any) {

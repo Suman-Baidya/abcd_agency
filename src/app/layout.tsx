@@ -21,7 +21,7 @@ import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();
-  const favicon = config.faviconUrl || "/favicon.ico";
+  const favicon = config.faviconUrl?.trim() || "/images/abcd_square_logo.png";
   
   return {
     title: `${config.agencyName} — Software Development & Digital Consulting`,
@@ -33,9 +33,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: config.agencyName || "ABCD Agency",
     },
     icons: {
-      icon: favicon,
+      icon: [
+        { url: favicon, sizes: "any" },
+        { url: "/images/abcd_square_logo.png", sizes: "192x192", type: "image/png" },
+        { url: "/images/abcd_square_logo.png", sizes: "512x512", type: "image/png" },
+      ],
       shortcut: favicon,
-      apple: "/images/abcd_sqr_icon.jpg",
+      apple: "/images/abcd_square_logo.png",
     },
   };
 }
@@ -46,7 +50,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const config = await getSiteConfig();
-  const favicon = config.faviconUrl || "/favicon.ico";
+  const favicon = config.faviconUrl?.trim() || "/images/abcd_square_logo.png";
 
   return (
     <html
@@ -56,7 +60,7 @@ export default async function RootLayout({
     >
       <head>
         <link rel="icon" href={favicon} sizes="any" />
-        <link rel="apple-touch-icon" href="/images/abcd_sqr_icon.jpg" />
+        <link rel="apple-touch-icon" href="/images/abcd_square_logo.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#0A0A0A" />

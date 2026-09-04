@@ -31,8 +31,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/login?error=GoogleAuthCancelled`);
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const rawClientId = process.env.GOOGLE_CLIENT_ID;
+  const rawClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = rawClientId?.trim().replace(/^["']|["']$/g, "");
+  const clientSecret = rawClientSecret?.trim().replace(/^["']|["']$/g, "");
 
   if (!clientId || !clientSecret) {
     console.error("[Google OAuth] Missing Google Client ID or Secret.");
@@ -141,7 +143,7 @@ export async function GET(req: NextRequest) {
       if (isProfileIncomplete) {
         destination = "/onboarding";
       } else {
-        destination = callbackUrl.startsWith("/admin") ? "/portal" : callbackUrl;
+        destination = (callbackUrl === "/app" || callbackUrl.startsWith("/admin")) ? "/portal" : callbackUrl;
       }
     }
 

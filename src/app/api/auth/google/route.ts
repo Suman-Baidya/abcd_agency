@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const rawClientId = process.env.GOOGLE_CLIENT_ID;
+  const clientId = rawClientId?.trim().replace(/^["']|["']$/g, "");
 
   if (!clientId) {
     return NextResponse.json(

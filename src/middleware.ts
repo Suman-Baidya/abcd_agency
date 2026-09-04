@@ -51,6 +51,20 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 5. Smart App Entrypoint (for installed PWA / app icon launch)
+  if (pathname === "/app") {
+    if (!session) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", "/app");
+      return NextResponse.redirect(loginUrl);
+    }
+    const destination =
+      session.role === "ADMIN" || session.role === "SUPER_ADMIN"
+        ? new URL("/admin", request.url)
+        : new URL("/portal", request.url);
+    return NextResponse.redirect(destination);
+  }
+
   return NextResponse.next();
 }
 
@@ -61,5 +75,6 @@ export const config = {
     "/login",
     "/register",
     "/onboarding",
+    "/app",
   ],
 };

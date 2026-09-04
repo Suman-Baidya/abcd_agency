@@ -1,12 +1,12 @@
-// Service Worker for ABCD Agency PWA (v1.3)
-const CACHE_NAME = "abcd-agency-cache-v1.3";
+// Service Worker for ABCD Agency PWA (v1.4)
+const CACHE_NAME = "abcd-agency-cache-v1.4";
 const STATIC_ASSETS = [
   "/",
   "/offline.html",
   "/favicon.ico",
   "/manifest.webmanifest",
   "/manifest.json",
-  "/images/abcd_sqr_icon.jpg",
+  "/images/abcd_square_logo.png",
   "/images/White_Logo.png",
   "/images/Black_Logo.png",
 ];
