@@ -33,8 +33,10 @@ export async function GET(req: NextRequest) {
 
   const rawClientId = process.env.GOOGLE_CLIENT_ID;
   const rawClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const clientId = rawClientId?.trim().replace(/^["']|["']$/g, "");
-  const clientSecret = rawClientSecret?.trim().replace(/^["']|["']$/g, "");
+  const clientMatch = rawClientId?.match(/([0-9]+-[a-z0-9_]+\.apps\.googleusercontent\.com)/i);
+  const secretMatch = (rawClientSecret || rawClientId)?.match(/(GOCSPX-[a-zA-Z0-9_-]+)/);
+  const clientId = clientMatch ? clientMatch[1] : rawClientId?.trim().replace(/^["']|["']$/g, "");
+  const clientSecret = secretMatch ? secretMatch[1] : rawClientSecret?.trim().replace(/^["']|["']$/g, "");
 
   if (!clientId || !clientSecret) {
     console.error("[Google OAuth] Missing Google Client ID or Secret.");

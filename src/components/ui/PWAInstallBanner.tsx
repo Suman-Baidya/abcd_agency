@@ -152,12 +152,17 @@ export function PWAInstallBanner() {
     const isAlreadyInstalled = localStorage.getItem("abcd_pwa_installed") === "true";
 
     setIsStandalone(isRunningStandalone);
-    if (isRunningStandalone || isAlreadyInstalled) {
+    if (isRunningStandalone) {
       setIsDismissed(true);
       return;
     }
 
-    // 4. Check dismissal history (show again after 3 days if dismissed)
+    // If already installed, dismiss automatic floating banner, but keep on-demand install triggers active
+    if (isAlreadyInstalled) {
+      setIsDismissed(true);
+    }
+
+    // 4. Check dismissal history (show floating banner again after 3 days if dismissed)
     const dismissedTimestamp = localStorage.getItem("abcd_pwa_dismissed");
     if (dismissedTimestamp) {
       const parsedTime = parseInt(dismissedTimestamp, 10);
@@ -168,7 +173,9 @@ export function PWAInstallBanner() {
 
     // 5. Detect Platform and In-App WebViews
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
-    const isAppleMobile = /iphone|ipad|ipod/.test(userAgent);
+    const isAppleMobile =
+      /iphone|ipad|ipod/.test(userAgent) ||
+      (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const isAndroid = /android/.test(userAgent);
     const inAppWebView = /fbav|instagram|fban|linkedinapp|twitter|snapchat|musical_ly|tiktok|line|micromessenger/i.test(
       userAgent

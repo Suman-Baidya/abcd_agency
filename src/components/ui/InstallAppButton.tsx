@@ -15,7 +15,6 @@ export function InstallAppButton({
   label = "Install Web App",
 }: InstallAppButtonProps) {
   const [isStandalone, setIsStandalone] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -26,27 +25,16 @@ export function InstallAppButton({
         (window.navigator as any).standalone === true ||
         window.matchMedia("(display-mode: fullscreen)").matches);
 
-    const alreadyInstalled =
-      typeof window !== "undefined" &&
-      localStorage.getItem("abcd_pwa_installed") === "true";
-
     setIsStandalone(Boolean(isRunningStandalone));
-    setIsInstalled(Boolean(alreadyInstalled));
 
     const handleAppInstalled = () => {
-      setIsInstalled(true);
-    };
-
-    const handleBeforeInstall = () => {
-      setIsInstalled(false);
+      setIsStandalone(true);
     };
 
     window.addEventListener("appinstalled", handleAppInstalled);
-    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
     return () => {
       window.removeEventListener("appinstalled", handleAppInstalled);
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
     };
   }, []);
 
@@ -56,7 +44,7 @@ export function InstallAppButton({
     }
   };
 
-  if (!mounted || isStandalone || isInstalled) {
+  if (!mounted || isStandalone) {
     return null;
   }
 

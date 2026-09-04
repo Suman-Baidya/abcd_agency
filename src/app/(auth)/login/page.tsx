@@ -108,7 +108,7 @@ function LoginForm() {
         return;
       }
       toast.success("Email verified!");
-      const target = safeCallbackUrl || res.redirectTo || "/portal";
+      const target = (safeCallbackUrl && safeCallbackUrl !== "/app") ? safeCallbackUrl : (res.redirectTo || "/portal");
       router.push(target);
       router.refresh();
     } catch {

@@ -63,10 +63,10 @@ export async function Navbar() {
                 <AuthNavButton />
               </div>
 
-              {/* Install App Quick Action (Desktop Icon Only) */}
+              {/* Install App Quick Action (Visible on mobile & desktop) */}
               <InstallAppButton
                 variant="icon"
-                className="hidden sm:inline-flex"
+                className="inline-flex"
               />
 
               {/* Theme Toggle Button (Light/Dark Switcher) */}

@@ -23,19 +23,21 @@ export default function manifest(): MetadataRoute.Manifest {
       },
       {
         src: "/images/abcd_square_logo.png",
-        sizes: "512x512",
+        sizes: "192x192",
         type: "image/png",
         purpose: "maskable",
       },
       {
         src: "/images/abcd_square_logo.png",
-        sizes: "any",
-        type: "image/png",
-      },
-      {
-        src: "/images/Black_Logo.png",
         sizes: "512x512",
         type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/images/abcd_square_logo.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
     shortcuts: [

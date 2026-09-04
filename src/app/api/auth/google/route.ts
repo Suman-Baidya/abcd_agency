@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const rawClientId = process.env.GOOGLE_CLIENT_ID;
-  const clientId = rawClientId?.trim().replace(/^["']|["']$/g, "");
+  const match = rawClientId?.match(/([0-9]+-[a-z0-9_]+\.apps\.googleusercontent\.com)/i);
+  const clientId = match ? match[1] : rawClientId?.trim().replace(/^["']|["']$/g, "");
 
   if (!clientId) {
     return NextResponse.json(
