@@ -15,7 +15,7 @@ export function NewProjectButton({ categories, clients = [] }: NewProjectButtonP
 
   return (
     <>
-      <Button variant="primary" size="sm" onClick={() => setIsOpen(true)}>
+      <Button variant="primary" size="sm" onClick={() => setIsOpen(true)} className="w-full sm:w-auto text-xs justify-center">
         New Project
       </Button>
 

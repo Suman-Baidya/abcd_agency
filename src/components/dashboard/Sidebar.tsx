@@ -203,10 +203,33 @@ export function Sidebar({
     { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[1].icon },
   ];
 
-  // Check if any secondary item is active
-  const isSecondaryActive = smartMenuSections.some((sec) =>
+  // Check if any primary mobile bottom item is active
+  const isPrimaryActive = primaryNavItems.some((item) =>
+    item.href === "/admin"
+      ? pathname === "/admin"
+      : pathname === item.href || pathname?.startsWith(`${item.href}/`)
+  );
+
+  // Check if any secondary (More menu) item is active (excluding primary nav items)
+  const isSecondaryActive = !isPrimaryActive && smartMenuSections.some((sec) =>
     sec.items.some((item) => pathname === item.href || pathname?.startsWith(`${item.href}/`))
   );
+
+  // Unread notifications specifically for items inside the More menu
+  const moreNotificationsCount = smartMenuSections.reduce((acc, sec) => {
+    return (
+      acc +
+      sec.items.reduce((secAcc, item) => {
+        const isPrimary = primaryNavItems.some((p) => p.href === item.href);
+        if (!isPrimary && item.badgeCount && item.badgeCount > 0) {
+          return secAcc + item.badgeCount;
+        }
+        return secAcc;
+      }, 0)
+    );
+  }, 0);
+
+  const hasMoreNotifications = moreNotificationsCount > 0;
 
   return (
     <>
@@ -320,11 +343,11 @@ export function Sidebar({
             >
               <div className="relative">
                 {item.icon}
-                {item.label === "Inquiries" && unreadInquiriesCount > 0 && (
+                {item.badgeCount && item.badgeCount > 0 ? (
                   <span className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white dark:border-[#0A0A0A]">
-                    {unreadInquiriesCount}
+                    {item.badgeCount > 9 ? "9+" : item.badgeCount}
                   </span>
-                )}
+                ) : null}
               </div>
               <span className="text-[10px] font-medium tracking-tight truncate max-w-[56px] text-center">
                 {item.label}
@@ -358,8 +381,11 @@ export function Sidebar({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
-            {isSecondaryActive && !isSmartMenuOpen && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#0A0A0A] dark:bg-white rounded-full"></span>
+            {/* Top-right notification badge: only shows if there are actual unread items in More */}
+            {hasMoreNotifications && !isSmartMenuOpen && (
+              <span className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white dark:border-[#0A0A0A]">
+                {moreNotificationsCount > 9 ? "9+" : moreNotificationsCount}
+              </span>
             )}
           </div>
           <span className="text-[10px] font-medium tracking-tight">More</span>
@@ -392,11 +418,11 @@ export function Sidebar({
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#E5E5E5] dark:border-[#262626]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center text-xs font-bold shrink-0 shadow-xs">
-                  SB
+                  {initials}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#0A0A0A] dark:text-white leading-none">Suman Baidya</h3>
-                  <p className="text-[11px] text-[#737373] dark:text-neutral-400 mt-1">suman.baidya.pro@gmail.com</p>
+                  <h3 className="text-sm font-bold text-[#0A0A0A] dark:text-white leading-none">{displayName}</h3>
+                  <p className="text-[11px] text-[#737373] dark:text-neutral-400 mt-1">{displayEmail}</p>
                 </div>
               </div>
               <button

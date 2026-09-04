@@ -340,18 +340,18 @@ export default async function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
             Dashboard Overview
           </h1>
-          <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#737373] dark:text-neutral-400 mt-1">
             Welcome back, {user?.name || "Suman"}. Here&apos;s a summary of your agency&apos;s operations.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" size="sm" href="/admin/finance">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 sm:gap-3">
+          <Button variant="secondary" size="sm" href="/admin/finance" className="w-full sm:w-auto text-xs justify-center">
             Export Report
           </Button>
-          <Button variant="primary" size="sm" href="/admin/projects">
+          <Button variant="primary" size="sm" href="/admin/projects" className="w-full sm:w-auto text-xs justify-center">
             New Project
           </Button>
         </div>
@@ -359,25 +359,25 @@ export default async function AdminDashboardPage() {
 
       {/* New Registered Users Notification Alert Banner */}
       {newUsersCount > 0 && (
-        <div className="p-4 sm:p-5 rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-[#F9F9F9] dark:bg-[#121212] flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in shadow-xs">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center font-bold text-sm shrink-0">
+        <div className="p-4 sm:p-5 rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-[#F9F9F9] dark:bg-[#121212] flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 animate-in fade-in shadow-xs">
+          <div className="flex items-start gap-3 sm:gap-3.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0A0A0A] dark:bg-white text-white dark:text-[#0A0A0A] flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 mt-0.5">
               {newUsersCount}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                 <h4 className="text-xs font-bold text-[#0A0A0A] dark:text-white uppercase tracking-wider">
                   New User Registration{newUsersCount > 1 ? "s" : ""} Awaiting Review
                 </h4>
               </div>
-              <p className="text-xs text-[#737373] dark:text-neutral-400 mt-0.5">
+              <p className="text-xs text-[#737373] dark:text-neutral-400 mt-0.5 leading-relaxed">
                 {newUsersCount} prospective account{newUsersCount > 1 ? "s" : ""} registered. Review contact details, inspect activity logs, or convert them into clients.
               </p>
             </div>
           </div>
-          <Button variant="primary" size="sm" href="/admin/users" className="text-xs shrink-0">
-Review Users Table
+          <Button variant="primary" size="sm" href="/admin/users" className="text-xs shrink-0 w-full md:w-auto justify-center">
+            Review Users Table
           </Button>
         </div>
       )}
@@ -508,27 +508,27 @@ Review Users Table
       {/* Main Charts & Activity Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Bar Chart (Dynamic Client Component) */}
-        <Card id="admin-revenue-chart" className="p-6 lg:col-span-2 flex flex-col">
+        <Card id="admin-revenue-chart" className="p-4 sm:p-6 lg:col-span-2 flex flex-col">
           <RevenueChart transactions={transactions} />
         </Card>
 
         {/* Recent Activity List */}
-        <Card id="admin-activity-feed" className="p-6 flex flex-col justify-between">
+        <Card id="admin-activity-feed" className="p-4 sm:p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-[#0A0A0A] dark:text-white">Recent Activity</h2>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F5F5F5] dark:bg-[#262626] text-[#737373] dark:text-neutral-400">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-bold text-[#0A0A0A] dark:text-white">Recent Activity</h2>
+              <span className="text-[11px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-[#F5F5F5] dark:bg-[#262626] text-[#737373] dark:text-neutral-400">
                 Live Feed
               </span>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               {recentActivities.length > 0 ? (
                 recentActivities.map((act) => (
                   <Link
                     key={act.id}
                     href={act.href}
-                    className="flex gap-4 group rounded-md p-1.5 -mx-1.5 transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A]"
+                    className="flex gap-3 sm:gap-4 group rounded-md p-1.5 -mx-1.5 transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A]"
                   >
                     <div className="w-8 h-8 rounded-full bg-[#F5F5F5] dark:bg-[#262626] flex items-center justify-center shrink-0 group-hover:bg-[#0A0A0A] dark:group-hover:bg-white transition-colors">
                       {act.type === "finance" ? (
@@ -570,7 +570,7 @@ Review Users Table
             </div>
           </div>
 
-          <Button variant="secondary" className="w-full mt-6 text-xs" href="/admin/finance">
+          <Button variant="secondary" className="w-full mt-4 sm:mt-6 text-xs justify-center" href="/admin/finance">
             View All Activity
           </Button>
         </Card>
@@ -578,19 +578,21 @@ Review Users Table
 
       {/* Active Projects Data Table - Shows all On Track projects */}
       <Card id="admin-active-projects-table" className="overflow-hidden !p-0 border border-[#E5E5E5] dark:border-[#262626]">
-        <div className="p-6 border-b border-[#E5E5E5] dark:border-[#262626] flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-lg font-bold text-[#0A0A0A] dark:text-white">Active Projects</h2>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+        <div className="p-4 sm:p-6 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              <h2 className="text-base sm:text-lg font-bold text-[#0A0A0A] dark:text-white tracking-tight whitespace-nowrap">
+                Active Projects
+              </h2>
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 shrink-0 whitespace-nowrap">
                 On Track ({onTrackCount})
               </span>
             </div>
-            <p className="text-xs text-[#737373] dark:text-neutral-400 mt-0.5">
+            <p className="text-xs text-[#737373] dark:text-neutral-400 mt-0.5 leading-relaxed">
               Current active client deliverables and schedules
             </p>
           </div>
-          <Button variant="secondary" size="sm" href="/admin/projects" className="hidden sm:inline-flex">
+          <Button variant="secondary" size="sm" href="/admin/projects" className="w-full sm:w-auto shrink-0 text-xs justify-center">
             View All Projects
           </Button>
         </div>
@@ -598,11 +600,11 @@ Review Users Table
           <table className="w-full text-left text-sm text-[#262626] dark:text-neutral-300">
             <thead className="text-xs font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400 bg-[#FBFBFB] dark:bg-[#111111] border-b border-[#E5E5E5] dark:border-[#262626]">
               <tr>
-                <th className="px-6 py-4 w-16 text-center">SL</th>
-                <th className="px-6 py-4 min-w-[200px]">Project Name</th>
-                <th className="px-6 py-4 w-36">Progress</th>
-                <th className="px-6 py-4">Budget</th>
-                <th className="px-6 py-4">Time Period</th>
+                <th className="px-3.5 sm:px-6 py-3 sm:py-4 w-12 sm:w-16 text-center">SL</th>
+                <th className="px-3.5 sm:px-6 py-3 sm:py-4 min-w-[170px] sm:min-w-[200px]">Project Name</th>
+                <th className="px-3.5 sm:px-6 py-3 sm:py-4 w-28 sm:w-36">Progress</th>
+                <th className="px-3.5 sm:px-6 py-3 sm:py-4">Budget</th>
+                <th className="px-3.5 sm:px-6 py-3 sm:py-4">Time Period</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
@@ -616,18 +618,18 @@ Review Users Table
                       className="hover:bg-[#FBFBFB] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer group"
                     >
                       {/* SL No */}
-                      <td className="px-6 py-4 text-center font-mono text-xs font-medium text-[#737373] dark:text-neutral-500">
+                      <td className="px-3.5 sm:px-6 py-3 sm:py-4 text-center font-mono text-xs font-medium text-[#737373] dark:text-neutral-500">
                         {slNo}
                       </td>
 
                       {/* Project Name & Client */}
-                      <td className="px-6 py-4">
+                      <td className="px-3.5 sm:px-6 py-3 sm:py-4">
                         <div className="flex flex-col">
-                          <Link href="/admin/projects" className="font-semibold text-[#0A0A0A] dark:text-white group-hover:underline truncate">
+                          <Link href="/admin/projects" className="font-semibold text-xs sm:text-sm text-[#0A0A0A] dark:text-white group-hover:underline truncate">
                             {project.title}
                           </Link>
                           {project.client && (
-                            <span className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5">
+                            <span className="text-[11px] sm:text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5">
                               {project.client}
                             </span>
                           )}
@@ -635,9 +637,9 @@ Review Users Table
                       </td>
 
                       {/* Progress */}
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1.5 min-w-[100px]">
-                          <div className="flex items-center justify-between text-xs font-mono">
+                      <td className="px-3.5 sm:px-6 py-3 sm:py-4">
+                        <div className="flex flex-col gap-1.5 min-w-[90px] sm:min-w-[100px]">
+                          <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono">
                             <span className="font-semibold text-[#0A0A0A] dark:text-white">{project.progress}%</span>
                           </div>
                           <div className="w-full h-1.5 bg-[#E5E5E5] dark:bg-[#262626] rounded-full overflow-hidden">
@@ -650,17 +652,17 @@ Review Users Table
                       </td>
 
                       {/* Budget */}
-                      <td className="px-6 py-4 font-mono text-xs font-medium text-[#0A0A0A] dark:text-white whitespace-nowrap">
+                      <td className="px-3.5 sm:px-6 py-3 sm:py-4 font-mono text-xs font-medium text-[#0A0A0A] dark:text-white whitespace-nowrap">
                         {project.budget ? (project.budget.startsWith("₹") ? project.budget : `₹${project.budget}`) : "—"}
                       </td>
 
                       {/* Time Period (Start/End Date on Top, Remaining / Total Days on Bottom) */}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3.5 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div className="flex flex-col">
-                          <span className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
+                          <span className="text-[11px] sm:text-xs font-semibold text-[#0A0A0A] dark:text-white">
                             {timePeriod.dateRange}
                           </span>
-                          <span className="text-[11px] font-mono text-[#737373] dark:text-neutral-400 mt-0.5">
+                          <span className="text-[10px] sm:text-[11px] font-mono text-[#737373] dark:text-neutral-400 mt-0.5">
                             {timePeriod.daysText}
                           </span>
                         </div>

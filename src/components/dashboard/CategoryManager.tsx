@@ -57,7 +57,7 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
 
   return (
     <>
-      <Button variant="secondary" size="sm" onClick={() => setIsOpen(true)}>
+      <Button variant="secondary" size="sm" onClick={() => setIsOpen(true)} className="w-full sm:w-auto text-xs justify-center">
         Work Category
       </Button>
 

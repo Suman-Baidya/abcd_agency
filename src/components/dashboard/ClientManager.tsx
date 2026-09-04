@@ -499,14 +499,14 @@ export function ClientManager({
             Manage your client accounts, engagements, and business relationships.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <Button
             variant="secondary"
             size="sm"
             onClick={handleExportCSV}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             Export CSV
           </Button>
           <Button
@@ -514,9 +514,9 @@ export function ClientManager({
             variant="primary"
             size="sm"
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Add Client
           </Button>
         </div>

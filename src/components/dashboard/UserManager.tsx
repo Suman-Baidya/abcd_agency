@@ -293,15 +293,15 @@ export function UserManager({ initialUsers }: UserManagerProps) {
             Track user registrations, view active sessions, and convert prospects to official clients.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <Button
             id="admin-users-export-btn"
             variant="secondary"
             size="sm"
             onClick={handleExportCSV}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             Export CSV
           </Button>
         </div>

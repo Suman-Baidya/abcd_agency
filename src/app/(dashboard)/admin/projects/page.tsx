@@ -126,7 +126,7 @@ export default async function ProjectsPage({
             Manage and monitor all agency projects.
           </p>
         </div>
-        <div id="admin-projects-actions" className="flex items-center gap-2">
+        <div id="admin-projects-actions" className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <CategoryManager categories={projectCategories} />
           <NewProjectButton categories={categoryNames} clients={clients} />
         </div>

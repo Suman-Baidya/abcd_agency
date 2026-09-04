@@ -77,10 +77,10 @@ export function RevenueChart({ transactions }: RevenueChartProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <Link 
           href="/admin/finance" 
-          className="text-lg font-bold text-[#0A0A0A] dark:text-white hover:underline flex items-center gap-1.5 group"
+          className="text-base sm:text-lg font-bold text-[#0A0A0A] dark:text-white hover:underline flex items-center gap-1.5 group"
         >
           <span>Revenue Overview</span>
           <svg 
@@ -135,7 +135,7 @@ export function RevenueChart({ transactions }: RevenueChartProps) {
                 </span>
               </div>
               <span
-                className={`text-xs font-semibold ${
+                className={`text-[10px] sm:text-xs font-semibold ${
                   isHighlight
                     ? "text-[#0A0A0A] dark:text-white"
                     : "text-[#737373] dark:text-neutral-400 group-hover:text-[#0A0A0A] dark:group-hover:text-white"
