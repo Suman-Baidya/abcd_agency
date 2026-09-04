@@ -14,10 +14,12 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+import { Suspense } from "react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 import { Toaster } from "react-hot-toast";
 import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
+import { NavigationProgressBar } from "@/components/ui/NavigationProgressBar";
 
 export const viewport: Viewport = {
   themeColor: "#0A0A0A",
@@ -86,6 +88,9 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white font-sans selection:bg-[#0A0A0A] selection:text-white dark:selection:bg-white dark:selection:text-[#0A0A0A] transition-colors duration-200">
+        <Suspense fallback={null}>
+          <NavigationProgressBar />
+        </Suspense>
         <Toaster 
           position="top-right" 
           toastOptions={{

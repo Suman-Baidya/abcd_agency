@@ -3,8 +3,6 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
-import { getFinanceTransactions } from "./finance/actions";
-import { getClientsWithProjectCounts } from "./clients/actions";
 import { getCurrentUser } from "@/lib/auth-session";
 import { db } from "@/lib/prisma";
 
@@ -165,12 +163,27 @@ interface ActivityItem {
   href: string;
 }
 
+interface OverviewTransaction {
+  id: string;
+  title: string;
+  type: string;
+  category: string;
+  amount: string;
+  amountRaw: number;
+  status: string;
+  date: string;
+  dateRaw: string;
+  clientName?: string | null;
+  referenceNo?: string | null;
+}
+
 export default async function AdminDashboardPage() {
-  // Optimized parallel queries: minimal selected fields, no redundant round trips
+  // Optimized parallel queries: minimal selected fields, zero redundant table scans
   const [
     user,
-    transactions, 
-    clients, 
+    rawTransactions, 
+    totalClientsCount,
+    activeClientsCount,
     allProjects, 
     inquiries, 
     totalInquiriesCount, 
@@ -179,8 +192,25 @@ export default async function AdminDashboardPage() {
     newUsersCount,
   ] = await Promise.all([
     getCurrentUser(),
-    getFinanceTransactions(),
-    getClientsWithProjectCounts(),
+    db.transaction.findMany({
+      orderBy: { date: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        category: true,
+        amount: true,
+        amountRaw: true,
+        status: true,
+        date: true,
+        clientName: true,
+        referenceNo: true,
+        createdAt: true,
+      },
+    }),
+    db.client.count(),
+    db.client.count({ where: { status: "Active" } }),
     db.project.findMany({
       orderBy: { updatedAt: "desc" },
       select: {
@@ -227,14 +257,32 @@ export default async function AdminDashboardPage() {
     db.user.count({ where: { role: "USER", isViewed: false } as any }),
   ]);
 
+  const transactions: OverviewTransaction[] = rawTransactions.map((r: any) => ({
+    id: r.id,
+    title: r.title,
+    type: r.type || "Income",
+    category: r.category || "Miscellaneous",
+    amount: r.amount || "₹0",
+    amountRaw: r.amountRaw || 0,
+    status: r.status || "Completed",
+    date: new Date(r.date || r.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    }),
+    dateRaw: new Date(r.date || r.createdAt).toISOString().slice(0, 10),
+    clientName: r.clientName,
+    referenceNo: r.referenceNo,
+  }));
+
   // Derived in-memory from allProjects without an additional DB query
   const onTrackProjects = allProjects.filter((p: any) => p.status === "On Track");
 
   // 1. KPI: Total Revenue calculation
   const completedIncomeTxs = transactions.filter(
-    (t) => t.type === "Income" && t.status === "Completed"
+    (t: OverviewTransaction) => t.type === "Income" && t.status === "Completed"
   );
-  const totalRevenueNumber = completedIncomeTxs.reduce((sum, t) => sum + (t.amountRaw || 0), 0);
+  const totalRevenueNumber = completedIncomeTxs.reduce((sum: number, t: OverviewTransaction) => sum + (t.amountRaw || 0), 0);
   const formattedTotalRevenue = `₹${totalRevenueNumber.toLocaleString("en-IN")}`;
 
   // Month-over-month calculation for revenue badge
@@ -244,7 +292,7 @@ export default async function AdminDashboardPage() {
   const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
   const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-  const currentMonthRevenue = completedIncomeTxs.reduce((sum, t) => {
+  const currentMonthRevenue = completedIncomeTxs.reduce((sum: number, t: OverviewTransaction) => {
     const d = new Date(t.dateRaw || t.date);
     if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
       return sum + (t.amountRaw || 0);
@@ -252,7 +300,7 @@ export default async function AdminDashboardPage() {
     return sum;
   }, 0);
 
-  const prevMonthRevenue = completedIncomeTxs.reduce((sum, t) => {
+  const prevMonthRevenue = completedIncomeTxs.reduce((sum: number, t: OverviewTransaction) => {
     const d = new Date(t.dateRaw || t.date);
     if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
       return sum + (t.amountRaw || 0);
@@ -273,15 +321,11 @@ export default async function AdminDashboardPage() {
   const activeProjectsCount = activeProjects.length;
   const onTrackCount = onTrackProjects.length;
 
-  // 3. KPI: Clients calculation
-  const totalClientsCount = clients.length;
-  const activeClientsCount = clients.filter((c: any) => c.status === "Active").length;
-
-  // 4. Combined Recent Activity Stream
+  // 3. Combined Recent Activity Stream
   const activityList: ActivityItem[] = [];
 
   // Recent transactions (top 3)
-  transactions.slice(0, 3).forEach((tx) => {
+  transactions.slice(0, 3).forEach((tx: OverviewTransaction) => {
     activityList.push({
       id: `tx-${tx.id}`,
       type: "finance",

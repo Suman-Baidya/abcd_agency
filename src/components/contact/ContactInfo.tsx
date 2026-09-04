@@ -135,7 +135,13 @@ export async function ContactInfo() {
           <ChannelCard
             icon={<WhatsAppIcon />}
             label="WhatsApp"
-            value={`+91 ${siteConfig.whatsappNumber}`}
+            value={
+              siteConfig.whatsappNumber.startsWith("91") && siteConfig.whatsappNumber.length === 12
+                ? `+91 ${siteConfig.whatsappNumber.slice(2, 7)} ${siteConfig.whatsappNumber.slice(7)}`
+                : siteConfig.whatsappNumber.startsWith("+")
+                ? siteConfig.whatsappNumber
+                : `+91 ${siteConfig.whatsappNumber}`
+            }
             href={whatsappHref}
             isExternal
           />

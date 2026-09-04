@@ -15,7 +15,10 @@ import {
   FolderKanban,
   ListTodo,
   ExternalLink,
+  ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Check,
   MessageSquare,
   Send,
   CheckCircle2,
@@ -72,6 +75,19 @@ export function RevisionManager({
   const [selectedClientId, setSelectedClientId] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "priority">("date-desc");
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+  const projectDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close custom project dropdown on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
+        setIsProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -132,16 +148,38 @@ export function RevisionManager({
       result = result.filter((r) => r.priority === selectedPriority);
     }
 
-    // Search keyword
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (r) =>
-          r.title?.toLowerCase().includes(q) ||
-          r.description?.toLowerCase().includes(q) ||
-          r.clientRel?.name?.toLowerCase().includes(q) ||
-          r.projectRel?.title?.toLowerCase().includes(q)
-      );
+    // Search keyword (matches title, description, client name, email, project title, status, priority, response)
+    const cleanQuery = searchQuery.trim().toLowerCase();
+    if (cleanQuery) {
+      result = result.filter((r) => {
+        const title = (r.title || "").toLowerCase();
+        const desc = (r.description || "").toLowerCase();
+        const responseText = (r.response || "").toLowerCase();
+        const clientRelName = (r.clientRel?.name || "").toLowerCase();
+        const clientRelEmail = (r.clientRel?.email || "").toLowerCase();
+        const contactPerson = (r.clientRel?.contactPerson || "").toLowerCase();
+        const clientLookupName = (clients.find((c) => c.id === r.clientId)?.name || "").toLowerCase();
+        const clientLookupEmail = (clients.find((c) => c.id === r.clientId)?.email || "").toLowerCase();
+        const projectRelTitle = (r.projectRel?.title || "").toLowerCase();
+        const projectLookupTitle = (projects.find((p) => p.id === r.projectId)?.title || "").toLowerCase();
+        const status = (r.status || "").toLowerCase();
+        const priority = (r.priority || "").toLowerCase();
+
+        return (
+          title.includes(cleanQuery) ||
+          desc.includes(cleanQuery) ||
+          responseText.includes(cleanQuery) ||
+          clientRelName.includes(cleanQuery) ||
+          clientRelEmail.includes(cleanQuery) ||
+          contactPerson.includes(cleanQuery) ||
+          clientLookupName.includes(cleanQuery) ||
+          clientLookupEmail.includes(cleanQuery) ||
+          projectRelTitle.includes(cleanQuery) ||
+          projectLookupTitle.includes(cleanQuery) ||
+          status.includes(cleanQuery) ||
+          priority.includes(cleanQuery)
+        );
+      });
     }
 
     // Sorting
@@ -160,7 +198,7 @@ export function RevisionManager({
     });
 
     return result;
-  }, [revisions, selectedStatusTab, selectedProjectId, selectedClientId, selectedPriority, searchQuery, sortBy]);
+  }, [revisions, selectedStatusTab, selectedProjectId, selectedClientId, selectedPriority, searchQuery, sortBy, projects, clients]);
 
   // Paginated slice
   const paginatedRevisions = useMemo(() => {
@@ -282,9 +320,12 @@ export function RevisionManager({
       {/* Main Container Card */}
       <Card id="admin-revisions-table" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
         {/* Top Filter Toolbar */}
-        <div className="p-4 sm:p-5 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0A0A0A]">
+        <div className="p-3 sm:p-4 border-b border-[#E5E5E5] dark:border-[#262626] flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-white dark:bg-[#0A0A0A]">
           {/* Status Tabs */}
-          <div id="admin-revisions-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+          <div
+            id="admin-revisions-tabs"
+            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-0.5"
+          >
             {[
               { id: "all", label: "All", count: totalCount },
               { id: "pending", label: "Pending", count: pendingCount },
@@ -298,7 +339,7 @@ export function RevisionManager({
                   setSelectedStatusTab(tab.id);
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer shrink-0 ${
                   selectedStatusTab === tab.id
                     ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
                     : "text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A]"
@@ -306,7 +347,7 @@ export function RevisionManager({
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`px-1.5 py-0.2 text-[10px] rounded-md font-mono ${
+                  className={`px-1.5 py-0.5 text-[10px] rounded-md font-mono ${
                     selectedStatusTab === tab.id
                       ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
                       : "bg-[#E5E5E5] text-[#0A0A0A] dark:bg-[#262626] dark:text-neutral-300"
@@ -319,46 +360,102 @@ export function RevisionManager({
           </div>
 
           {/* Search, Filters & Sort Controls */}
-          <div id="admin-revisions-search" className="flex flex-wrap lg:flex-nowrap items-center gap-2.5">
+          <div id="admin-revisions-search" className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
             {/* Search bar */}
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-[#737373] absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative w-36 sm:w-44 md:w-48 shrink-0">
+              <Search className="w-3.5 h-3.5 text-[#737373] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search tickets, clients..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 pr-8 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-all"
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Filter by Project */}
-            <select
-              value={selectedProjectId}
-              onChange={(e) => {
-                setSelectedProjectId(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-2.5 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
-            >
-              <option value="all" className="dark:bg-[#111111]">Project: All ({projects.length})</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id} className="dark:bg-[#111111]">
-                  {p.title}
-                </option>
-              ))}
-            </select>
+            {/* Filter by Project (Custom Scrollable Popover) */}
+            <div ref={projectDropdownRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                className="flex items-center justify-between gap-1.5 text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent hover:bg-[#F5F5F5] dark:hover:bg-[#161616] rounded-lg px-2.5 py-1.5 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer transition-colors max-w-[130px] sm:max-w-[155px]"
+              >
+                <span className="truncate">
+                  {selectedProjectId === "all"
+                    ? `Project: All (${projects.length})`
+                    : (() => {
+                        const p = projects.find((proj) => proj.id === selectedProjectId);
+                        const title = p?.title || "Selected Project";
+                        return title.length > 25 ? `${title.slice(0, 25)}...` : title;
+                      })()}
+                </span>
+                <ChevronDown className={`w-3 h-3 text-[#737373] shrink-0 transition-transform duration-150 ${isProjectDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Scrollable Dropdown List with Sleek Scrollbar */}
+              {isProjectDropdownOpen && (
+                <div className="absolute left-0 mt-1 w-64 max-h-56 overflow-y-auto rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] shadow-lg py-1 z-50 text-xs scrollbar-thin">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProjectId("all");
+                      setIsProjectDropdownOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] cursor-pointer transition-colors ${
+                      selectedProjectId === "all"
+                        ? "font-bold text-[#0A0A0A] dark:text-white bg-[#F5F5F5] dark:bg-[#1A1A1A]"
+                        : "text-[#525252] dark:text-neutral-300"
+                    }`}
+                  >
+                    <span>Project: All ({projects.length})</span>
+                    {selectedProjectId === "all" && <Check className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white shrink-0" />}
+                  </button>
+
+                  <div className="h-px bg-[#E5E5E5] dark:bg-[#262626] my-1" />
+
+                  {projects.map((p) => {
+                    const truncated = p.title && p.title.length > 25 ? `${p.title.slice(0, 25)}...` : p.title;
+                    const isSelected = selectedProjectId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        title={p.title}
+                        onClick={() => {
+                          setSelectedProjectId(p.id);
+                          setIsProjectDropdownOpen(false);
+                          setCurrentPage(1);
+                        }}
+                        className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] cursor-pointer transition-colors ${
+                          isSelected
+                            ? "font-bold text-[#0A0A0A] dark:text-white bg-[#F5F5F5] dark:bg-[#1A1A1A]"
+                            : "text-[#525252] dark:text-neutral-300"
+                        }`}
+                      >
+                        <span className="truncate">{truncated}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#0A0A0A] dark:text-white shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Filter by Priority */}
             <select
@@ -367,7 +464,7 @@ export function RevisionManager({
                 setSelectedPriority(e.target.value);
                 setCurrentPage(1);
               }}
-              className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-2.5 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
+              className="max-w-[95px] text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-2 py-1.5 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer shrink-0"
             >
               <option value="all" className="dark:bg-[#111111]">Priority: All</option>
               <option value="High" className="dark:bg-[#111111]">High</option>
@@ -379,7 +476,7 @@ export function RevisionManager({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-2.5 py-2 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer"
+              className="max-w-[105px] text-xs border border-[#E5E5E5] dark:border-[#262626] bg-transparent rounded-lg px-2 py-1.5 font-medium text-[#0A0A0A] dark:text-white outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white cursor-pointer shrink-0"
             >
               <option value="date-desc" className="dark:bg-[#111111]">Sort: Newest</option>
               <option value="date-asc" className="dark:bg-[#111111]">Sort: Oldest</option>

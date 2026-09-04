@@ -45,7 +45,7 @@ export default async function ProjectsPage({
   else if (sort === "z-a") orderBy = { title: "desc" };
   else if (sort === "progress") orderBy = { progress: "desc" };
 
-  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allProjectsForBudget, allTasks, allProjectsUnfiltered] = await Promise.all([
+  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allTasks, allProjectsUnfiltered] = await Promise.all([
     db.project.findMany({
       where,
       orderBy,
@@ -71,7 +71,6 @@ export default async function ProjectsPage({
       where: q ? { title: { contains: q, mode: 'insensitive' as any } } : undefined,
     }),
     getAvailableClients(),
-    db.project.findMany({ select: { budgetRaw: true, budget: true } }),
     db.projectTask.findMany({
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       include: {
@@ -88,7 +87,7 @@ export default async function ProjectsPage({
     }),
   ]);
 
-  const totalBudgetRaw = allProjectsForBudget.reduce(
+  const totalBudgetRaw = allProjectsUnfiltered.reduce(
     (sum: number, p: any) => sum + (p.budgetRaw > 0 ? p.budgetRaw : parseCurrencyToNumber(p.budget)),
     0
   );
