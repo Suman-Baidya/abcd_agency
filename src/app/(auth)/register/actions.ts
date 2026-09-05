@@ -6,6 +6,7 @@ import { createSession, logUserActivity, hashPassword } from "@/lib/auth-session
 import { registerLimiter, otpVerifyLimiter, otpResendLimiter, getClientIp } from "@/lib/rate-limit";
 import { checkSpamShield, isDisposableEmail } from "@/lib/spam-protection";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export interface RegisterInput {
   companyName: string;
@@ -225,6 +226,15 @@ export async function registerUser(data: RegisterInput) {
     }
 
     // If OTP is off, establish session immediately
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: "abcd_new_client_tour",
+      value: "1",
+      maxAge: 3600 * 24,
+      path: "/",
+      sameSite: "lax",
+    });
+
     await createSession(user.id, user.role);
     await logUserActivity(user.id, "LOGIN", "Automatic initial session login");
 
@@ -293,6 +303,15 @@ export async function verifyOtpCode(userId: string, enteredCode: string) {
 
     // Reset rate limiter on success
     otpVerifyLimiter.reset(rateLimitKey);
+
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: "abcd_new_client_tour",
+      value: "1",
+      maxAge: 3600 * 24,
+      path: "/",
+      sameSite: "lax",
+    });
 
     await logUserActivity(user.id, "EMAIL_VERIFIED", "User successfully verified email via OTP");
     await createSession(user.id, user.role);

@@ -5,6 +5,7 @@ import { Project } from "@prisma/client";
 import { Button } from "@/components/ui/Button";
 import { Search, Check, ChevronsUpDown, Building2, X } from "lucide-react";
 import { updateProjectFull, createProjectInline } from "@/app/(dashboard)/admin/projects/actions";
+import { slugify } from "@/lib/slugify";
 
 interface ProjectEditFormProps {
   project?: Project;
@@ -65,20 +66,44 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
     return clients.find((c) => c.id === selectedClientId) || (clientName ? { id: selectedClientId, name: clientName, email: "" } : null);
   }, [clients, selectedClientId, clientName]);
 
+  const [title, setTitle] = useState(project?.title || "");
+  const [slug, setSlug] = useState(project?.slug || "");
+  const [isSlugCustomized, setIsSlugCustomized] = useState(Boolean(project?.slug));
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    if (!isSlugCustomized) {
+      setSlug(slugify(newTitle));
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsSlugCustomized(true);
+    setSlug(e.target.value);
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFormError(null);
     if (!clientName.trim()) {
       setIsClientOpen(true);
       return;
     }
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      if (project) {
-        await updateProjectFull(project.id, formData);
-      } else {
-        await createProjectInline(formData);
+      try {
+        if (project) {
+          await updateProjectFull(project.id, formData);
+        } else {
+          await createProjectInline(formData);
+        }
+        onSuccess();
+      } catch (err: any) {
+        console.error("Failed to save project:", err);
+        setFormError(err?.message || "Failed to save project. Please check fields and try again.");
       }
-      onSuccess();
     });
   };
 
@@ -88,6 +113,12 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
       <input type="hidden" name="client" value={clientName} />
 
       <div className="space-y-6 pb-24">
+        {formError && (
+          <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-xs text-red-700 dark:text-red-400 font-medium">
+            {formError}
+          </div>
+        )}
+
         {/* Public Marketing Fields */}
         <div>
           <h2 className="text-xs font-bold text-[#0A0A0A] dark:text-white uppercase tracking-wider mb-3 border-b border-[#E5E5E5] dark:border-[#262626] pb-2">
@@ -96,11 +127,25 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">Project Title</label>
-            <input type="text" name="title" defaultValue={project?.title} required className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none" />
+            <input 
+              type="text" 
+              name="title" 
+              value={title} 
+              onChange={handleTitleChange} 
+              required 
+              className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none" 
+            />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">Slug (URL)</label>
-            <input type="text" name="slug" defaultValue={project?.slug} required className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none" />
+            <input 
+              type="text" 
+              name="slug" 
+              value={slug} 
+              onChange={handleSlugChange} 
+              required 
+              className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none" 
+            />
           </div>
 
           {/* Smart Searchable Client Selector */}

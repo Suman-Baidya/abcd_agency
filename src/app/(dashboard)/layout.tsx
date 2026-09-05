@@ -132,6 +132,8 @@ export default async function DashboardLayout({
           userName={user?.name}
           userRole={user?.role}
           notifications={allNotifications}
+          isEligibleForAutoTour={false}
+          userId={user?.id}
         />
 
         {/* Scrollable Main Area */}

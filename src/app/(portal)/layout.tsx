@@ -1,5 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/auth-session";
 import { getSiteConfig } from "@/lib/dbConfig";
 import { db } from "@/lib/prisma";
@@ -26,6 +27,24 @@ export default async function PortalLayout({
   }
 
   const siteConfig = await getSiteConfig();
+
+  // Determine if this user is a brand-new client who hasn't yet experienced the one-time portal tour
+  const cookieStore = await cookies();
+  const isNewClientCookie = cookieStore.get("abcd_new_client_tour")?.value === "1";
+
+  let isEligibleForAutoTour = false;
+  if (isNewClientCookie && (user.role === "USER" || user.role === "CLIENT")) {
+    const tourActivity = await db.userActivity.findFirst({
+      where: {
+        userId: user.id,
+        action: "PORTAL_TOUR_SEEN",
+      },
+      select: { id: true },
+    });
+    if (!tourActivity) {
+      isEligibleForAutoTour = true;
+    }
+  }
 
   // Resolve client ID with fallback for clients without direct clientId on User
   let effectiveClientId = user.clientId;
@@ -145,6 +164,8 @@ export default async function PortalLayout({
           userName={user.name}
           userRole={user.role === "USER" ? "Prospect Portal" : "Client Portal"}
           notifications={portalNotifications}
+          isEligibleForAutoTour={isEligibleForAutoTour}
+          userId={user.id}
         />
 
         {/* Scrollable Main Content Area */}

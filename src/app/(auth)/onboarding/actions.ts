@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { getCurrentUser, logUserActivity } from "@/lib/auth-session";
+import { cookies } from "next/headers";
 import { z } from "zod";
 
 const onboardingSchema = z.object({
@@ -69,6 +70,15 @@ export async function completeOnboardingProfile(data: OnboardingFormData) {
       "PROFILE_COMPLETED",
       `Completed onboarding business profile: ${validated.companyName} (${validated.industry})`
     ).catch(() => {});
+
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: "abcd_new_client_tour",
+      value: "1",
+      maxAge: 3600 * 24,
+      path: "/",
+      sameSite: "lax",
+    });
 
     return { success: true, redirectTo: "/portal" };
   } catch (error) {

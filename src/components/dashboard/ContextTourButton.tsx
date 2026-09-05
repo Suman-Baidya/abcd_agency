@@ -747,7 +747,12 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
   return null;
 }
 
-export function ContextTourButton() {
+interface ContextTourButtonProps {
+  isEligibleForAutoTour?: boolean;
+  userId?: string;
+}
+
+export function ContextTourButton({ isEligibleForAutoTour = false, userId }: ContextTourButtonProps) {
   const pathname = usePathname();
   const [isRunning, setIsRunning] = useState(false);
 
@@ -757,12 +762,10 @@ export function ContextTourButton() {
     if (!tourConfig) return;
     setIsRunning(true);
 
-    const storageKey = `abcd_tour_seen_${(pathname || "").replace(/\/$/, "") || "root"}`;
-    // Mark as seen so it doesn't auto-launch again on subsequent visits
-    try {
-      localStorage.setItem(storageKey, "true");
-    } catch {
-      // ignore
+    if (userId) {
+      try {
+        localStorage.setItem(`abcd_tour_seen_user_${userId}`, "true");
+      } catch {}
     }
 
     try {
@@ -780,37 +783,53 @@ export function ContextTourButton() {
         steps: tourConfig.steps as any,
         onDestroyed: () => {
           setIsRunning(false);
+          if (isAuto || pathname === "/portal") {
+            import("@/app/(portal)/portal/actions").then(({ markPortalTourSeen }) => {
+              markPortalTourSeen().catch(() => {});
+            });
+          }
         },
       });
 
       driverObj.drive();
+
+      if (isAuto) {
+        import("@/app/(portal)/portal/actions").then(({ markPortalTourSeen }) => {
+          markPortalTourSeen().catch(() => {});
+        });
+      }
     } catch (err) {
       console.error("Failed to start Driver.js tour:", err);
       setIsRunning(false);
     }
   };
 
-  // Auto-trigger tour on user's first visit to this page
+  // ONLY auto-trigger on user's first visit to /portal if they are a newly registered client!
   useEffect(() => {
+    // 1. Must have a valid tour config
     if (!tourConfig) return;
 
+    // 2. Must be explicitly flagged as eligible (new client registration only)
+    if (!isEligibleForAutoTour) return;
+
+    // 3. ONLY auto-trigger on the primary portal landing page ("/portal")
+    if (pathname !== "/portal") return;
+
     try {
-      const storageKey = `abcd_tour_seen_${(pathname || "").replace(/\/$/, "") || "root"}`;
-      const hasSeenTour = localStorage.getItem(storageKey);
-      const globalOptOut = localStorage.getItem("abcd_tour_opt_out");
+      // 4. Safeguard with client-side storage to ensure it never runs twice
+      const userStorageKey = `abcd_tour_seen_user_${userId || "client"}`;
+      const hasSeen = localStorage.getItem(userStorageKey);
+      if (hasSeen) return;
 
-      // If user hasn't seen the tour for this page, launch automatically once
-      if (!hasSeenTour && !globalOptOut) {
-        const timer = setTimeout(() => {
-          handleStartTour(true);
-        }, 1200);
+      const timer = setTimeout(() => {
+        handleStartTour(true);
+      }, 1500);
 
-        return () => clearTimeout(timer);
-      }
+      return () => clearTimeout(timer);
     } catch {
-      // ignore localStorage errors in private mode
+      // ignore localStorage errors in private browsing
     }
-  }, [pathname, tourConfig]);
+  }, [pathname, isEligibleForAutoTour, userId, tourConfig]);
 
   // If no tour is available for this current page, DO NOT SHOW the button!
   if (!tourConfig) {
@@ -827,7 +846,7 @@ export function ContextTourButton() {
       aria-label={`Take tour of ${tourConfig.title}`}
     >
       <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-      <span className="hidden sm:inline">Tour</span>
+      <span className="hidden sm:inline">Take Tour</span>
       <span className="sm:hidden">Tour</span>
     </button>
   );

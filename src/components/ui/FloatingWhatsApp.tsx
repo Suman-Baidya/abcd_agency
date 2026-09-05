@@ -29,7 +29,7 @@ export function FloatingWhatsApp() {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         aria-label="Direct WhatsApp Chat with ABCD Agency"
-        className="relative group w-12 h-12 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#25D366] hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] hover:border-[#0A0A0A] dark:hover:border-white shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
+        className="relative group w-12 h-12 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white hover:border-[#0A0A0A] dark:hover:bg-white dark:hover:text-[#0A0A0A] dark:hover:border-white shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
         {/* Pulsing Active Online Indicator */}
         <span className="absolute top-0.5 right-0.5 flex h-3 w-3">
@@ -37,9 +37,9 @@ export function FloatingWhatsApp() {
           <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white dark:border-[#111111]" />
         </span>
 
-        {/* WhatsApp Vector Icon */}
+        {/* WhatsApp Vector Icon (Black/Monochrome) */}
         <svg
-          className="w-6 h-6 fill-current"
+          className="w-5.5 h-5.5 fill-current transition-transform group-hover:scale-105"
           viewBox="0 0 24 24"
           aria-hidden="true"
         >

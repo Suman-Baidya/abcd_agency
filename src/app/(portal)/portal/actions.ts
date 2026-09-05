@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { getCurrentUser, logUserActivity } from "@/lib/auth-session";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export async function getPortalData() {
   const user = await getCurrentUser();
@@ -262,3 +263,35 @@ export async function updatePortalProfile(data: {
 
   return updatedUser;
 }
+
+export async function markPortalTourSeen() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { success: false };
+
+    const cookieStore = await cookies();
+    cookieStore.delete("abcd_new_client_tour");
+
+    const existing = await db.userActivity.findFirst({
+      where: {
+        userId: user.id,
+        action: "PORTAL_TOUR_SEEN",
+      },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      await logUserActivity(
+        user.id,
+        "PORTAL_TOUR_SEEN",
+        "Completed initial guided client portal walkthrough"
+      );
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to mark portal tour seen:", err);
+    return { success: false };
+  }
+}
+

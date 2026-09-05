@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { createSession, logUserActivity, verifyPassword, hashPassword } from "@/lib/auth-session";
 import { loginLimiter, getClientIp } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export async function loginUser(formData: { email: string; password?: string; rememberMe?: boolean }) {
   try {
@@ -64,6 +65,9 @@ export async function loginUser(formData: { email: string; password?: string; re
 
       // Successful login resets rate limit counter
       loginLimiter.reset(rateLimitKey);
+
+      const cookieStore = await cookies();
+      cookieStore.delete("abcd_new_client_tour");
 
       await createSession(adminUser.id, adminUser.role, rememberMe);
       await logUserActivity(adminUser.id, "LOGIN", "Super Admin logged in");
@@ -145,6 +149,9 @@ export async function loginUser(formData: { email: string; password?: string; re
       where: { id: user.id },
       data: updateData,
     });
+
+    const cookieStore = await cookies();
+    cookieStore.delete("abcd_new_client_tour");
 
     await createSession(user.id, user.role, rememberMe);
     await logUserActivity(user.id, "LOGIN", `User logged into portal as ${user.role}`);

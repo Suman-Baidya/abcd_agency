@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { syncClientAndProjectBalances, parseCurrencyToNumber, formatNumberToINR } from "@/lib/sync-financials";
+import { slugify } from "@/lib/slugify";
 
 export async function getAvailableClients() {
   try {
@@ -21,9 +22,30 @@ export async function getAvailableClients() {
   }
 }
 
+export async function getUniqueProjectSlug(desiredSlug: string, currentProjectId?: string): Promise<string> {
+  const base = slugify(desiredSlug) || "project";
+  let candidate = base;
+  let counter = 1;
+
+  while (true) {
+    const existing = await db.project.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    });
+
+    if (!existing || (currentProjectId && existing.id === currentProjectId)) {
+      return candidate;
+    }
+
+    candidate = `${base}-${counter}`;
+    counter++;
+  }
+}
+
 export async function createProject(formData: FormData) {
-  const title = formData.get("title") as string;
-  const slug = formData.get("slug") as string;
+  const title = (formData.get("title") as string)?.trim() || "Untitled Project";
+  const rawSlug = (formData.get("slug") as string)?.trim() || title;
+  const slug = await getUniqueProjectSlug(rawSlug);
   let client = (formData.get("client") as string)?.trim();
   const clientIdFromForm = formData.get("clientId") as string;
   const category = formData.get("category") as string;
@@ -107,8 +129,9 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProjectFull(id: string, formData: FormData) {
-  const title = formData.get("title") as string;
-  const slug = formData.get("slug") as string;
+  const title = (formData.get("title") as string)?.trim() || "Untitled Project";
+  const rawSlug = (formData.get("slug") as string)?.trim() || title;
+  const slug = await getUniqueProjectSlug(rawSlug, id);
   let client = (formData.get("client") as string)?.trim();
   const clientIdFromForm = formData.get("clientId") as string;
   const category = formData.get("category") as string;
@@ -186,8 +209,9 @@ export async function updateProjectFull(id: string, formData: FormData) {
 }
 
 export async function createProjectInline(formData: FormData) {
-  const title = formData.get("title") as string;
-  const slug = formData.get("slug") as string;
+  const title = (formData.get("title") as string)?.trim() || "Untitled Project";
+  const rawSlug = (formData.get("slug") as string)?.trim() || title;
+  const slug = await getUniqueProjectSlug(rawSlug);
   let client = (formData.get("client") as string)?.trim();
   const clientIdFromForm = formData.get("clientId") as string;
   const category = formData.get("category") as string;

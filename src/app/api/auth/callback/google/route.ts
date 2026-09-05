@@ -160,6 +160,18 @@ export async function GET(req: NextRequest) {
       path: "/",
     });
 
+    if (isNewRegistration && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+      response.cookies.set({
+        name: "abcd_new_client_tour",
+        value: "1",
+        sameSite: "lax",
+        maxAge: 3600 * 24,
+        path: "/",
+      });
+    } else {
+      response.cookies.delete("abcd_new_client_tour");
+    }
+
     return response;
   } catch (error) {
     console.error("[Google OAuth Callback Exception]:", error);

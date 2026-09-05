@@ -1,8 +1,8 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CTASection } from "@/components/marketing/CTASection";
 import { Briefcase } from "lucide-react";
-import { ProjectCard } from "@/components/ui/ProjectCard";
+import { WorkGallery, WorkGallerySkeleton, SerializedProject } from "@/components/marketing/WorkGallery";
 import { db } from "@/lib/prisma";
 
 export const metadata = {
@@ -12,7 +12,7 @@ export const metadata = {
 };
 
 export default async function WorkPage() {
-  const projects = await db.project.findMany({
+  const rawProjects = await db.project.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       title: true,
@@ -22,8 +22,20 @@ export default async function WorkPage() {
       summary: true,
       impact: true,
       techStack: true,
-    }
+      createdAt: true,
+    },
   });
+
+  const serializedProjects: SerializedProject[] = rawProjects.map((p: any) => ({
+    title: p.title,
+    slug: p.slug,
+    category: p.category,
+    tagline: p.tagline,
+    summary: p.summary,
+    impact: p.impact,
+    techStack: p.techStack,
+    createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+  }));
 
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
@@ -38,19 +50,11 @@ export default async function WorkPage() {
         icon={<Briefcase className="w-32 h-32" />}
       />
 
-      {/* Projects Grid */}
-      <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {projects.length > 0 ? (
-            projects.map((project: any) => (
-              <ProjectCard key={project.slug} project={project} />
-            ))
-          ) : (
-            <div className="col-span-3 py-12 text-center text-[#737373] dark:text-neutral-400 border border-dashed border-[#E5E5E5] dark:border-[#262626] rounded-xl">
-              No projects found. Check your dashboard.
-            </div>
-          )}
-        </div>
+      {/* Interactive Projects Gallery Section */}
+      <section className="py-12 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Suspense fallback={<WorkGallerySkeleton />}>
+          <WorkGallery initialProjects={serializedProjects} />
+        </Suspense>
       </section>
 
       {/* CTA Section */}
@@ -58,3 +62,4 @@ export default async function WorkPage() {
     </div>
   );
 }
+

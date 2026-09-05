@@ -25,6 +25,8 @@ interface TopbarProps {
   userName?: string | null;
   userRole?: string | null;
   notifications?: Notification[];
+  isEligibleForAutoTour?: boolean;
+  userId?: string;
 }
 
 export function Topbar({ 
@@ -33,7 +35,9 @@ export function Topbar({
   agencyName = "ABCD Agency", 
   userName,
   userRole,
-  notifications = [] 
+  notifications = [],
+  isEligibleForAutoTour = false,
+  userId
 }: TopbarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [readNotifIds, setReadNotifIds] = useState<string[]>([]);
@@ -271,7 +275,7 @@ export function Topbar({
             </>
           )}
         </div>
-        <ContextTourButton />
+        <ContextTourButton isEligibleForAutoTour={isEligibleForAutoTour} userId={userId} />
         <InstallAppButton variant="icon" />
         <ThemeToggle />
         <button
