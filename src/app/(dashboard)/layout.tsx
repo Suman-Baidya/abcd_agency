@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-session";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
+import { ScrollProgressBar } from "@/components/ui/ScrollProgressBar";
 import { getSiteConfig } from "@/lib/dbConfig";
 import { db } from "@/lib/prisma";
 
@@ -125,6 +126,7 @@ export default async function DashboardLayout({
 
       {/* Main Content Wrapper */}
       <div className="flex flex-col flex-1 overflow-hidden w-full relative">
+        <ScrollProgressBar position="absolute" containerSelector="main" />
         <Topbar 
           lightLogoUrl={siteConfig.lightLogoUrl} 
           darkLogoUrl={siteConfig.darkLogoUrl} 

@@ -5,21 +5,87 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { syncClientAndProjectBalances, parseCurrencyToNumber, formatNumberToINR } from "@/lib/sync-financials";
 import { slugify } from "@/lib/slugify";
+import { convertUserToClient } from "@/app/(dashboard)/admin/users/actions";
 
 export async function getAvailableClients() {
   try {
-    return await db.client.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
-      orderBy: { name: "asc" },
-    });
+    const [clients, users] = await Promise.all([
+      db.client.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+        orderBy: { name: "asc" },
+      }),
+      db.user.findMany({
+        where: {
+          role: "USER",
+          clientId: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          companyName: true,
+          email: true,
+        },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+
+    const clientItems = clients.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      isUser: false,
+    }));
+
+    const userItems = users.map((u: any) => ({
+      id: `user:${u.id}`,
+      name: u.companyName || u.name,
+      email: u.email,
+      isUser: true,
+    }));
+
+    return [...clientItems, ...userItems];
   } catch (error) {
     console.error("Error fetching clients list:", error);
     return [];
   }
+}
+
+async function resolveAndPromoteClient(clientIdFromForm?: string | null, clientName?: string | null) {
+  let resolvedClientId: string | null = clientIdFromForm || null;
+  let resolvedClientName: string = clientName || "Agency Client";
+
+  if (resolvedClientId && resolvedClientId.startsWith("user:")) {
+    const userId = resolvedClientId.replace("user:", "");
+    const promo = await convertUserToClient(userId);
+    if (promo?.clientId) {
+      resolvedClientId = promo.clientId;
+      const cl = await db.client.findUnique({ where: { id: resolvedClientId } });
+      if (cl) {
+        resolvedClientName = cl.name;
+      }
+    }
+  } else if (!resolvedClientId && clientName) {
+    const existingClient = await db.client.findFirst({
+      where: { name: { equals: clientName, mode: "insensitive" } },
+    });
+    if (existingClient) {
+      resolvedClientId = existingClient.id;
+      resolvedClientName = existingClient.name;
+    }
+  } else if (resolvedClientId && !clientName) {
+    const existingClient = await db.client.findUnique({
+      where: { id: resolvedClientId },
+    });
+    if (existingClient) {
+      resolvedClientName = existingClient.name;
+    }
+  }
+
+  return { resolvedClientId, resolvedClientName };
 }
 
 export async function getUniqueProjectSlug(desiredSlug: string, currentProjectId?: string): Promise<string> {
@@ -74,23 +140,8 @@ export async function createProject(formData: FormData) {
   const deadline = JSON.stringify({ startDate, endDate });
   const content = formData.get("content") as string || "";
 
-  let resolvedClientId: string | null = clientIdFromForm || null;
-  if (!resolvedClientId && client) {
-    const existingClient = await db.client.findFirst({
-      where: { name: { equals: client, mode: "insensitive" } },
-    });
-    if (existingClient) {
-      resolvedClientId = existingClient.id;
-      client = existingClient.name;
-    }
-  } else if (resolvedClientId && !client) {
-    const existingClient = await db.client.findUnique({
-      where: { id: resolvedClientId },
-    });
-    if (existingClient) {
-      client = existingClient.name;
-    }
-  }
+  const { resolvedClientId, resolvedClientName } = await resolveAndPromoteClient(clientIdFromForm, client);
+  client = resolvedClientName;
 
   const project = await db.project.create({
     data: {
@@ -155,23 +206,8 @@ export async function updateProjectFull(id: string, formData: FormData) {
   const deadline = JSON.stringify({ startDate, endDate });
   const content = formData.get("content") as string || "";
 
-  let resolvedClientId: string | null = clientIdFromForm || null;
-  if (!resolvedClientId && client) {
-    const existingClient = await db.client.findFirst({
-      where: { name: { equals: client, mode: "insensitive" } },
-    });
-    if (existingClient) {
-      resolvedClientId = existingClient.id;
-      client = existingClient.name;
-    }
-  } else if (resolvedClientId && !client) {
-    const existingClient = await db.client.findUnique({
-      where: { id: resolvedClientId },
-    });
-    if (existingClient) {
-      client = existingClient.name;
-    }
-  }
+  const { resolvedClientId, resolvedClientName } = await resolveAndPromoteClient(clientIdFromForm, client);
+  client = resolvedClientName;
 
   await db.project.update({
     where: { id },
@@ -235,23 +271,8 @@ export async function createProjectInline(formData: FormData) {
   const deadline = (startDate || endDate) ? JSON.stringify({ startDate, endDate }) : (formData.get("deadline") as string || "");
   const content = formData.get("content") as string || "";
 
-  let resolvedClientId: string | null = clientIdFromForm || null;
-  if (!resolvedClientId && client) {
-    const existingClient = await db.client.findFirst({
-      where: { name: { equals: client, mode: "insensitive" } },
-    });
-    if (existingClient) {
-      resolvedClientId = existingClient.id;
-      client = existingClient.name;
-    }
-  } else if (resolvedClientId && !client) {
-    const existingClient = await db.client.findUnique({
-      where: { id: resolvedClientId },
-    });
-    if (existingClient) {
-      client = existingClient.name;
-    }
-  }
+  const { resolvedClientId, resolvedClientName } = await resolveAndPromoteClient(clientIdFromForm, client);
+  client = resolvedClientName;
 
   const created = await db.project.create({
     data: {

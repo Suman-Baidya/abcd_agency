@@ -256,6 +256,13 @@ model Category {
   updatedAt DateTime @updatedAt
 }
 
+model BlogCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Client {
   id             String   @id @default(cuid())
   name           String
@@ -308,5 +315,24 @@ model Transaction {
   updatedAt      DateTime @updatedAt
 }
 
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  pageTitle   String?  // Concise single-line header title displayed in the PageHeader
+  summary     String   @db.Text
+  content     String   @db.Text
+  category    String   @default("Engineering")
+  readTime    String   @default("5 min read")
+  author      String   @default("ABCD Team")
+  coverImage  String?
+  published   Boolean  @default(true)
+  featured    Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-
+  @@index([slug])
+  @@index([published])
+  @@index([category])
+}

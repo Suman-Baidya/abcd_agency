@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Palette, 
-  BookOpen,
   ShieldCheck, 
   FileText,
   Phone,
@@ -33,7 +33,6 @@ const TABS = [
   { id: "careers", label: "Careers", icon: Briefcase },
   { id: "pricing", label: "Pricing", icon: IndianRupee },
   { id: "legal", label: "Legal Pages", icon: ShieldCheck },
-  { id: "blog", label: "Blog", icon: BookOpen },
   { id: "documents", label: "Documents", icon: FileText },
 ];
 
@@ -46,7 +45,19 @@ export default function SettingsTabs({
   pricingPackages?: any[];
   pricingServices?: any[];
 }) {
-  const [activeTab, setActiveTab] = useState("branding");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    tabParam && TABS.some((t) => t.id === tabParam) ? tabParam : "branding"
+  );
+
+  useEffect(() => {
+    if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   const toggleSection = (id: string) => {
@@ -118,7 +129,10 @@ export default function SettingsTabs({
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                router.replace(`/admin/settings?tab=${tab.id}`, { scroll: false });
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                 isActive
                   ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"

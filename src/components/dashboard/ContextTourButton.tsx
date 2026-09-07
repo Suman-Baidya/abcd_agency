@@ -568,6 +568,55 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
     };
   }
 
+  // 11b. Admin Blog (/admin/blog)
+  if (path === "/admin/blog") {
+    return {
+      title: "Blog Articles & Editorial",
+      steps: [
+        {
+          element: "#blog-write-button",
+          popover: {
+            title: "1. Write New Article",
+            description:
+              "Launch the editorial modal with image cover uploads, custom slugs, categories, and Markdown live preview.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: "#admin-blog-kpi",
+          popover: {
+            title: "2. Editorial Metrics",
+            description:
+              "Track total articles published, live engineering posts, drafts in progress, and featured highlights.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#admin-blog-tabs",
+          popover: {
+            title: "3. Status Filtering",
+            description:
+              "Filter between all publications, live articles active on the public blog, and drafts awaiting review.",
+            side: "top",
+            align: "start",
+          },
+        },
+        {
+          element: "#admin-blog-table",
+          popover: {
+            title: "4. Editorial Publication Ledger",
+            description:
+              "Manage articles with inline Live/Draft status toggling, direct live site previews, editing, and deletion.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
   // 12. Admin Revisions (/admin/revisions)
   if (path === "/admin/revisions") {
     return {
@@ -744,6 +793,56 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
       ],
     };
   }
+
+  // 15. Admin Blog & Editorial (/admin/blog or /admin/settings)
+  if (path === "/admin/blog" || path === "/admin/settings") {
+    return {
+      title: "Settings & Editorial",
+      steps: [
+        {
+          element: "#blog-write-button",
+          popover: {
+            title: "1. Write & Publish Articles",
+            description:
+              "Draft new technical articles, configure cover images, and publish live to /blog.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: "#blog-metrics-bar",
+          popover: {
+            title: "2. Publication Metrics",
+            description:
+              "Keep track of total publication volume, active live posts, and work-in-progress drafts.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#blog-search-toolbar",
+          popover: {
+            title: "3. Search & Filter System",
+            description:
+              "Filter posts by keyword, live status (Published vs. Draft), and category taxonomies.",
+            side: "top",
+            align: "start",
+          },
+        },
+        {
+          element: "#blog-articles-list",
+          popover: {
+            title: "4. Editorial Management & Actions",
+            description:
+              "Preview live articles, edit markdown content, quick-toggle draft status, or delete posts.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
   return null;
 }
 

@@ -1,21 +1,43 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Upload, Link as LinkIcon, Image as ImageIcon, Loader2, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, Link as LinkIcon, Image as ImageIcon, Loader2, Check, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 interface ImageUploadInputProps {
   name: string;
   label: string;
   defaultValue?: string | null;
+  value?: string | null;
+  onChange?: (url: string) => void;
   folder?: string;
 }
 
-export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_agency/branding" }: ImageUploadInputProps) {
-  const [value, setValue] = useState(defaultValue || "");
+export function ImageUploadInput({ 
+  name, 
+  label, 
+  defaultValue, 
+  value: controlledValue,
+  onChange,
+  folder = "abcd_agency/branding" 
+}: ImageUploadInputProps) {
+  const [internalValue, setInternalValue] = useState(defaultValue || controlledValue || "");
   const [isUploading, setIsUploading] = useState(false);
   const [mode, setMode] = useState<"upload" | "url">("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (controlledValue !== undefined && controlledValue !== null) {
+      setInternalValue(controlledValue);
+    }
+  }, [controlledValue]);
+
+  const activeValue = controlledValue !== undefined ? (controlledValue || "") : internalValue;
+
+  const updateValue = (newVal: string) => {
+    setInternalValue(newVal);
+    onChange?.(newVal);
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,7 +67,7 @@ export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_age
       }
 
       const data = await res.json();
-      setValue(data.secure_url);
+      updateValue(data.secure_url);
       toast.success("Image uploaded successfully", { id: toastId });
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -66,7 +88,7 @@ export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_age
           <button
             type="button"
             onClick={() => setMode("upload")}
-            className={`text-xs px-2.5 py-1 rounded-sm transition-colors ${
+            className={`text-xs px-2.5 py-1 rounded-sm transition-colors cursor-pointer ${
               mode === "upload"
                 ? "bg-white dark:bg-[#262626] text-[#0A0A0A] dark:text-white shadow-sm"
                 : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
@@ -77,7 +99,7 @@ export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_age
           <button
             type="button"
             onClick={() => setMode("url")}
-            className={`text-xs px-2.5 py-1 rounded-sm transition-colors ${
+            className={`text-xs px-2.5 py-1 rounded-sm transition-colors cursor-pointer ${
               mode === "url"
                 ? "bg-white dark:bg-[#262626] text-[#0A0A0A] dark:text-white shadow-sm"
                 : "text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white"
@@ -88,7 +110,7 @@ export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_age
         </div>
       </div>
 
-      <input type="hidden" name={name} value={value} />
+      <input type="hidden" name={name} value={activeValue} />
 
       {mode === "upload" ? (
         <div className="flex gap-4 items-start">
@@ -113,12 +135,17 @@ export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_age
               </>
             )}
           </div>
-          {value && (
-            <div className="w-24 h-24 shrink-0 rounded-md border border-[#E5E5E5] dark:border-[#262626] overflow-hidden bg-[#F5F5F5] dark:bg-[#111111] flex items-center justify-center relative">
-              <img src={value} alt="Preview" className="max-w-full max-h-full object-contain p-2" />
-              <div className="absolute top-1 right-1 w-5 h-5 bg-[#10B981] rounded-full flex items-center justify-center">
-                <Check className="w-3 h-3 text-white" strokeWidth={3} />
-              </div>
+          {activeValue && (
+            <div className="w-24 h-24 shrink-0 rounded-md border border-[#E5E5E5] dark:border-[#262626] overflow-hidden bg-[#F5F5F5] dark:bg-[#111111] flex items-center justify-center relative group">
+              <img src={activeValue} alt="Preview" className="max-w-full max-h-full object-cover w-full h-full" />
+              <button
+                type="button"
+                onClick={() => updateValue("")}
+                className="absolute top-1 right-1 w-5 h-5 bg-black/70 hover:bg-black text-white rounded-full flex items-center justify-center transition-colors cursor-pointer"
+                title="Remove image"
+              >
+                <X className="w-3 h-3" strokeWidth={2.5} />
+              </button>
             </div>
           )}
         </div>
@@ -130,15 +157,23 @@ export function ImageUploadInput({ name, label, defaultValue, folder = "abcd_age
             </div>
             <input
               type="url"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
+              value={activeValue}
+              onChange={(e) => updateValue(e.target.value)}
               placeholder="https://..."
               className="w-full pl-9 pr-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white transition-shadow"
             />
           </div>
-          {value && (
-             <div className="w-10 h-10 shrink-0 rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#111111] flex items-center justify-center">
-               <img src={value} alt="Preview" className="max-w-full max-h-full object-contain p-1" />
+          {activeValue && (
+             <div className="w-10 h-10 shrink-0 rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#111111] flex items-center justify-center relative group overflow-hidden">
+               <img src={activeValue} alt="Preview" className="max-w-full max-h-full object-cover w-full h-full" />
+               <button
+                 type="button"
+                 onClick={() => updateValue("")}
+                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                 title="Remove image"
+               >
+                 <X className="w-3.5 h-3.5" />
+               </button>
              </div>
           )}
         </div>

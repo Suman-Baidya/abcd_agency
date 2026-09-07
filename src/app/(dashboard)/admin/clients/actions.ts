@@ -2,12 +2,13 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { logUserActivity } from "@/lib/auth-session";
+import { logUserActivity, hashPassword } from "@/lib/auth-session";
 
 export interface ClientInput {
   name: string;
   contactPerson?: string;
   email: string;
+  password?: string;
   phone?: string;
   isWhatsappSame?: boolean;
   whatsapp?: string;
@@ -209,9 +210,14 @@ export async function getClientsWithProjectCounts() {
       });
     }
 
-    const [clients, projects, incomeTransactions] = await Promise.all([
+    const [clientsRaw, projects, incomeTransactions, users] = await Promise.all([
       db.client.findMany({
         orderBy: { createdAt: "desc" },
+        include: {
+          userRel: {
+            select: { id: true, role: true, clientId: true },
+          },
+        },
       }),
       db.project.findMany({
         select: {
@@ -242,7 +248,24 @@ export async function getClientsWithProjectCounts() {
           title: true,
         },
       }),
+      db.user.findMany({
+        select: { id: true, email: true, role: true, clientId: true },
+      }),
     ]);
+
+    // Guard: Normal users who have not been officially promoted must NOT appear on the Client Page
+    const clients = clientsRaw.filter((c: any) => {
+      if (c.userRel && c.userRel.role === "USER") {
+        return false;
+      }
+      const matchingUser = users.find(
+        (u: any) => u.email.toLowerCase() === c.email.toLowerCase()
+      );
+      if (matchingUser && matchingUser.role === "USER" && matchingUser.clientId !== c.id) {
+        return false;
+      }
+      return true;
+    });
 
     return clients.map((c: any) => {
       const clientProjects = projects.filter(
@@ -374,6 +397,9 @@ export async function createClient(data: ClientInput) {
 
     // Auto-create/sync corresponding user in User table
     try {
+      const rawPassword = data.password?.trim() || `Client@${Math.floor(1000 + Math.random() * 9000)}`;
+      const hashedPassword = hashPassword(rawPassword);
+
       const existingUser = await db.user.findUnique({
         where: { email: data.email.trim().toLowerCase() },
       });
@@ -385,6 +411,12 @@ export async function createClient(data: ClientInput) {
             clientId: created.id,
             role: "CLIENT",
             status: "Active",
+            ...(data.password?.trim() ? { password: hashedPassword } : {}),
+            phone: data.phone?.trim() || existingUser.phone,
+            companyName: data.name.trim() || existingUser.companyName,
+            location: data.location?.trim() || existingUser.location,
+            industry: data.industry?.trim() || existingUser.industry,
+            website: data.website?.trim() || existingUser.website,
           },
         });
       } else {
@@ -393,7 +425,7 @@ export async function createClient(data: ClientInput) {
             name: data.contactPerson?.trim() || data.name.trim(),
             companyName: data.name.trim(),
             email: data.email.trim().toLowerCase(),
-            password: "Client@" + Math.floor(1000 + Math.random() * 9000), // Default random client initial password
+            password: hashedPassword,
             phone: data.phone?.trim() || null,
             isWhatsappSame: isSame,
             whatsapp: isSame ? null : (data.whatsapp?.trim() || null),
@@ -483,25 +515,36 @@ export async function updateClientStatus(id: string, status: string) {
 
 export async function deleteClient(id: string) {
   try {
-    // 1. Reset any linked user account back to USER role and clear clientId
-    const linkedUser = await db.user.findFirst({
-      where: { clientId: id },
+    const clientToDelete = await db.client.findUnique({
+      where: { id },
     });
 
-    if (linkedUser) {
-      await db.user.update({
-        where: { id: linkedUser.id },
-        data: {
-          role: "USER",
-          clientId: null,
+    if (clientToDelete) {
+      // 1. Reset any linked user account back to USER role and clear clientId
+      const linkedUsers = await db.user.findMany({
+        where: {
+          OR: [
+            { clientId: id },
+            { email: { equals: clientToDelete.email, mode: "insensitive" } },
+          ],
         },
       });
 
-      await logUserActivity(
-        linkedUser.id,
-        "CLIENT_REVERTED",
-        "Client record was removed; account reverted to standard user/prospect"
-      );
+      for (const u of linkedUsers) {
+        await db.user.update({
+          where: { id: u.id },
+          data: {
+            role: "USER",
+            clientId: null,
+          },
+        });
+
+        await logUserActivity(
+          u.id,
+          "CLIENT_REVERTED",
+          "Client record was removed; account reverted to standard user/prospect"
+        );
+      }
     }
 
     // 2. Delete the client record

@@ -15,7 +15,7 @@ interface ProjectTableRowProps {
   project: any;
   serialNumber: number;
   categories: string[];
-  clients?: Array<{ id: string; name: string; email: string }>;
+  clients?: Array<{ id: string; name: string; email: string; isUser?: boolean }>;
 }
 
 export function ProjectTableRow({ project, serialNumber, categories, clients = [] }: ProjectTableRowProps) {

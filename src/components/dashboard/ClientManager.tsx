@@ -19,6 +19,7 @@ import {
   MapPin,
   Briefcase,
   Eye,
+  EyeOff,
   MoreVertical,
   X,
   ExternalLink,
@@ -69,17 +70,34 @@ export interface ClientItem {
 
 export function ClientManager({
   initialClients = [],
+  initialSearch = "",
+  initialClientId = "",
 }: {
   initialClients?: ClientItem[];
+  initialSearch?: string;
+  initialClientId?: string;
 }) {
   const router = useRouter();
   const [clientList, setClientList] = useState<ClientItem[]>(initialClients);
   const [, startTransition] = useTransition();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch || "");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"name" | "spend" | "projects" | "joined">("joined");
-  const [selectedClient, setSelectedClient] = useState<ClientItem | null>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientItem | null>(() => {
+    if (initialClientId) {
+      const match = initialClients.find((c) => c.id === initialClientId);
+      if (match) return match;
+    }
+    if (initialSearch) {
+      const q = initialSearch.toLowerCase();
+      const match = initialClients.find(
+        (c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+      );
+      if (match) return match;
+    }
+    return null;
+  });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientItem | null>(null);
   const [deletingClient, setDeletingClient] = useState<ClientItem | null>(null);
@@ -90,6 +108,23 @@ export function ClientManager({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sync initial query when navigated to with searchParams
+  React.useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+    if (initialClientId) {
+      const match = clientList.find((c) => c.id === initialClientId);
+      if (match) setSelectedClient(match);
+    } else if (initialSearch) {
+      const q = initialSearch.toLowerCase();
+      const match = clientList.find(
+        (c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+      );
+      if (match) setSelectedClient(match);
+    }
+  }, [initialSearch, initialClientId, clientList]);
 
   // Close dropdowns on outside click
   React.useEffect(() => {
@@ -122,11 +157,14 @@ export function ClientManager({
     });
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+
   // New Client Form State
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
     email: "",
+    password: "",
     phone: "",
     isWhatsappSame: true,
     whatsapp: "",
@@ -283,6 +321,7 @@ export function ClientManager({
         name: formData.name,
         contactPerson: formData.contactPerson,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone,
         isWhatsappSame: formData.isWhatsappSame,
         whatsapp: formData.isWhatsappSame ? formData.phone : formData.whatsapp,
@@ -338,6 +377,7 @@ export function ClientManager({
         name: "",
         contactPerson: "",
         email: "",
+        password: "",
         phone: "",
         isWhatsappSame: true,
         whatsapp: "",
@@ -1567,6 +1607,31 @@ export function ClientManager({
             </div>
             <div className="space-y-1">
               <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                Portal Login Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Set password (or auto-generates)"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-3 py-2 pr-8 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white transition-colors cursor-pointer"
+                  title={showPassword ? "Hide Password" : "Show Password"}
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
                 Phone Number
               </label>
               <input
@@ -1584,9 +1649,7 @@ export function ClientManager({
                 className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* WhatsApp Number with Checkbox on the right */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
@@ -1628,7 +1691,7 @@ export function ClientManager({
                 className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
               />
             </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
                 Industry
@@ -1641,9 +1704,6 @@ export function ClientManager({
                 className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
                 Location
@@ -1653,6 +1713,21 @@ export function ClientManager({
                 placeholder="City, Country"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                Website URL (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="https://company.com"
+                value={formData.website}
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
               />
             </div>
@@ -1671,20 +1746,6 @@ export function ClientManager({
               </select>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
-                Website URL (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="https://company.com"
-                value={formData.website}
-                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-lg bg-transparent text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white"
-              />
-            </div>
             <div className="space-y-1">
               <label className="text-[11px] font-semibold uppercase tracking-wider text-[#737373] dark:text-neutral-400">
                 Initial Spend

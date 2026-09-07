@@ -8,7 +8,21 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientsPage() {
+export default async function ClientsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined };
+}) {
+  const resolvedParams = await searchParams;
+  const initialSearch = typeof resolvedParams?.search === "string" ? resolvedParams.search : undefined;
+  const initialClientId = typeof resolvedParams?.clientId === "string" ? resolvedParams.clientId : undefined;
+
   const clients = await getClientsWithProjectCounts();
-  return <ClientManager initialClients={clients} />;
+  return (
+    <ClientManager
+      initialClients={clients}
+      initialSearch={initialSearch}
+      initialClientId={initialClientId}
+    />
+  );
 }

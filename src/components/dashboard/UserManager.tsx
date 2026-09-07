@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import Link from "next/link";
 import { UserItem, convertUserToClient, updateUserStatus, deleteUserAccount, getUserActivities, clearUserActivities, markUserAsViewed } from "@/app/(dashboard)/admin/users/actions";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -408,15 +409,16 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                 <th className="px-5 py-3.5 text-center">Account Role</th>
                 <th className="px-5 py-3.5 text-center">Status</th>
                 <th className="px-5 py-3.5">Joined & Activity</th>
+                <th className="px-5 py-3.5 text-center">Quick Action</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626]">
               {paginatedUsers.length > 0 ? (
                 paginatedUsers.map((user) => {
-                  const isProspect = user.role === "USER" || !user.clientId;
-                  const isClient = user.role === "CLIENT" && !!user.clientId;
                   const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+                  const isClient = !isAdmin && (user.role === "CLIENT" || !!user.clientId);
+                  const isProspect = !isAdmin && !isClient;
                   const isContactOpen = openContactDropdownId === user.id;
 
                   const initials =
@@ -518,23 +520,58 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                         </div>
                       </td>
 
-                      {/* Actions */}
-                      <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5" data-dropdown-container>
-                          {/* Make Client 1-Click CTA if Prospect */}
+                      {/* Quick Action Button (Center Aligned) */}
+                      <td className="px-5 py-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center">
                           {isProspect && (
                             <Button
                               variant="primary"
                               size="sm"
                               onClick={() => handleConvertToClient(user)}
                               disabled={isConverting}
-                              className="text-xs py-1 px-2.5 min-h-[30px] font-bold"
+                              className="text-xs py-1 px-3 min-h-[30px] font-bold w-[116px] justify-center"
+                              title="Promote User to Client"
                             >
-                              <UserPlus className="w-3.5 h-3.5 mr-1" />
+                              <UserPlus className="w-3.5 h-3.5 mr-1.5" />
                               Make Client
                             </Button>
                           )}
 
+                          {isClient && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              href={
+                                user.clientId
+                                  ? `/admin/clients?clientId=${encodeURIComponent(user.clientId)}&search=${encodeURIComponent(user.clientName || user.companyName || user.name)}`
+                                  : `/admin/clients?search=${encodeURIComponent(user.clientName || user.companyName || user.name)}`
+                              }
+                              className="text-xs py-1 px-3 min-h-[30px] font-semibold w-[116px] justify-center"
+                              title="Visit Client profile, billing & projects"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                              Visit Client
+                            </Button>
+                          )}
+
+                          {isAdmin && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleOpenDetails(user)}
+                              className="text-xs py-1 px-3 min-h-[30px] font-medium w-[116px] justify-center"
+                              title="View Admin Overview & Activity Log"
+                            >
+                              <Eye className="w-3.5 h-3.5 mr-1.5" />
+                              Overview
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Actions Icons (Right Aligned) */}
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5" data-dropdown-container>
                           {/* Contact Popup Button */}
                           <div className="relative">
                             <button
@@ -641,7 +678,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-sm text-[#737373] dark:text-neutral-400">
+                  <td colSpan={6} className="py-12 text-center text-sm text-[#737373] dark:text-neutral-400">
                     No users found matching your search or filters.
                   </td>
                 </tr>
@@ -753,14 +790,28 @@ export function UserManager({ initialUsers }: UserManagerProps) {
 
               {/* Converted Client Status Badge */}
               {selectedUser.role === "CLIENT" && !!selectedUser.clientId && (
-                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl flex items-center justify-between">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">Official Client Account</p>
                       <p className="text-[11px] text-emerald-700 dark:text-emerald-400">Available in Client CRM and Project allocations.</p>
                     </div>
                   </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    href={
+                      selectedUser.clientId
+                        ? `/admin/clients?clientId=${encodeURIComponent(selectedUser.clientId)}&search=${encodeURIComponent(selectedUser.clientName || selectedUser.companyName || selectedUser.name)}`
+                        : `/admin/clients?search=${encodeURIComponent(selectedUser.clientName || selectedUser.companyName || selectedUser.name)}`
+                    }
+                    className="text-xs py-1 px-3 min-h-[30px] font-semibold shrink-0"
+                    title="Visit Client profile, billing & projects"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Visit Client
+                  </Button>
                 </div>
               )}
 

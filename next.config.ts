@@ -5,11 +5,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "cdn.pixabay.com",
+        hostname: "**",
       },
       {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
+        protocol: "http",
+        hostname: "**",
       },
     ],
   },
@@ -44,4 +44,5 @@ const nextConfig: NextConfig = {
   },
 };
 
+// Restart trigger for updated Prisma schema: BlogPost
 export default nextConfig;

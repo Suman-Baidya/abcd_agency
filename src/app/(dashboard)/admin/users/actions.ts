@@ -154,44 +154,61 @@ export async function convertUserToClient(userId: string) {
       throw new Error("User not found.");
     }
 
-    if (user.clientId && user.clientRel) {
-      // Already has client record, ensure role is CLIENT
-      await db.user.update({
-        where: { id: userId },
-        data: { role: "CLIENT" },
+    let targetClientId = user.clientId;
+
+    if (!targetClientId) {
+      const existingClientWithEmail = await db.client.findFirst({
+        where: { email: { equals: user.email.trim(), mode: "insensitive" } },
       });
-      revalidatePath("/admin/users");
-      revalidatePath("/admin/clients");
-      return { success: true, clientId: user.clientId };
+      if (existingClientWithEmail) {
+        targetClientId = existingClientWithEmail.id;
+        await db.client.update({
+          where: { id: targetClientId },
+          data: {
+            name: user.companyName || user.name,
+            contactPerson: user.name,
+            phone: user.phone || "",
+            isWhatsappSame: user.isWhatsappSame,
+            whatsapp: user.whatsapp || null,
+            industry: user.industry || "General",
+            location: user.location || "Remote",
+            website: user.website || null,
+            status: "Active",
+          },
+        });
+      }
     }
 
-    // Create a new Client record in the database
-    const newClient = await db.client.create({
-      data: {
-        name: user.companyName || user.name,
-        contactPerson: user.name,
-        email: user.email,
-        phone: user.phone || "",
-        isWhatsappSame: user.isWhatsappSame,
-        whatsapp: user.whatsapp || null,
-        industry: user.industry || "General",
-        location: user.location || "Remote",
-        website: user.website || null,
-        status: "Active",
-        totalSpend: "₹0",
-        totalSpendRaw: 0,
-        dueBalance: "₹0",
-        dueBalanceRaw: 0,
-        notes: `Converted from registered user account on ${new Date().toLocaleDateString()}.`,
-      },
-    });
+    if (!targetClientId) {
+      // Create a new Client record in the database
+      const newClient = await db.client.create({
+        data: {
+          name: user.companyName || user.name,
+          contactPerson: user.name,
+          email: user.email.trim(),
+          phone: user.phone || "",
+          isWhatsappSame: user.isWhatsappSame,
+          whatsapp: user.whatsapp || null,
+          industry: user.industry || "General",
+          location: user.location || "Remote",
+          website: user.website || null,
+          status: "Active",
+          totalSpend: "₹0",
+          totalSpendRaw: 0,
+          dueBalance: "₹0",
+          dueBalanceRaw: 0,
+          notes: `Converted from registered user account on ${new Date().toLocaleDateString()}.`,
+        },
+      });
+      targetClientId = newClient.id;
+    }
 
-    // Link user to client and update role
+    // Link user to client and update role to CLIENT
     await db.user.update({
       where: { id: userId },
       data: {
         role: "CLIENT",
-        clientId: newClient.id,
+        clientId: targetClientId,
         status: "Active",
         isVerified: true,
       },
@@ -200,7 +217,7 @@ export async function convertUserToClient(userId: string) {
     await logUserActivity(
       userId,
       "CONVERTED_TO_CLIENT",
-      `User was officially verified and converted to Client account (${newClient.name}) by Super Admin`
+      `User was officially verified and converted to Client account by Super Admin`
     );
 
     revalidatePath("/admin/users");
@@ -209,7 +226,7 @@ export async function convertUserToClient(userId: string) {
     revalidatePath("/admin/finance");
     revalidatePath("/admin");
 
-    return { success: true, clientId: newClient.id };
+    return { success: true, clientId: targetClientId };
   } catch (error: any) {
     console.error("Error converting user to client:", error);
     throw new Error(error?.message || "Failed to convert user to client.");
@@ -237,9 +254,25 @@ export async function updateUserStatus(userId: string, status: string) {
 
 export async function deleteUserAccount(userId: string) {
   try {
-    await db.user.delete({
+    const user = await db.user.findUnique({
       where: { id: userId },
     });
+
+    if (user) {
+      if (user.clientId) {
+        await db.client.delete({
+          where: { id: user.clientId },
+        }).catch(() => {});
+      } else {
+        await db.client.deleteMany({
+          where: { email: { equals: user.email, mode: "insensitive" } },
+        }).catch(() => {});
+      }
+
+      await db.user.delete({
+        where: { id: userId },
+      });
+    }
 
     revalidatePath("/admin/users");
     revalidatePath("/admin/clients");

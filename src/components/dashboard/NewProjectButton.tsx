@@ -7,7 +7,7 @@ import { ProjectEditForm } from "./ProjectEditForm";
 
 interface NewProjectButtonProps {
   categories: string[];
-  clients?: Array<{ id: string; name: string; email: string }>;
+  clients?: Array<{ id: string; name: string; email: string; isUser?: boolean }>;
 }
 
 export function NewProjectButton({ categories, clients = [] }: NewProjectButtonProps) {

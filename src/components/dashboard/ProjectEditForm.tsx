@@ -10,7 +10,7 @@ import { slugify } from "@/lib/slugify";
 interface ProjectEditFormProps {
   project?: Project;
   categories: string[];
-  clients?: Array<{ id: string; name: string; email: string }>;
+  clients?: Array<{ id: string; name: string; email: string; isUser?: boolean }>;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -174,6 +174,11 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
                     {selectedClientObj.name.slice(0, 2).toUpperCase()}
                   </div>
                   <span className="font-medium truncate">{selectedClientObj.name}</span>
+                  {(selectedClientObj as any)?.isUser && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#F5F5F5] dark:bg-[#262626] text-[#737373] dark:text-neutral-300 border border-[#E5E5E5] dark:border-[#333333] shrink-0">
+                      User → Promotes to Client
+                    </span>
+                  )}
                   {selectedClientObj.email && (
                     <span className="text-xs text-[#737373] dark:text-neutral-400 font-mono truncate hidden sm:inline">
                       ({selectedClientObj.email})
@@ -245,7 +250,14 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
                               {c.name.slice(0, 2).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate font-medium">{c.name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="truncate font-medium">{c.name}</p>
+                                {c.isUser && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#F5F5F5] dark:bg-[#262626] text-[#737373] dark:text-neutral-300 border border-[#E5E5E5] dark:border-[#333333] shrink-0">
+                                    User (Promote)
+                                  </span>
+                                )}
+                              </div>
                               {c.email && (
                                 <p className={`text-[10px] truncate ${isSelected ? "text-neutral-300 dark:text-neutral-600" : "text-[#737373] dark:text-neutral-400"}`}>
                                   {c.email}

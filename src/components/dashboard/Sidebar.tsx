@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { IndianRupee } from "lucide-react";
+import { IndianRupee, BookOpen } from "lucide-react";
 
 interface SidebarProps {
   user?: {
@@ -150,6 +150,12 @@ export function Sidebar({
           icon: <IndianRupee className="w-5 h-5" strokeWidth={2} />
         },
         { 
+          label: "Blog", 
+          description: "Author, edit & publish articles",
+          href: "/admin/blog", 
+          icon: <BookOpen className="w-5 h-5" strokeWidth={1.8} />
+        },
+        { 
           label: "Inquiries", 
           description: "Incoming project consultation leads",
           href: "/admin/inquiries", 
@@ -196,9 +202,10 @@ export function Sidebar({
     { label: "Users", href: "/admin/users", icon: smartMenuSections[0].items[0].icon, badgeCount: newUsersCount },
     { label: "Projects", href: "/admin/projects", icon: primaryNavItems[1].icon },
     { label: "Clients", href: "/admin/clients", icon: smartMenuSections[0].items[1].icon },
+    { label: "Blog", href: "/admin/blog", icon: <BookOpen className="w-5 h-5" strokeWidth={1.8} /> },
     { label: "Revisions", href: "/admin/revisions", icon: primaryNavItems[2].icon, badgeCount: pendingRevisionsCount },
     { label: "Finance", href: "/admin/finance", icon: primaryNavItems[3].icon },
-    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[5].icon, badgeCount: unreadInquiriesCount },
+    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[6].icon, badgeCount: unreadInquiriesCount },
     { label: "Profile", href: "/admin/profile", icon: smartMenuSections[1].items[0].icon },
     { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[1].icon },
   ];
