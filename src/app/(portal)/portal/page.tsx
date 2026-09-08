@@ -15,6 +15,7 @@ import {
   Calendar, 
   Receipt, 
   FileText,
+  Download,
   RotateCcw,
   MessageCircle,
   Building2,
@@ -411,6 +412,32 @@ export default async function PortalDashboardPage() {
                     <div className="flex items-center justify-between text-xs pt-3 border-t border-[#E5E5E5] dark:border-[#262626] text-[#737373]">
                       <span>Budget: <strong className="text-[#0A0A0A] dark:text-white">{proj.budget || "Custom"}</strong></span>
                       <span>Target: <strong className="text-[#0A0A0A] dark:text-white">{formatProjectDeadline(proj.deadline).dateRange}</strong></span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href="/portal/projects"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors"
+                          title="Open Project Agreement"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Agreement</span>
+                        </Link>
+                        <Link
+                          href="/portal/projects"
+                          className="p-1 border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors"
+                          title="Download Agreement PDF"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                      <Link
+                        href="/portal/projects"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#0A0A0A] dark:text-white hover:underline"
+                      >
+                        Sprint Board <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </div>
                   </Card>
                 ))}

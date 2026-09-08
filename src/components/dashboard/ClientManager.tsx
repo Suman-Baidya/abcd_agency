@@ -13,6 +13,7 @@ import {
   Search,
   Plus,
   Download,
+  FileText,
   Mail,
   Phone,
   Globe,
@@ -42,6 +43,9 @@ import {
 } from "@/app/(dashboard)/admin/clients/actions";
 
 import { ClientProjectItem } from "@/app/(dashboard)/admin/clients/actions";
+import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
+import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
+import { parseCurrencyToNumber } from "@/lib/sync-financials";
 
 export interface ClientItem {
   id: string;
@@ -66,6 +70,7 @@ export interface ClientItem {
   joinedDate: string;
   initials: string;
   notes?: string;
+  agreement?: any;
 }
 
 export function ClientManager({
@@ -108,6 +113,71 @@ export function ClientManager({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Agreement Modal State
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+  const [agreementModalData, setAgreementModalData] = useState<any | null>(null);
+  const [directDownloadAgreement, setDirectDownloadAgreement] = useState<any | null>(null);
+
+  const buildClientAgreementData = (client: ClientItem) => {
+    const proj = client.projectsList?.[0];
+    let deadlineObj = { startDate: "", endDate: "" };
+    try {
+      if (proj?.deadline) deadlineObj = JSON.parse(proj.deadline);
+    } catch (e) {}
+
+    const budgetRaw =
+      proj?.budgetRaw && proj.budgetRaw > 0
+        ? proj.budgetRaw
+        : client.totalSpendRaw > 0
+        ? client.totalSpendRaw
+        : 50000;
+    const agr = (proj as any)?.agreement || client.agreement || {};
+
+    return {
+      id: agr.id,
+      projectId: proj?.id || client.id,
+      agreementNumber:
+        agr.agreementNumber ||
+        `ABCD-AGR-2026-${(client.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4) || "CLNT").toUpperCase()}`,
+      status: agr.status || (client.status === "Active" ? "Active" : "Draft"),
+      startDate: agr.startDate || deadlineObj.startDate || new Date().toISOString().slice(0, 10),
+      deliveryDate: agr.deliveryDate || deadlineObj.endDate || "",
+      estimatedDuration: agr.estimatedDuration || "4 Weeks",
+      totalAmountRaw: agr.totalAmountRaw || budgetRaw,
+      advancePercent: agr.advancePercent ?? 40,
+      advanceAmountRaw: agr.advanceAmountRaw ?? Math.round(budgetRaw * 0.4),
+      deliveryPercent: agr.deliveryPercent ?? 40,
+      deliveryAmountRaw: agr.deliveryAmountRaw ?? Math.round(budgetRaw * 0.4),
+      finalPercent: agr.finalPercent ?? 20,
+      finalAmountRaw: agr.finalAmountRaw ?? Math.round(budgetRaw * 0.2),
+      paymentDueDays: agr.paymentDueDays ?? 7,
+      reviewWindowDays: agr.reviewWindowDays ?? 14,
+      revisionRounds: agr.revisionRounds ?? 2,
+      termsAndPolicy: agr.termsAndPolicy || DEFAULT_AGREEMENT_TERMS,
+      notes: agr.notes || client.notes || undefined,
+      issuedAt: agr.issuedAt || client.joinedDate || new Date(),
+      updatedAt: agr.updatedAt || null,
+      projectTitle: proj?.title || `${client.name} — Corporate Digital Services`,
+      projectCategory: proj?.category || client.industry || "Digital Technology Services",
+      projectSummary: `Official corporate services agreement, statement of deliverables, and intellectual property terms for ${client.name}.`,
+      clientName: client.name,
+      clientContactPerson: client.contactPerson,
+      clientEmail: client.email,
+      clientPhone: client.phone,
+      clientLocation: client.location || "Chandpara, 24 pgs N, 743245",
+    };
+  };
+
+  const handleOpenAgreement = (client: ClientItem) => {
+    setAgreementModalData(buildClientAgreementData(client));
+    setIsAgreementModalOpen(true);
+  };
+
+  const handleDirectDownload = (client: ClientItem) => {
+    // Just download, NO PREVIEW MODAL!
+    setDirectDownloadAgreement(buildClientAgreementData(client));
+  };
 
   // Sync initial query when navigated to with searchParams
   React.useEffect(() => {
@@ -659,6 +729,7 @@ export function ClientManager({
                 <th className="px-5 py-3.5 min-w-[130px]">Projects</th>
                 <th className="px-5 py-3.5 min-w-[140px]">Spend & Due</th>
                 <th className="px-5 py-3.5 min-w-[140px]">Client Since</th>
+                <th className="px-5 py-3.5 text-center min-w-[120px]">AGREEMENT</th>
                 <th className="px-5 py-3.5 text-right w-36">Actions</th>
               </tr>
             </thead>
@@ -764,6 +835,28 @@ export function ClientManager({
                       {/* Joined Date */}
                       <td className="px-5 py-4 whitespace-nowrap text-xs text-[#737373] dark:text-neutral-400">
                         {client.joined}
+                      </td>
+
+                      {/* AGREEMENT Column: Document icon + Download icon */}
+                      <td className="px-5 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAgreement(client)}
+                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-colors cursor-pointer shadow-2xs group"
+                            title="Open Agreement Document"
+                          >
+                            <FileText className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDirectDownload(client)}
+                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-colors cursor-pointer shadow-2xs group"
+                            title="Download Agreement as PDF"
+                          >
+                            <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                          </button>
+                        </div>
                       </td>
 
                       {/* Actions: Contact, Edit, Delete, More */}
@@ -924,7 +1017,7 @@ export function ClientManager({
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={8} className="px-6 py-12 text-center">
                     <div className="max-w-xs mx-auto text-center space-y-2">
                       <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white">
                         No clients match your filter
@@ -1410,14 +1503,60 @@ export function ClientManager({
 
                         {/* Direct action link to project */}
                         <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
-                          <Link
-                            href={`/admin/projects?q=${encodeURIComponent(proj.title)}`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
-                            title="Manage this project"
-                          >
-                            <span>Open Project</span>
-                            <ChevronRight className="w-3 h-3" />
-                          </Link>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const budgetRaw = proj.budgetRaw > 0 ? proj.budgetRaw : parseCurrencyToNumber(proj.budget);
+                                const agr = (proj as any).agreement || {};
+                                const agreementData: any = {
+                                  id: agr.id,
+                                  projectId: proj.id,
+                                  agreementNumber: agr.agreementNumber || `ABCD-AGR-2026-${(proj.slug || "PRJ").slice(0, 4).toUpperCase()}`,
+                                  status: agr.status || "Active",
+                                  startDate: agr.startDate || "",
+                                  deliveryDate: agr.deliveryDate || "",
+                                  estimatedDuration: agr.estimatedDuration || "4 Weeks",
+                                  totalAmountRaw: agr.totalAmountRaw || budgetRaw,
+                                  advancePercent: agr.advancePercent ?? 40,
+                                  advanceAmountRaw: agr.advanceAmountRaw ?? Math.round(budgetRaw * 0.4),
+                                  deliveryPercent: agr.deliveryPercent ?? 40,
+                                  deliveryAmountRaw: agr.deliveryAmountRaw ?? Math.round(budgetRaw * 0.4),
+                                  finalPercent: agr.finalPercent ?? 20,
+                                  finalAmountRaw: agr.finalAmountRaw ?? Math.round(budgetRaw * 0.2),
+                                  paymentDueDays: agr.paymentDueDays ?? 7,
+                                  reviewWindowDays: agr.reviewWindowDays ?? 14,
+                                  revisionRounds: agr.revisionRounds ?? 2,
+                                  termsAndPolicy: agr.termsAndPolicy || DEFAULT_AGREEMENT_TERMS,
+                                  notes: agr.notes || undefined,
+                                  issuedAt: agr.issuedAt || new Date(),
+                                  projectTitle: proj.title,
+                                  projectCategory: proj.category,
+                                  projectSummary: `Official statement of work and service agreement for ${proj.title}.`,
+                                  clientName: selectedClient.name,
+                                  clientContactPerson: selectedClient.contactPerson,
+                                  clientEmail: selectedClient.email,
+                                  clientPhone: selectedClient.phone,
+                                  clientLocation: selectedClient.location || "Chandpara, 24 pgs N, 743245",
+                                };
+                                setAgreementModalData(agreementData);
+                                setIsAgreementModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                              title="View official project agreement"
+                            >
+                              <FileText className="w-3 h-3" />
+                              <span>Agreement</span>
+                            </button>
+                            <Link
+                              href={`/admin/projects?q=${encodeURIComponent(proj.title)}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                              title="Manage this project"
+                            >
+                              <span>Open</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </Link>
+                          </div>
                           {proj.slug && (
                             <Link
                               href={`/work/${proj.slug}`}
@@ -1810,6 +1949,25 @@ export function ClientManager({
           </div>
         </form>
       </Modal>
+
+      {/* Official Project Agreement Modal */}
+      {isAgreementModalOpen && agreementModalData && (
+        <ProjectAgreementModal
+          isOpen={isAgreementModalOpen}
+          onClose={() => setIsAgreementModalOpen(false)}
+          agreement={agreementModalData}
+          canEdit={true}
+          onSave={(updated) => setAgreementModalData(updated)}
+        />
+      )}
+
+      {/* Direct Background Downloader - No Preview Popup */}
+      {directDownloadAgreement && (
+        <DirectPDFDownloader
+          agreement={directDownloadAgreement}
+          onComplete={() => setDirectDownloadAgreement(null)}
+        />
+      )}
     </div>
   );
 }

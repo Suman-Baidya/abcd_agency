@@ -182,6 +182,7 @@ export interface ClientProjectItem {
   paidRaw: number;
   dueRaw: number;
   deadline?: string;
+  agreement?: any;
 }
 
 export async function getClientsWithProjectCounts() {
@@ -200,6 +201,7 @@ export async function getClientsWithProjectCounts() {
         joinedDate: s.joinedDate.toISOString().slice(0, 10),
         initials: s.name.slice(0, 2).toUpperCase(),
         status: s.status as "Active" | "Prospect" | "Inactive",
+        agreement: null,
       }));
     }
 
@@ -210,7 +212,7 @@ export async function getClientsWithProjectCounts() {
       });
     }
 
-    const [clientsRaw, projects, incomeTransactions, users] = await Promise.all([
+    const [clientsRaw, projects, incomeTransactions, users, agreements] = await Promise.all([
       db.client.findMany({
         orderBy: { createdAt: "desc" },
         include: {
@@ -251,7 +253,10 @@ export async function getClientsWithProjectCounts() {
       db.user.findMany({
         select: { id: true, email: true, role: true, clientId: true },
       }),
+      (db as any).projectAgreement?.findMany().catch(() => []) || [],
     ]);
+
+    const agreementMap = new Map((agreements || []).map((a: any) => [a.projectId, a]));
 
     // Guard: Normal users who have not been officially promoted must NOT appear on the Client Page
     const clients = clientsRaw.filter((c: any) => {
@@ -312,6 +317,7 @@ export async function getClientsWithProjectCounts() {
           paidRaw: pPaidRaw,
           dueRaw: pDueRaw,
           deadline: p.deadline || undefined,
+          agreement: agreementMap.get(p.id) || null,
         };
       });
 
@@ -349,6 +355,7 @@ export async function getClientsWithProjectCounts() {
         joinedDate: (c.joinedDate || c.createdAt).toISOString().slice(0, 10),
         initials,
         notes: c.notes || undefined,
+        agreement: projectsList.find((p) => p.agreement)?.agreement || null,
       };
     });
   } catch (error) {

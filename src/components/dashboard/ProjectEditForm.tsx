@@ -8,7 +8,7 @@ import { updateProjectFull, createProjectInline } from "@/app/(dashboard)/admin/
 import { slugify } from "@/lib/slugify";
 
 interface ProjectEditFormProps {
-  project?: Project;
+  project?: any;
   categories: string[];
   clients?: Array<{ id: string; name: string; email: string; isUser?: boolean }>;
   onSuccess: () => void;
@@ -357,6 +357,149 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
           </div>
         </div>
       </div>
+
+        {/* Project Agreement & Payment Terms */}
+        <div className="pt-2">
+          <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-2 mb-3">
+            <h2 className="text-xs font-bold text-[#0A0A0A] dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span>Agreement & Payment Terms</span>
+            </h2>
+            <span className="text-[10px] text-[#737373] dark:text-neutral-400 font-mono">
+              Auto-generates official A4 PDF agreement
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Agreement Number
+              </label>
+              <input
+                type="text"
+                name="agreementNumber"
+                defaultValue={project?.agreement?.agreementNumber || `ABCD-AGR-2026-${Math.floor(1000 + Math.random() * 9000)}`}
+                className="w-full text-sm font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                placeholder="e.g. ABCD-AGR-2026-0042"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Estimated Duration
+              </label>
+              <input
+                type="text"
+                name="estimatedDuration"
+                defaultValue={project?.agreement?.estimatedDuration || "4 Weeks"}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                placeholder="e.g. 4 Weeks, 6 Weeks"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Advance Deposit (%)
+              </label>
+              <input
+                type="number"
+                name="advancePercent"
+                min="0"
+                max="100"
+                defaultValue={project?.agreement?.advancePercent ?? 40}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+              />
+              <span className="text-[11px] text-[#737373] block">Due before sprint kickoff (standard 40%)</span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Staging Delivery (%)
+              </label>
+              <input
+                type="number"
+                name="deliveryPercent"
+                min="0"
+                max="100"
+                defaultValue={project?.agreement?.deliveryPercent ?? 40}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+              />
+              <span className="text-[11px] text-[#737373] block">Due upon staging demo deployment (standard 40%)</span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Final Settlement (%)
+              </label>
+              <input
+                type="number"
+                name="finalPercent"
+                min="0"
+                max="100"
+                defaultValue={project?.agreement?.finalPercent ?? 20}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+              />
+              <span className="text-[11px] text-[#737373] block">Due post-review window sign-off (standard 20%)</span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Review & Inspection Window (Days)
+              </label>
+              <input
+                type="number"
+                name="reviewWindowDays"
+                min="1"
+                max="60"
+                defaultValue={project?.agreement?.reviewWindowDays ?? 14}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+              />
+              <span className="text-[11px] text-[#737373] block">Client inspection & testing period (default 14 days)</span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Payment Period Window (Days)
+              </label>
+              <input
+                type="number"
+                name="paymentDueDays"
+                min="1"
+                max="60"
+                defaultValue={project?.agreement?.paymentDueDays ?? 7}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+              />
+              <span className="text-[11px] text-[#737373] block">Net payment window after invoice issue (default 7 days)</span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Included Revision Rounds
+              </label>
+              <input
+                type="number"
+                name="revisionRounds"
+                min="0"
+                max="10"
+                defaultValue={project?.agreement?.revisionRounds ?? 2}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+              />
+              <span className="text-[11px] text-[#737373] block">Rounds of UI/UX revisions included in base fee (default 2)</span>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
+                Special Stipulations / Notes (Optional)
+              </label>
+              <textarea
+                name="agreementNotes"
+                defaultValue={project?.agreement?.notes || ""}
+                rows={2}
+                className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                placeholder="Any client-specific covenants, custom delivery milestones, or non-standard terms..."
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-auto pt-4 border-t border-[#E5E5E5] dark:border-[#262626] flex justify-end gap-3 bg-white dark:bg-[#0A0A0A] shrink-0 sticky bottom-0 pb-2 z-10">

@@ -225,9 +225,65 @@ model Project {
   transactions     Transaction[]
   revisionRequests RevisionRequest[]
   tasks            ProjectTask[]
+  agreement        ProjectAgreement?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ProjectAgreement {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  projectRel        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  agreementNumber   String    @unique // e.g. "ABCD-AGR-2026-001"
+  status            String    @default("Active") // "Active", "Draft", "Completed"
+  
+  // Time Period & Schedule
+  startDate         String?   // e.g. "2026-09-10"
+  deliveryDate      String?   // e.g. "2026-10-25"
+  estimatedDuration String?   // e.g. "6 Weeks"
+  
+  // Payment Breakdown
+  totalAmountRaw    Int       @default(0) // Total project fee in INR
+  advancePercent    Int       @default(40) // 40% upfront deposit
+  advanceAmountRaw  Int       @default(0)
+  deliveryPercent   Int       @default(40) // 40% upon staging delivery
+  deliveryAmountRaw Int       @default(0)
+  finalPercent      Int       @default(20) // 20% after review window & signoff
+  finalAmountRaw    Int       @default(0)
+  paymentDueDays    Int       @default(7)  // Net 7 days payment period
+  
+  // Review & Acceptance Window
+  reviewWindowDays  Int       @default(14) // 14 calendar days post-delivery for client review & QA
+  revisionRounds    Int       @default(2)  // 2 included rounds of revisions
+  
+  // Terms & Policies
+  termsAndPolicy    String?   @db.Text     // Default standard agency terms or custom overrides
+  notes             String?   @db.Text     // Custom stipulations or notes
+  
+  // Digital Signature & Electronic Audit Records (IT Act, 2000 compliant)
+  signedAt            DateTime? // Exact timestamp when client signed
+  signedByName        String?   // Signatory legal name
+  signedByEmail       String?   // Signatory email
+  signedByTitle       String?   // Signatory job title / authorization
+  signedIp            String?   // Signatory IP address
+  signedUserAgent     String?   // Browser/Device fingerprint
+  signatureType       String?   @default("DRAW") // "DRAW" | "TYPE"
+  clientSignature     String?   @db.Text // Base64 transparent PNG or stylized SVG
+  contractorSignedAt  DateTime? @default(now())
+  contractorSignature String?   @db.Text // Suman Baidya signature representation
+  signedAuditHash     String?   // Cryptographic SHA-256 verification seal
+  
+  // Historical Confirmation Chain & Permanent Audit Trail
+  originalSignedAt    DateTime? // Permanent record of initial acceptance
+  originalSignedIp    String?   // Permanent record of initial IP address
+  originalAuditHash   String?   // Permanent initial SHA-256 seal
+  confirmationHistory String?   @db.Text // Complete JSON audit log of all execution and amendment events
+  
+  issuedAt          DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model ProjectTask {

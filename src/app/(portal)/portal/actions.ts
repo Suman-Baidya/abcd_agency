@@ -47,6 +47,22 @@ export async function getPortalData() {
     }),
   ]);
 
+  // Safely attach agreements to projects
+  if (fullUser?.clientRel?.projects?.length) {
+    try {
+      const projectIds = fullUser.clientRel.projects.map((p: any) => p.id);
+      const agreements = await (db as any).projectAgreement.findMany({
+        where: { projectId: { in: projectIds } },
+      });
+      const map = new Map((agreements || []).map((a: any) => [a.projectId, a]));
+      for (const proj of fullUser.clientRel.projects) {
+        (proj as any).agreement = map.get(proj.id) || null;
+      }
+    } catch (e) {
+      console.warn("Could not query agreements for client projects:", e);
+    }
+  }
+
   return {
     user: fullUser,
     client: fullUser?.clientRel || null,

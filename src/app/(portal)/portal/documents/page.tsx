@@ -8,6 +8,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { TablePagination } from "@/components/ui/TablePagination";
 import { FileText, Download, FileCode, FileSpreadsheet, Shield, UploadCloud, Search, ArrowUpDown, Lock, X } from "lucide-react";
 import Link from "next/link";
+import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
+import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
 
 export default function PortalDocumentsPage() {
   const [data, setData] = useState<any>(null);
@@ -19,6 +21,9 @@ export default function PortalDocumentsPage() {
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name-asc">("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] = useState<any | null>(null);
+  const [directDownloadAgreement, setDirectDownloadAgreement] = useState<any | null>(null);
 
   useEffect(() => {
     getPortalData().then((res) => {
@@ -30,49 +35,130 @@ export default function PortalDocumentsPage() {
   const client = data?.client;
   const isProspect = data?.user?.role === "USER";
 
+  const buildAgreementData = (project: any) => {
+    let deadlineObj = { startDate: "", endDate: "" };
+    try {
+      if (project.deadline) deadlineObj = JSON.parse(project.deadline);
+    } catch (e) {}
+
+    const budgetRaw =
+      project.budgetRaw > 0
+        ? project.budgetRaw
+        : parseInt(String(project.budget || "0").replace(/[^0-9]/g, "") || "0", 10);
+    const agr = project.agreement || {};
+
+    return {
+      id: agr.id,
+      projectId: project.id,
+      agreementNumber:
+        agr.agreementNumber || `ABCD-AGR-2026-${(project.slug || "PRJ").slice(0, 4).toUpperCase()}`,
+      status: agr.status || "Active",
+      startDate: agr.startDate || deadlineObj.startDate || "",
+      deliveryDate: agr.deliveryDate || deadlineObj.endDate || "",
+      estimatedDuration: agr.estimatedDuration || "4 Weeks",
+      totalAmountRaw: agr.totalAmountRaw || budgetRaw,
+      advancePercent: agr.advancePercent ?? 40,
+      advanceAmountRaw: agr.advanceAmountRaw ?? Math.round(budgetRaw * 0.4),
+      deliveryPercent: agr.deliveryPercent ?? 40,
+      deliveryAmountRaw: agr.deliveryAmountRaw ?? Math.round(budgetRaw * 0.4),
+      finalPercent: agr.finalPercent ?? 20,
+      finalAmountRaw: agr.finalAmountRaw ?? Math.round(budgetRaw * 0.2),
+      paymentDueDays: agr.paymentDueDays ?? 7,
+      reviewWindowDays: agr.reviewWindowDays ?? 14,
+      revisionRounds: agr.revisionRounds ?? 2,
+      termsAndPolicy: agr.termsAndPolicy || DEFAULT_AGREEMENT_TERMS,
+      notes: agr.notes || undefined,
+      issuedAt: agr.issuedAt || project.createdAt,
+      updatedAt: agr.updatedAt || null,
+      projectTitle: project.title,
+      projectCategory: project.category,
+      projectSummary: project.summary,
+      clientName: client?.name || project.client || data?.user?.companyName || "Client Account",
+      clientContactPerson: client?.contactPerson || data?.user?.name || "",
+      clientEmail: client?.email || data?.user?.email || "",
+      clientPhone: client?.phone || data?.user?.phone || "",
+      clientLocation: client?.location || data?.user?.location || "",
+      signedAt: agr.signedAt,
+      signedByName: agr.signedByName,
+      signedByEmail: agr.signedByEmail,
+      signedByTitle: agr.signedByTitle,
+      signedIp: agr.signedIp,
+      signedUserAgent: agr.signedUserAgent,
+      signatureType: agr.signatureType,
+      clientSignature: agr.clientSignature,
+      contractorSignedAt: agr.contractorSignedAt,
+      contractorSignature: agr.contractorSignature,
+      signedAuditHash: agr.signedAuditHash,
+    };
+  };
+
+  const handleOpenAgreement = (project: any) => {
+    setSelectedAgreement(buildAgreementData(project));
+    setIsAgreementModalOpen(true);
+  };
+
+  const handleDirectDownload = (project: any) => {
+    setDirectDownloadAgreement(buildAgreementData(project));
+  };
+
   const rawDocuments: any[] = useMemo(() => {
-    if (client?.documents?.length) return client.documents;
-    return [
-      {
-        id: "doc-1",
-        title: "Master Services Agreement (MSA) & Non-Disclosure Agreement",
-        fileType: "PDF",
-        size: "1.4 MB",
-        uploadedBy: "Agency Legal Team",
-        createdAt: new Date("2026-08-01"),
-      },
-      {
-        id: "doc-2",
-        title: "Enterprise Full-Stack Architecture & API Specifications",
-        fileType: "PDF",
-        size: "3.2 MB",
-        uploadedBy: "Engineering Lead",
-        createdAt: new Date("2026-08-10"),
-      },
-      {
-        id: "doc-3",
-        title: "Complete Figma UI/UX Design System & Asset Bundle",
-        fileType: "Archive",
-        size: "18.5 MB",
-        uploadedBy: "Product Design Team",
-        createdAt: new Date("2026-08-15"),
-      },
-      {
-        id: "doc-4",
-        title: "Security & Database Compliance Verification Report",
-        fileType: "PDF",
-        size: "820 KB",
-        uploadedBy: "DevOps Team",
-        createdAt: new Date("2026-08-20"),
-      },
-    ];
+    const agreementDocs = (client?.projects || []).map((proj: any) => ({
+      id: `agr-${proj.id}`,
+      title: `${proj.title} — Official Project Service Agreement.pdf`,
+      fileType: "Agreement",
+      size: "A4 PDF",
+      uploadedBy: "ABCD Legal Operations",
+      createdAt: proj.agreement?.createdAt || proj.createdAt,
+      isAgreement: true,
+      project: proj,
+    }));
+
+    const clientDocs = client?.documents?.length
+      ? client.documents
+      : [
+          {
+            id: "doc-1",
+            title: "Master Services Agreement (MSA) & Non-Disclosure Agreement",
+            fileType: "PDF",
+            size: "1.4 MB",
+            uploadedBy: "Agency Legal Team",
+            createdAt: new Date("2026-08-01"),
+          },
+          {
+            id: "doc-2",
+            title: "Enterprise Full-Stack Architecture & API Specifications",
+            fileType: "PDF",
+            size: "3.2 MB",
+            uploadedBy: "Engineering Lead",
+            createdAt: new Date("2026-08-10"),
+          },
+          {
+            id: "doc-3",
+            title: "Complete Figma UI/UX Design System & Asset Bundle",
+            fileType: "Archive",
+            size: "18.5 MB",
+            uploadedBy: "Product Design Team",
+            createdAt: new Date("2026-08-15"),
+          },
+          {
+            id: "doc-4",
+            title: "Security & Database Compliance Verification Report",
+            fileType: "PDF",
+            size: "820 KB",
+            uploadedBy: "DevOps Team",
+            createdAt: new Date("2026-08-20"),
+          },
+        ];
+
+    return [...agreementDocs, ...clientDocs];
   }, [client]);
 
   // Stat metrics
   const totalDocsCount = rawDocuments.length;
+  const agreementDocsCount = rawDocuments.filter((d) => d.fileType === "Agreement").length;
   const pdfDocsCount = rawDocuments.filter((d) => d.fileType === "PDF").length;
   const archiveDocsCount = rawDocuments.filter((d) => d.fileType === "Archive" || d.fileType === "ZIP").length;
-  const otherDocsCount = totalDocsCount - pdfDocsCount - archiveDocsCount;
+  const otherDocsCount = totalDocsCount - agreementDocsCount - pdfDocsCount - archiveDocsCount;
 
   // Filter & Sort
   const filteredDocuments = useMemo(() => {
@@ -80,6 +166,7 @@ export default function PortalDocumentsPage() {
 
     if (selectedTypeTab !== "all") {
       result = result.filter((d) => {
+        if (selectedTypeTab === "agreement") return d.fileType === "Agreement";
         if (selectedTypeTab === "pdf") return d.fileType === "PDF";
         if (selectedTypeTab === "archive") return d.fileType === "Archive" || d.fileType === "ZIP";
         return true;
@@ -176,9 +263,9 @@ export default function PortalDocumentsPage() {
       {/* StatCards KPI Row */}
       <div id="documents-kpi-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Documents" value={totalDocsCount} color="default" />
-        <StatCard label="PDF Specifications" value={pdfDocsCount} color="emerald" />
-        <StatCard label="Design & Source Archives" value={archiveDocsCount} color="amber" />
-        <StatCard label="Vault Security" value="Encrypted" color="default" />
+        <StatCard label="Official Agreements" value={agreementDocsCount} color="emerald" />
+        <StatCard label="PDF Specifications" value={pdfDocsCount} color="default" />
+        <StatCard label="Design & Archives" value={archiveDocsCount} color="amber" />
       </div>
 
       {/* Documents Table Card */}
@@ -189,6 +276,7 @@ export default function PortalDocumentsPage() {
           <div id="documents-type-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {[
               { id: "all", label: "All", count: totalDocsCount },
+              { id: "agreement", label: "Official Agreements", count: agreementDocsCount },
               { id: "pdf", label: "PDF Documents", count: pdfDocsCount },
               { id: "archive", label: "Source Archives", count: archiveDocsCount },
             ].map((tab) => (
@@ -265,7 +353,7 @@ export default function PortalDocumentsPage() {
                 <th className="px-5 py-3.5 min-w-[100px]">Size</th>
                 <th className="px-5 py-3.5 min-w-[130px]">Author</th>
                 <th className="px-5 py-3.5 min-w-[120px]">Date Uploaded</th>
-                <th className="px-5 py-3.5 text-right w-28">Action</th>
+                <th className="px-5 py-3.5 text-right w-36">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5] dark:divide-[#262626] bg-white dark:bg-[#0A0A0A]">
@@ -291,7 +379,11 @@ export default function PortalDocumentsPage() {
                       </td>
 
                       <td className="px-5 py-4 text-center whitespace-nowrap">
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-[#F5F5F5] dark:bg-[#222222] text-[#0A0A0A] dark:text-white border border-[#E5E5E5] dark:border-[#333333]">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                          doc.isAgreement
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                            : "bg-[#F5F5F5] dark:bg-[#222222] text-[#0A0A0A] dark:text-white border-[#E5E5E5] dark:border-[#333333]"
+                        }`}>
                           {doc.fileType}
                         </span>
                       </td>
@@ -313,15 +405,36 @@ export default function PortalDocumentsPage() {
                       </td>
 
                       <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <a
-                          href={doc.fileUrl || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors cursor-pointer"
-                        >
-                          <Download className="w-3 h-3" />
-                          Download
-                        </a>
+                        {doc.isAgreement ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAgreement(doc.project)}
+                              className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                              title="Open Agreement Document"
+                            >
+                              <FileText className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDirectDownload(doc.project)}
+                              className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                              title="Download Agreement as PDF"
+                            >
+                              <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                            </button>
+                          </div>
+                        ) : (
+                          <a
+                            href={doc.fileUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors cursor-pointer"
+                          >
+                            <Download className="w-3 h-3" />
+                            Download
+                          </a>
+                        )}
                       </td>
                     </tr>
                   );
@@ -347,6 +460,28 @@ export default function PortalDocumentsPage() {
           itemLabel="documents"
         />
       </Card>
+
+      {/* Official A4 Agreement Modal */}
+      {isAgreementModalOpen && selectedAgreement && (
+        <ProjectAgreementModal
+          isOpen={isAgreementModalOpen}
+          onClose={() => setIsAgreementModalOpen(false)}
+          agreement={selectedAgreement}
+          canEdit={false}
+          onSave={(updated) => {
+            setSelectedAgreement(updated);
+            getPortalData().then((res) => setData(res));
+          }}
+        />
+      )}
+
+      {/* Direct Background Downloader - No Preview Popup */}
+      {directDownloadAgreement && (
+        <DirectPDFDownloader
+          agreement={directDownloadAgreement}
+          onComplete={() => setDirectDownloadAgreement(null)}
+        />
+      )}
     </div>
   );
 }

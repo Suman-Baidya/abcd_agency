@@ -29,12 +29,16 @@ import {
   Eye,
   Check,
   HelpCircle,
-  Calendar
+  Calendar,
+  FileText,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatProjectDeadline, evaluateTaskUrgency } from "@/lib/formatDate";
 import { ProjectSelectDropdown } from "@/components/ui/ProjectSelectDropdown";
+import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
+import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
 
 const CLIENT_KANBAN_LANES = [
   { id: "Backlog", title: "Backlog", color: "border-t-indigo-500", badgeBg: "bg-indigo-50 dark:bg-indigo-950/40", badgeText: "text-indigo-600 dark:text-indigo-300" },
@@ -97,6 +101,76 @@ export default function PortalProjectsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] = useState<any | null>(null);
+  const [directDownloadAgreement, setDirectDownloadAgreement] = useState<any | null>(null);
+
+  const buildAgreementData = (project: any) => {
+    let deadlineObj = { startDate: "", endDate: "" };
+    try {
+      if (project.deadline) deadlineObj = JSON.parse(project.deadline);
+    } catch (e) {}
+
+    const budgetRaw =
+      project.budgetRaw > 0
+        ? project.budgetRaw
+        : parseInt(String(project.budget || "0").replace(/[^0-9]/g, "") || "0", 10);
+    const agr = project.agreement || {};
+
+    return {
+      id: agr.id,
+      projectId: project.id,
+      agreementNumber:
+        agr.agreementNumber || `ABCD-AGR-2026-${(project.slug || "PRJ").slice(0, 4).toUpperCase()}`,
+      status: agr.status || "Active",
+      startDate: agr.startDate || deadlineObj.startDate || "",
+      deliveryDate: agr.deliveryDate || deadlineObj.endDate || "",
+      estimatedDuration: agr.estimatedDuration || "4 Weeks",
+      totalAmountRaw: agr.totalAmountRaw || budgetRaw,
+      advancePercent: agr.advancePercent ?? 40,
+      advanceAmountRaw: agr.advanceAmountRaw ?? Math.round(budgetRaw * 0.4),
+      deliveryPercent: agr.deliveryPercent ?? 40,
+      deliveryAmountRaw: agr.deliveryAmountRaw ?? Math.round(budgetRaw * 0.4),
+      finalPercent: agr.finalPercent ?? 20,
+      finalAmountRaw: agr.finalAmountRaw ?? Math.round(budgetRaw * 0.2),
+      paymentDueDays: agr.paymentDueDays ?? 7,
+      reviewWindowDays: agr.reviewWindowDays ?? 14,
+      revisionRounds: agr.revisionRounds ?? 2,
+      termsAndPolicy: agr.termsAndPolicy || DEFAULT_AGREEMENT_TERMS,
+      notes: agr.notes || undefined,
+      issuedAt: agr.issuedAt || project.createdAt,
+      updatedAt: agr.updatedAt || null,
+      projectTitle: project.title,
+      projectCategory: project.category,
+      projectSummary: project.summary,
+      clientName: client?.name || project.client || data?.user?.companyName || "Client Account",
+      clientContactPerson: client?.contactPerson || data?.user?.name || "",
+      clientEmail: client?.email || data?.user?.email || "",
+      clientPhone: client?.phone || data?.user?.phone || "",
+      clientLocation: client?.location || data?.user?.location || "",
+      signedAt: agr.signedAt,
+      signedByName: agr.signedByName,
+      signedByEmail: agr.signedByEmail,
+      signedByTitle: agr.signedByTitle,
+      signedIp: agr.signedIp,
+      signedUserAgent: agr.signedUserAgent,
+      signatureType: agr.signatureType,
+      clientSignature: agr.clientSignature,
+      contractorSignedAt: agr.contractorSignedAt,
+      contractorSignature: agr.contractorSignature,
+      signedAuditHash: agr.signedAuditHash,
+    };
+  };
+
+  const handleOpenAgreement = (project: any) => {
+    setSelectedAgreement(buildAgreementData(project));
+    setIsAgreementModalOpen(true);
+  };
+
+  const handleDirectDownload = (project: any) => {
+    // Directly trigger download, NO PREVIEW MODAL!
+    setDirectDownloadAgreement(buildAgreementData(project));
+  };
 
   const fetchPortalProjects = async (showToast = false) => {
     try {
@@ -476,6 +550,7 @@ export default function PortalProjectsPage() {
                 <th className="px-5 py-3.5 min-w-[140px]">Progress</th>
                 <th className="px-5 py-3.5 min-w-[130px]">Budget</th>
                 <th className="px-5 py-3.5 min-w-[140px]">Target Timeline</th>
+                <th className="px-5 py-3.5 text-center min-w-[120px]">AGREEMENT</th>
                 <th className="px-5 py-3.5 text-right w-28">Action</th>
               </tr>
             </thead>
@@ -540,21 +615,44 @@ export default function PortalProjectsPage() {
                         {formatProjectDeadline(proj.deadline).dateRange}
                       </td>
 
+                      <td className="px-5 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAgreement(proj)}
+                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                            title="Open Agreement Document"
+                          >
+                            <FileText className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDirectDownload(proj)}
+                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                            title="Download Agreement as PDF"
+                          >
+                            <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                          </button>
+                        </div>
+                      </td>
+
                       <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setSelectedProject(proj)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors cursor-pointer"
-                        >
-                          Details
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setSelectedProject(proj)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors cursor-pointer"
+                          >
+                            Details
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#737373] dark:text-neutral-400">
+                  <td colSpan={8} className="py-12 text-center text-[#737373] dark:text-neutral-400">
                     No project deliverables matching your search or filters.
                   </td>
                 </tr>
@@ -1126,16 +1224,47 @@ export default function PortalProjectsPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#262626]">
-              <Button variant="secondary" size="sm" onClick={() => setSelectedProject(null)}>
-                Close
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#262626]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handleOpenAgreement(selectedProject)}
+                className="inline-flex items-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>View Agreement (PDF)</span>
               </Button>
-              <Button variant="primary" size="sm" href="/portal/revisions">
-                Request Modification
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setSelectedProject(null)}>
+                  Close
+                </Button>
+                <Button variant="primary" size="sm" href="/portal/revisions">
+                  Request Modification
+                </Button>
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {isAgreementModalOpen && selectedAgreement && (
+        <ProjectAgreementModal
+          isOpen={isAgreementModalOpen}
+          onClose={() => setIsAgreementModalOpen(false)}
+          agreement={selectedAgreement}
+          canEdit={false}
+          onSave={(updated) => {
+            setSelectedAgreement(updated);
+            fetchPortalProjects();
+          }}
+        />
+      )}
+
+      {directDownloadAgreement && (
+        <DirectPDFDownloader
+          agreement={directDownloadAgreement}
+          onComplete={() => setDirectDownloadAgreement(null)}
+        />
       )}
     </div>
   );

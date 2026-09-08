@@ -4,11 +4,13 @@ import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Edit, Trash2, Eye, RotateCcw } from "lucide-react";
+import { Edit, Trash2, Eye, RotateCcw, FileText } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ProjectEditForm } from "./ProjectEditForm";
 import { ProjectViewDetails } from "./ProjectViewDetails";
+import { ProjectAgreementModal } from "./ProjectAgreementModal";
 import { quickUpdateStatus, quickUpdateProgress, deleteProject } from "@/app/(dashboard)/admin/projects/quick-actions";
+import { getProjectAgreement } from "@/app/(dashboard)/admin/projects/actions";
 import { Project } from "@prisma/client";
 
 interface ProjectTableRowProps {
@@ -23,6 +25,24 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isAgreementOpen, setIsAgreementOpen] = useState(false);
+  const [agreementData, setAgreementData] = useState<any>(null);
+  const [loadingAgreement, setLoadingAgreement] = useState(false);
+
+  const handleOpenAgreement = async () => {
+    setLoadingAgreement(true);
+    try {
+      const res = await getProjectAgreement(project.id);
+      if (res) {
+        setAgreementData(res);
+        setIsAgreementOpen(true);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAgreement(false);
+    }
+  };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     startTransition(() => {
@@ -224,6 +244,14 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
       <td className="px-5 py-4 text-right">
         <div className="flex items-center justify-end gap-1.5">
           <button
+            onClick={handleOpenAgreement}
+            disabled={loadingAgreement}
+            className="p-1.5 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#262626]"
+            title="View & Download Official Agreement"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => setIsViewOpen(true)}
             className="p-1.5 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#262626]"
             title="View Details"
@@ -331,6 +359,17 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
         </div>
       </div>
     </Modal>
+
+    {/* Official Project Agreement Modal */}
+    {isAgreementOpen && agreementData && (
+      <ProjectAgreementModal
+        isOpen={isAgreementOpen}
+        onClose={() => setIsAgreementOpen(false)}
+        agreement={agreementData}
+        canEdit={true}
+        onSave={(updated) => setAgreementData(updated)}
+      />
+    )}
     </>
   );
 }
