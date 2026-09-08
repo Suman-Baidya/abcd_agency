@@ -151,24 +151,9 @@ export default function PortalInquiriesPage() {
     }
   };
 
-  const user = data?.user;
   const inquiriesList: any[] = useMemo(() => {
-    if (data?.userInquiries && data.userInquiries.length > 0) {
-      return data.userInquiries;
-    }
-    return [
-      {
-        id: "inq-1",
-        businessType: user?.industry || "Startup",
-        projectType: "Custom Web & Software Dev",
-        services: ["Website Development", "Web Application Development"],
-        budget: "₹15,000 – ₹30,000 — Scale & AI",
-        status: user?.role === "USER" ? "New" : "Replied",
-        createdAt: user?.createdAt || new Date(),
-        message: "Initial technical project brief registered during account verification.",
-      },
-    ];
-  }, [data, user]);
+    return data?.userInquiries || [];
+  }, [data]);
 
   // Stat metrics
   const totalInquiriesCount = inquiriesList.length;
@@ -440,8 +425,33 @@ export default function PortalInquiriesPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#737373] dark:text-neutral-400">
-                    No project briefs found matching your filter.
+                  <td colSpan={7} className="py-16 text-center">
+                    <div className="max-w-sm mx-auto flex flex-col items-center justify-center space-y-3">
+                      <div className="w-10 h-10 rounded-full bg-[#F5F5F5] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#262626] flex items-center justify-center text-[#737373] dark:text-neutral-400">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white">
+                          {inquiriesList.length === 0 ? "No project briefs submitted yet" : "No project briefs match filter"}
+                        </p>
+                        <p className="text-xs text-[#737373] dark:text-neutral-400 max-w-xs leading-relaxed">
+                          {inquiriesList.length === 0
+                            ? "Submit your first project specification to receive custom technical scoping and a formal statement of work."
+                            : "Try adjusting your search keywords or switching status tabs."}
+                        </p>
+                      </div>
+                      {inquiriesList.length === 0 && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setShowInquiryModal(true)}
+                          className="mt-2 text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          Submit New Brief
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}

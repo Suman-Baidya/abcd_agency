@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TablePagination } from "@/components/ui/TablePagination";
-import { FileText, Download, FileCode, FileSpreadsheet, Shield, UploadCloud, Search, ArrowUpDown, Lock, X } from "lucide-react";
+import { FileText, Download, FileCode, FileSpreadsheet, Shield, UploadCloud, Search, ArrowUpDown, Lock, X, Folder } from "lucide-react";
 import Link from "next/link";
 import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
 import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
@@ -113,43 +113,7 @@ export default function PortalDocumentsPage() {
       project: proj,
     }));
 
-    const clientDocs = client?.documents?.length
-      ? client.documents
-      : [
-          {
-            id: "doc-1",
-            title: "Master Services Agreement (MSA) & Non-Disclosure Agreement",
-            fileType: "PDF",
-            size: "1.4 MB",
-            uploadedBy: "Agency Legal Team",
-            createdAt: new Date("2026-08-01"),
-          },
-          {
-            id: "doc-2",
-            title: "Enterprise Full-Stack Architecture & API Specifications",
-            fileType: "PDF",
-            size: "3.2 MB",
-            uploadedBy: "Engineering Lead",
-            createdAt: new Date("2026-08-10"),
-          },
-          {
-            id: "doc-3",
-            title: "Complete Figma UI/UX Design System & Asset Bundle",
-            fileType: "Archive",
-            size: "18.5 MB",
-            uploadedBy: "Product Design Team",
-            createdAt: new Date("2026-08-15"),
-          },
-          {
-            id: "doc-4",
-            title: "Security & Database Compliance Verification Report",
-            fileType: "PDF",
-            size: "820 KB",
-            uploadedBy: "DevOps Team",
-            createdAt: new Date("2026-08-20"),
-          },
-        ];
-
+    const clientDocs = client?.documents || [];
     return [...agreementDocs, ...clientDocs];
   }, [client]);
 
@@ -441,8 +405,22 @@ export default function PortalDocumentsPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#737373] dark:text-neutral-400">
-                    No documents found matching your filter.
+                  <td colSpan={7} className="py-16 text-center">
+                    <div className="max-w-sm mx-auto flex flex-col items-center justify-center space-y-3">
+                      <div className="w-10 h-10 rounded-full bg-[#F5F5F5] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#262626] flex items-center justify-center text-[#737373] dark:text-neutral-400">
+                        <Folder className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-[#0A0A0A] dark:text-white">
+                          {rawDocuments.length === 0 ? "No documents or agreements yet" : "No documents match filter"}
+                        </p>
+                        <p className="text-xs text-[#737373] dark:text-neutral-400 max-w-xs leading-relaxed">
+                          {rawDocuments.length === 0
+                            ? "Signed SOW agreements, NDA records, and project file packages will appear here as your project milestones progress."
+                            : "Try adjusting your search query or switching document categories."}
+                        </p>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               )}

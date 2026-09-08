@@ -6,8 +6,7 @@ import { usePathname } from "next/navigation";
 interface ScrollProgressBarProps {
   /**
    * Optional CSS selector for the scrollable container.
-   * If omitted, automatically detects a scrollable <main> element,
-   * falling back to window scrolling.
+   * If omitted, falls back to window scrolling.
    */
   containerSelector?: string;
   /**
@@ -30,13 +29,14 @@ export function ScrollProgressBar({
     let ticking = false;
     let currentElement: HTMLElement | null = null;
 
+    // Reset progress to 0 on pathname change so it never retains previous page position
+    setProgress(0);
+
     const getScrollTarget = (): HTMLElement | null => {
       if (containerSelector) {
         return document.querySelector<HTMLElement>(containerSelector);
       }
-      const mains = Array.from(document.querySelectorAll<HTMLElement>("main"));
-      const scrollable = mains.find((m) => m.scrollHeight > m.clientHeight);
-      return scrollable || mains[0] || null;
+      return null;
     };
 
     const calculateProgress = () => {
@@ -51,9 +51,10 @@ export function ScrollProgressBar({
         }
       }
 
-      if (currentElement && currentElement.scrollHeight > currentElement.clientHeight) {
+      if (currentElement) {
+        // Container scroll (e.g. <main className="overflow-y-auto"> in dashboard/portal)
         const scrollableHeight = currentElement.scrollHeight - currentElement.clientHeight;
-        if (scrollableHeight > 0) {
+        if (scrollableHeight > 10) {
           const scrolled = currentElement.scrollTop;
           const percentage = (scrolled / scrollableHeight) * 100;
           setProgress(Math.min(100, Math.max(0, percentage)));
@@ -61,11 +62,12 @@ export function ScrollProgressBar({
           setProgress(0);
         }
       } else {
-        const docHeight = document.documentElement.scrollHeight;
+        // Window scroll (e.g. marketing layout)
+        const docHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
         const winHeight = window.innerHeight;
         const scrollableHeight = docHeight - winHeight;
-        if (scrollableHeight > 0) {
-          const scrolled = window.scrollY;
+        if (scrollableHeight > 10) {
+          const scrolled = window.scrollY || document.documentElement.scrollTop;
           const percentage = (scrolled / scrollableHeight) * 100;
           setProgress(Math.min(100, Math.max(0, percentage)));
         } else {
@@ -82,7 +84,6 @@ export function ScrollProgressBar({
       }
     };
 
-    // Initial setup
     currentElement = getScrollTarget();
     if (currentElement) {
       currentElement.addEventListener("scroll", handleScroll, { passive: true });
@@ -90,12 +91,11 @@ export function ScrollProgressBar({
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", calculateProgress, { passive: true });
 
-    // Multi-stage check to handle client hydration and dynamic content rendering
+    // Multi-stage check to handle dynamic client rendering & images
     calculateProgress();
     const timer1 = setTimeout(calculateProgress, 100);
     const timer2 = setTimeout(calculateProgress, 400);
 
-    // ResizeObserver on the target element or body to catch dynamic list / card expansions
     let observer: ResizeObserver | null = null;
     if (typeof ResizeObserver !== "undefined") {
       const target = currentElement || document.body;
@@ -124,9 +124,14 @@ export function ScrollProgressBar({
       ? "sticky top-0 left-0 right-0"
       : "fixed top-0 left-0 right-0";
 
+  // When at the very top (progress === 0), be completely transparent with NO visible line before scrolling!
+  const isVisible = progress > 0;
+
   return (
     <div
-      className={`${positionClass} z-50 h-[3px] pointer-events-none bg-black/[0.04] dark:bg-white/[0.05] ${className}`}
+      className={`${positionClass} z-50 h-[2.5px] pointer-events-none transition-opacity duration-200 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      } ${className}`}
       role="progressbar"
       aria-label="Page scroll progress"
       aria-valuenow={Math.round(progress)}
@@ -134,7 +139,7 @@ export function ScrollProgressBar({
       aria-valuemax={100}
     >
       <div
-        className="h-full bg-[#0A0A0A] dark:bg-white transition-[width] duration-150 ease-out will-change-[width] shadow-[0_1px_3px_rgba(10,10,10,0.2)] dark:shadow-[0_1px_4px_rgba(255,255,255,0.4)]"
+        className="h-full bg-[#0A0A0A] dark:bg-white transition-[width] duration-100 ease-out will-change-[width] shadow-[0_1px_3px_rgba(10,10,10,0.2)] dark:shadow-[0_1px_4px_rgba(255,255,255,0.5)]"
         style={{
           width: `${progress}%`,
         }}
