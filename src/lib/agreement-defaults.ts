@@ -173,9 +173,9 @@ The Client formally engages Suman Baidya, operating professionally under the bra
 Work is executed in strict adherence to the agreed technical deliverables and milestones. Any additional features, scope expansion, third-party integrations, or functional changes requested outside this Statement of Work shall be quoted and scheduled as a supplementary Change Order.
 
 3. FINANCIAL CONSIDERATIONS & PAYMENT SCHEDULE
-• Upfront Advance Deposit (Milestone 1): Due immediately upon execution of this SOW to schedule resources and commence development sprints.
-• Staging / Demo Delivery (Milestone 2): Due upon functional deployment of the agreed features on the staging server for client review.
-• Final Settlement Balance (Milestone 3): Due within the Net payment period following formal sign-off and completion of the Client Review Window.
+- Upfront Advance Deposit (Milestone 1): Due immediately upon execution of this SOW to schedule resources and commence development sprints.
+- Staging / Demo Delivery (Milestone 2): Due upon functional deployment of the agreed features on the staging server for client review.
+- Final Settlement Balance (Milestone 3): Due within the Net payment period following formal sign-off and completion of the Client Review Window.
 All amounts are quoted in Indian National Rupees (INR) unless explicitly documented otherwise.
 
 4. CLIENT REVIEW, INSPECTION & ACCEPTANCE PERIOD

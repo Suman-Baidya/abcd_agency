@@ -127,6 +127,75 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
     };
   }
 
+  // Portal Services & Packages (/portal/services)
+  if (path === "/portal/services") {
+    return {
+      title: "Services & Packages Tour",
+      steps: [
+        {
+          element: "#portal-services-header",
+          popover: {
+            title: "1. Services & Capabilities",
+            description:
+              "Explore our fixed-deliverable packages, engineering services, and production tech stacks.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#portal-services-kpis",
+          popover: {
+            title: "2. Key Guarantees & SLAs",
+            description:
+              "Review our non-negotiable standards: 100% IP code handover, launch warranties, and fast response times.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#portal-services-packages",
+          popover: {
+            title: "3. Delivery Packages",
+            description:
+              "Select milestone-driven engineering packages tailored for MVPs, full-scale SaaS platforms, and enterprise AI.",
+            side: "top",
+            align: "center",
+          },
+        },
+        {
+          element: "#portal-services-list",
+          popover: {
+            title: "4. Core Engineering Services",
+            description:
+              "Review specialized capabilities across web & SaaS engineering, UI/UX design systems, AI agents, and database architecture.",
+            side: "top",
+            align: "center",
+          },
+        },
+        {
+          element: "#portal-services-tech",
+          popover: {
+            title: "5. Production Technologies",
+            description:
+              "Inspect our modern architectural foundation: Next.js 15, Neon PostgreSQL, Prisma ORM, and Google Gemini AI.",
+            side: "top",
+            align: "center",
+          },
+        },
+        {
+          element: "#portal-services-consultation",
+          popover: {
+            title: "6. Custom Scope Consultation",
+            description:
+              "Connect directly via Call, WhatsApp, or Project Brief for custom requirements.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
   // 3. Portal Projects (/portal/projects)
   if (path === "/portal/projects") {
     return {
