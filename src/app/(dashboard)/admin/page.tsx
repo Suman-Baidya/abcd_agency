@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
+import { SystemHealthWidget } from "@/components/dashboard/SystemHealthWidget";
 import { getCurrentUser } from "@/lib/auth-session";
 import { db } from "@/lib/prisma";
 
@@ -391,11 +392,12 @@ export default async function AdminDashboardPage() {
             Welcome back, {user?.name || "Suman"}. Here&apos;s a summary of your agency&apos;s operations.
           </p>
         </div>
-        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 sm:gap-3">
-          <Button variant="secondary" size="sm" href="/admin/finance" className="w-full sm:w-auto text-xs justify-center">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <SystemHealthWidget />
+          <Button variant="secondary" size="sm" href="/admin/finance" className="w-auto text-xs justify-center">
             Export Report
           </Button>
-          <Button variant="primary" size="sm" href="/admin/projects" className="w-full sm:w-auto text-xs justify-center">
+          <Button variant="primary" size="sm" href="/admin/projects" className="w-auto text-xs justify-center">
             New Project
           </Button>
         </div>

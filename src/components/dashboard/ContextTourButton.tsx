@@ -912,6 +912,65 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
     };
   }
 
+  // 16. Admin System & Infrastructure (/admin/system)
+  if (path === "/admin/system") {
+    return {
+      title: "System Information & Telemetry",
+      steps: [
+        {
+          element: "#system-quick-actions",
+          popover: {
+            title: "1. Quick Administrative Actions",
+            description:
+              "Clear application cache, export the last 1000 lines of system audit logs, or trigger diagnostic test alerts directly from the dashboard.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#system-upgrade-advisor",
+          popover: {
+            title: "2. Smart Upgrade Thresholds & Advisor",
+            description:
+              "Real-time traffic & resource monitor with automated Green, Yellow, and Red upgrade indicators for CPU, RAM, Disk, and DB connection pooling.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#system-hardware-grid",
+          popover: {
+            title: "3. Real-Time Hardware & OS Metrics",
+            description:
+              "Live gauges for CPU load percentage, RAM memory allocation, physical disk storage capacity, and network throughput.",
+            side: "top",
+            align: "center",
+          },
+        },
+        {
+          element: "#system-kpi-grid",
+          popover: {
+            title: "4. Database & Runtime Telemetry",
+            description:
+              "Monitor active vs max connection pool limits, database storage size, micro-benchmark query latency, and Node heap leak tracking.",
+            side: "top",
+            align: "center",
+          },
+        },
+        {
+          element: "#system-db-telemetry",
+          popover: {
+            title: "5. Database & Connection Pooling",
+            description:
+              "Inspect Neon Serverless PostgreSQL 16 connection pooling, WebSocket TLS encryption, and concurrency protection.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
   return null;
 }
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { IndianRupee, BookOpen } from "lucide-react";
+import { IndianRupee, BookOpen, Activity } from "lucide-react";
 
 interface SidebarProps {
   user?: {
@@ -243,6 +243,12 @@ export function Sidebar({
           )
         },
         { 
+          label: "System Info", 
+          description: "Live telemetry, DB latency & edge load balancing",
+          href: "/admin/system", 
+          icon: <Activity className="w-5 h-5" strokeWidth={1.8} />
+        },
+        { 
           label: "Settings", 
           description: "Site configuration, logos & integrations",
           href: "/admin/settings", 
@@ -268,7 +274,8 @@ export function Sidebar({
     { label: "Finance", href: "/admin/finance", icon: primaryNavItems[3].icon },
     { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[6].icon, badgeCount: effectiveInquiriesCount },
     { label: "Profile", href: "/admin/profile", icon: smartMenuSections[1].items[0].icon },
-    { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[1].icon },
+    { label: "System Info", href: "/admin/system", icon: <Activity className="w-5 h-5" strokeWidth={1.8} /> },
+    { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[2].icon },
   ];
 
   // Check if any primary mobile bottom item is active
