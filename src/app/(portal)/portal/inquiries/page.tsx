@@ -413,7 +413,18 @@ export default function PortalInquiriesPage() {
                       {/* Action */}
                       <td className="px-5 py-4 text-right whitespace-nowrap">
                         <button
-                          onClick={() => setSelectedInquiry(inq)}
+                          onClick={() => {
+                            setSelectedInquiry(inq);
+                            try {
+                              const stored = localStorage.getItem("abcd_read_notifications");
+                              const current = stored ? JSON.parse(stored) : [];
+                              if (!current.includes(`inq-${inq.id}`)) {
+                                const updated = [...current, `inq-${inq.id}`];
+                                localStorage.setItem("abcd_read_notifications", JSON.stringify(updated));
+                                window.dispatchEvent(new Event("notifications_updated"));
+                              }
+                            } catch {}
+                          }}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors cursor-pointer"
                         >
                           <Eye className="w-3 h-3" />

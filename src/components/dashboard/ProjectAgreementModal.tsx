@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { 
   X, Download, FileText, Shield, Loader2, Mail, Phone, Globe, User,
   Edit3, Save, RotateCcw, PenTool, CheckCircle2, Receipt, Clock, Check,
-  History, Clock3, ArrowRight, ShieldCheck, Laptop
+  History, Clock3, ArrowRight, ShieldCheck, Laptop, Printer
 } from "lucide-react";
 import { 
   ProjectAgreementData, 
@@ -13,7 +13,8 @@ import {
   DEFAULT_AGREEMENT_TERMS,
   ConfirmationEvent,
   formatISTDateTime,
-  parseConfirmationHistory
+  parseConfirmationHistory,
+  coolDownAgreementNotifications
 } from "@/lib/agreement-defaults";
 import { formatNumberToINR } from "@/lib/sync-financials";
 import { 
@@ -22,8 +23,6 @@ import {
   generateMilestoneInvoice
 } from "@/app/(dashboard)/admin/projects/actions";
 import { SignatureCanvasModal } from "./SignatureCanvasModal";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas-pro";
 import toast from "react-hot-toast";
 
 /**
@@ -110,99 +109,70 @@ export function parseTermsIntoClauses(text: string): ParsedClause[] {
 
 export interface TermsPageChunk {
   clauses: ParsedClause[];
-  isLastPage: boolean;
+  isLastPage?: boolean;
 }
 
 /**
- * Accurately estimates clause rendered height in a single-column professional legal layout.
- * Uses full-width (~90 chars/line at 10.5px) with generous leading and inter-clause spacing.
+ * Accurately estimates clause line weight (text lines + paragraph gaps + title).
+ * Standard A4 printable column (722px width) fits ~115 chars per line at text-[11.5px].
  */
-export function estimateClauseHeight(clause: ParsedClause): number {
-  const titleH = clause.title ? 22 : 0; // title line + small gap
+export function estimateClauseLines(clause: ParsedClause): number {
+  const titleLines = clause.title ? 1.2 : 0;
   const paragraphs = clause.body.split("\n").filter(Boolean);
-  let totalLines = 0;
+  let bodyLines = 0;
   for (const p of paragraphs) {
-    // Full-width single column: ~90 chars per line at 10.5px / 714px content width
-    totalLines += Math.max(1, Math.ceil(p.length / 90));
+    bodyLines += Math.max(1, Math.ceil(p.length / 115));
   }
-  const paragraphGaps = Math.max(0, paragraphs.length - 1) * 6;
-  // 15px per line (10.5px font * leading-[1.65]) + title + gaps + clause bottom margin (space-y-5 = 20px)
-  return titleH + totalLines * 15 + paragraphGaps + 20;
+  const paragraphGaps = Math.max(0, paragraphs.length - 1) * 0.5;
+  // Inter-clause spacing (space-y-4 is 16px / 20px line-height ≈ 0.7-0.8 line)
+  const clauseSpacingLine = 0.7;
+  return titleLines + bodyLines + paragraphGaps + clauseSpacingLine;
+}
+
+export function estimateClauseHeight(clause: ParsedClause): number {
+  return Math.round(estimateClauseLines(clause) * 20);
 }
 
 /**
- * Paginates clauses into clean A4 page chunks for a professional single-column legal layout.
- * Intermediate pages hold up to 900px of clause text (ensures 75-90% fill).
- * The final page reserves ~340px for the dual-execution signature block,
- * Section 65B audit ledger, and statutory compliance banner.
+ * Natural Word-Processor Style Terms Pagination for Middle Pages:
+ * Calibrated to ~41–43 lines capacity per middle page (added +5 lines).
+ * Fills up to 43 lines before creating a new page, eliminating
+ * excessive empty bottom spaces while allowing content to grow seamlessly.
  */
-export function paginateTerms(termsText: string, hasNotes: boolean): TermsPageChunk[] {
+export function paginateTerms(termsText: string, _hasNotes?: boolean): TermsPageChunk[] {
   const clauses = parseTermsIntoClauses(termsText);
   if (clauses.length === 0) {
-    return [{ clauses: [], isLastPage: true }];
+    return [{ clauses: [] }];
   }
 
-  // Single-column layout: full-page usable height = 1123px - 2*32px padding - header ~60px - footer ~50px = ~949px
-  // Intermediate terms pages: fill up to 900px (leaves slight bottom breathing room)
-  // Last page: reserve ~340px for execution block + audit ledger + compliance banner
-  // Notes (if present) consume ~130px extra from last page capacity
-  const intermediateCapacity = 900;
-  const lastPageCapacity = hasNotes ? 470 : 600;
-
-  const clauseHeights = clauses.map(estimateClauseHeight);
-  const totalHeight = clauseHeights.reduce((acc, h) => acc + h, 0);
-
-  // If all clauses comfortably fit on a single terms page (total agreement = 2 pages)
-  if (totalHeight <= lastPageCapacity) {
-    return [{ clauses, isLastPage: true }];
-  }
-
-  // Distribute across pages
+  // Middle page capacity calibrated to 43 lines (38 + 5 lines as requested)
+  const MAX_LINES_PER_PAGE = 43;
   const pages: TermsPageChunk[] = [];
   let currentClauses: ParsedClause[] = [];
-  let currentHeight = 0;
+  let currentLines = 0;
 
   for (let i = 0; i < clauses.length; i++) {
     const c = clauses[i];
-    const h = clauseHeights[i];
+    const lines = estimateClauseLines(c);
 
-    // Check if remaining clauses can fit on this page as the final page
-    let remainingNeed = 0;
-    for (let j = i; j < clauses.length; j++) {
-      remainingNeed += clauseHeights[j];
-    }
-
-    if (currentHeight + remainingNeed <= lastPageCapacity) {
-      for (let j = i; j < clauses.length; j++) {
-        currentClauses.push(clauses[j]);
-      }
-      pages.push({ clauses: currentClauses, isLastPage: true });
-      return pages;
-    }
-
-    if (currentHeight + h > intermediateCapacity && currentClauses.length > 0) {
-      pages.push({ clauses: [...currentClauses], isLastPage: false });
+    // Break to a new page only when this clause physically exceeds 43 lines capacity
+    if (currentClauses.length > 0 && currentLines + lines > MAX_LINES_PER_PAGE) {
+      pages.push({ clauses: currentClauses });
       currentClauses = [c];
-      currentHeight = h;
+      currentLines = lines;
     } else {
       currentClauses.push(c);
-      currentHeight += h;
+      currentLines += lines;
     }
   }
 
-  if (currentHeight > lastPageCapacity && pages.length > 0) {
-    pages.push({ clauses: currentClauses, isLastPage: false });
-    pages.push({ clauses: [], isLastPage: true });
-  } else {
-    pages.push({ clauses: currentClauses, isLastPage: true });
-  }
-
-  for (let i = 0; i < pages.length; i++) {
-    pages[i].isLastPage = i === pages.length - 1;
+  if (currentClauses.length > 0) {
+    pages.push({ clauses: currentClauses });
   }
 
   return pages;
 }
+
 
 interface PaperProps {
   agreement: ProjectAgreementData;
@@ -213,6 +183,9 @@ interface PaperProps {
   onOpenSignModal?: () => void;
   onGenerateInvoice?: (milestoneNumber: 1 | 2 | 3) => void;
   generatingMilestone?: number | null;
+  isClientView?: boolean;
+  /** When true, forces A4 fixed height (1123px) for PDF capture. On-screen should be false. */
+  forPdf?: boolean;
 }
 
 /**
@@ -229,6 +202,8 @@ export function AgreementDocumentPaper({
   onOpenSignModal,
   onGenerateInvoice,
   generatingMilestone,
+  isClientView = true,
+  forPdf = false,
 }: PaperProps) {
   const formattedTotal = formatNumberToINR(agreement.totalAmountRaw);
   const formattedAdvance = formatNumberToINR(agreement.advanceAmountRaw);
@@ -266,7 +241,7 @@ export function AgreementDocumentPaper({
 
   const termsText = agreement.termsAndPolicy || DEFAULT_AGREEMENT_TERMS;
   const termsPages = paginateTerms(termsText, Boolean(agreement.notes));
-  const totalPages = 1 + termsPages.length;
+  const totalPages = 1 + termsPages.length + 1;
 
   return (
     <div className="agreement-print-container flex flex-col items-center w-full max-w-[794px] space-y-6">
@@ -283,7 +258,7 @@ export function AgreementDocumentPaper({
           }
         }}
         id="agreement-page-1"
-        className="agreement-page-card w-[794px] min-h-[1123px] bg-white text-[#0A0A0A] px-9 py-8 shadow-sm border border-[#E5E5E5] dark:border-[#262626] font-sans flex flex-col justify-between text-left select-text rounded-xl"
+        className="w-[794px] min-h-[1123px] bg-white text-[#0A0A0A] px-9 py-8 shadow-sm border border-[#E5E5E5] dark:border-[#262626] font-sans flex flex-col justify-between text-left select-text rounded-xl"
         style={{ width: "794px", minHeight: "1123px", boxSizing: "border-box" }}
       >
         <div className="space-y-4">
@@ -454,7 +429,7 @@ export function AgreementDocumentPaper({
                 </span>
               </div>
               {agreement.projectSummary && (
-                <p className="text-[#525252] text-[11px] leading-relaxed">{agreement.projectSummary}</p>
+                <p className="text-[#404040] text-[11.5px] leading-relaxed">{agreement.projectSummary}</p>
               )}
               <div className="grid grid-cols-3 gap-3 pt-1.5 text-[11px] bg-[#FAFAFA] p-2.5 rounded border border-[#E5E5E5]">
                 <div>
@@ -580,7 +555,7 @@ export function AgreementDocumentPaper({
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#0A0A0A] mb-1.5">
               3. Client Review, Quality Inspection & Acceptance Period
             </h4>
-            <div className="p-3 bg-[#F9F9F9] border border-[#E5E5E5] rounded-md text-[10.5px] text-[#262626] leading-relaxed space-y-1">
+            <div className="p-3.5 bg-[#F9F9F9] border border-[#E5E5E5] rounded-md text-[11.5px] text-[#262626] leading-relaxed space-y-1.5">
               <p>
                 <strong>- Inspection Window:</strong> The Client is granted an official{" "}
                 <span className="font-bold underline text-[#0A0A0A]">
@@ -636,7 +611,7 @@ export function AgreementDocumentPaper({
       </div>
 
       {/* ==================================================================== */}
-      {/* PAGES 2+: TERMS OF ENGAGEMENT, NOTES & DIGITAL VERIFICATION */}
+      {/* MIDDLE PAGES: 4. INDEPENDENT CONTRACTOR TERMS OF ENGAGEMENT */}
       {/* ==================================================================== */}
       {termsPages.map((chunk, pIdx) => {
         const pageNum = pIdx + 2;
@@ -659,7 +634,7 @@ export function AgreementDocumentPaper({
                 }
               }}
               id={`agreement-page-${pageNum}`}
-              className="agreement-page-card w-[794px] min-h-[1123px] bg-white text-[#0A0A0A] px-9 py-8 shadow-sm border border-[#E5E5E5] dark:border-[#262626] font-sans flex flex-col justify-between text-left select-text rounded-xl"
+              className="w-[794px] min-h-[1123px] bg-white text-[#0A0A0A] px-9 py-8 shadow-sm border border-[#E5E5E5] dark:border-[#262626] font-sans flex flex-col justify-between text-left select-text rounded-xl"
               style={{ width: "794px", minHeight: "1123px", boxSizing: "border-box" }}
             >
               <div className="space-y-4">
@@ -696,9 +671,7 @@ export function AgreementDocumentPaper({
                   {/* Sub-line: Part Indicator & Upgraded Timestamp */}
                   <div className="flex items-center justify-between text-[8px] text-[#737373] font-mono mt-1">
                     <span>
-                      {chunk.clauses.length > 0
-                        ? "Terms of Engagement & Legal Policies | Part " + (pIdx + 1) + " of " + termsPages.length
-                        : "Commercial Notes & Electronic Execution Attestation | Part " + (pIdx + 1) + " of " + termsPages.length}
+                      Independent Contractor Terms of Engagement | Part {pIdx + 1} of {termsPages.length}
                     </span>
                     {isAmendedAfterSigning && (
                       <span className="text-[#0A0A0A] font-semibold whitespace-nowrap">
@@ -708,320 +681,49 @@ export function AgreementDocumentPaper({
                   </div>
                 </div>
 
-                {/* Section 4: General Terms & Freelance Service Policies */}
-                {chunk.clauses.length > 0 && (
-                  <div className={`pt-1 ${chunk.isLastPage ? "border-b border-[#E5E5E5] pb-5" : "pb-2"}`}>
+                {/* Section 4: Terms of Engagement - Displayed once on the first terms page */}
+                <div className="pt-1">
+                  {pIdx === 0 && (
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#0A0A0A]">
-                        {pIdx === 0 ? "4. " : ""}Terms of Engagement & Independent Contractor Legal Policies
+                        4. Independent Contractor Terms of Engagement
                       </h4>
                       {termsPages.length > 1 && (
                         <span className="text-[9px] font-mono font-semibold text-[#737373] tracking-wider">
-                          SECTION {pIdx + 1} / {termsPages.length}
+                          SECTION 1 / {termsPages.length}
                         </span>
                       )}
                     </div>
+                  )}
 
-                    {/* Single-column professional legal body */}
-                    <div className="space-y-5">
-                      {chunk.clauses.map((clause, cIdx) => (
-                        <div key={cIdx}>
-                          {clause.title && (
-                            <h5 className="text-[10px] font-bold uppercase tracking-widest text-[#0A0A0A] mb-1.5 leading-tight">
-                              {clause.title}
-                            </h5>
-                          )}
-                          <p className="text-[10.5px] text-[#262626] leading-[1.65] whitespace-pre-line text-justify">
-                            {clause.body}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {!chunk.isLastPage && (
-                      <div className="pt-4 flex items-center justify-between text-[9px] text-[#737373] italic border-t border-[#E5E5E5] mt-5">
-                        <span>- Terms of Engagement continue on next page -</span>
-                        <span className="font-mono font-semibold not-italic text-[#525252]">
-                          Continued: Page {pageNum + 1} of {totalPages} &rarr;
-                        </span>
+                  {/* Single-column professional legal body */}
+                  <div className="space-y-4">
+                    {chunk.clauses.map((clause, cIdx) => (
+                      <div key={cIdx}>
+                        {clause.title && (
+                          <h5 className="text-[11.5px] font-bold uppercase tracking-wider text-[#0A0A0A] mb-1.5 leading-snug">
+                            {clause.title}
+                          </h5>
+                        )}
+                        <p className="text-[11.5px] text-[#1F1F1F] leading-[1.75] whitespace-pre-line text-justify font-normal">
+                          {clause.body}
+                        </p>
                       </div>
-                    )}
+                    ))}
                   </div>
-                )}
 
-                {/* Only on the final page: Section 5 Notes & Digital Verification Record */}
-                {chunk.isLastPage && (
-                  <>
-                    {/* Section 5: Custom Stipulations & Notes (if any) */}
-                    {agreement.notes && (
-                      <div className="py-2.5 border-b border-[#E5E5E5]">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#0A0A0A] mb-1.5">
-                          5. Special Commercial Stipulations & Notes
-                        </h4>
-                        <p className="text-[10.5px] text-[#525252] bg-[#FAFAFA] p-3 rounded-md border border-[#E5E5E5]">
-                          {agreement.notes}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* === IN WITNESS WHEREOF - Legal Execution Block === */}
-                    <div className="mt-2 space-y-3">
-
-                      {/* Opening Legal Recital */}
-                      <div className="border-t-2 border-[#0A0A0A] pt-4">
-                        <p className="text-[10px] text-[#525252] leading-relaxed text-center italic">
-                          IN WITNESS WHEREOF, the Parties have executed this Statement of Work as of the date first written above,
-                          each binding themselves to all terms, conditions, and obligations set forth herein.
-                        </p>
-                      </div>
-
-                      {/* Dual Execution Columns - Party A | Party B */}
-                      <div className="grid grid-cols-2 gap-0 border border-[#E5E5E5] rounded-md overflow-hidden">
-                        {/* Party A: Contractor */}
-                        <div className="p-4 bg-white border-r border-[#E5E5E5]">
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-[#737373] mb-3">
-                            Party A - Independent Contractor
-                          </p>
-                          <p className="text-[11px] font-bold text-[#0A0A0A] leading-tight">{agencyInfo.name}</p>
-                          <p className="text-[10px] text-[#525252] leading-tight">{agencyInfo.roleTitle}</p>
-                          <p className="text-[9.5px] text-[#737373]">{agencyInfo.brandName} | {agencyInfo.jurisdiction}</p>
-
-                          <div className="mt-4 pt-3 border-t border-[#E5E5E5]">
-                            <div className="h-10 flex items-end pb-1 border-b border-[#262626]">
-                              <span
-                                className="text-2xl italic text-[#0A0A0A] select-none"
-                                style={{ fontFamily: "'Dancing Script', Georgia, serif" }}
-                              >
-                                Suman Baidya
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-[8.5px] text-[#737373] mt-1.5 font-mono">
-                              <span>Authorized Signature</span>
-                              <span>Pre-Certified</span>
-                            </div>
-                            <div className="mt-2 space-y-0.5 text-[9px] font-mono text-[#525252]">
-                              <div><span className="text-[#737373]">Name:</span> {agencyInfo.name}</div>
-                              <div><span className="text-[#737373]">Date:</span> {new Date(agreement.issuedAt || Date.now()).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                              <div><span className="text-[#737373]">Location:</span> West Bengal, India</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Party B: Client */}
-                        <div className="p-4 bg-white">
-                          <div className="flex items-start justify-between mb-3">
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-[#737373]">
-                              Party B | Client Organization
-                            </p>
-                            {agreement.signedAt ? (
-                              isAmendedAfterSigning ? (
-                                hasReconfirmed ? (
-                                  <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                    Re-Confirmed
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-amber-800 font-bold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                    Pending Re-Sign
-                                  </span>
-                                )
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                  Executed
-                                </span>
-                              )
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-[#737373] font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4D4D4]"></span>
-                                Pending
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] font-bold text-[#0A0A0A] leading-tight truncate">
-                            {agreement.signedByName || agreement.clientContactPerson || agreement.clientName || "Authorized Signatory"}
-                          </p>
-                          <p className="text-[10px] text-[#525252] leading-tight truncate">
-                            {agreement.signedByTitle || "Client Representative"}
-                          </p>
-                          <p className="text-[9.5px] text-[#737373] truncate">
-                            {agreement.signedByEmail || agreement.clientEmail || "Email on record"}
-                          </p>
-
-                          <div className="mt-4 pt-3 border-t border-[#E5E5E5]">
-                            {agreement.signedAt ? (
-                              <>
-                                <div className="h-10 flex items-end pb-1 border-b border-[#262626]">
-                                  {agreement.signatureType === "TYPE" || !agreement.clientSignature?.startsWith("data:image/png") ? (
-                                    <span
-                                      className="text-2xl italic text-[#0A0A0A] tracking-wide select-none"
-                                      style={{ fontFamily: "'Dancing Script', Georgia, serif", fontFeatureSettings: '"liga" 1' }}
-                                    >
-                                      {agreement.clientSignature && !agreement.clientSignature.startsWith("data:")
-                                        ? agreement.clientSignature
-                                        : agreement.signedByName || "Authorized Signatory"}
-                                    </span>
-                                  ) : (
-                                    <img
-                                      src={agreement.clientSignature}
-                                      alt="Client Signature"
-                                      className="max-h-9 max-w-[220px] object-contain"
-                                      style={{ imageRendering: "-webkit-optimize-contrast" }}
-                                    />
-                                  )}
-                                </div>
-                                <div className="flex items-center justify-between text-[8.5px] text-[#737373] mt-1.5 font-mono">
-                                  <span>Authorized Signature</span>
-                                  <span>Digitally Executed</span>
-                                </div>
-                                <div className="mt-2 space-y-0.5 text-[9px] font-mono text-[#525252]">
-                                  <div><span className="text-[#737373]">Name:</span> {agreement.signedByName || "Authorized Signatory"}</div>
-                                  <div><span className="text-[#737373]">Date:</span> {formatISTDateTime(agreement.signedAt)}</div>
-                                  <div><span className="text-[#737373]">IP Addr:</span> {agreement.signedIp || "Verified"}</div>
-                                </div>
-                                {isAmendedAfterSigning && !hasReconfirmed && (
-                                  <div className="mt-2.5 pt-2 border-t border-dashed border-[#E5E5E5]">
-                                    {onOpenSignModal ? (
-                                      <button
-                                        type="button"
-                                        onClick={onOpenSignModal}
-                                        className="no-print w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#0A0A0A] hover:bg-neutral-800 text-white rounded text-[10px] font-bold tracking-tight transition cursor-pointer shadow-xs"
-                                      >
-                                        <PenTool className="w-3 h-3" />
-                                        <span>Re-Confirm Amendment</span>
-                                      </button>
-                                    ) : (
-                                      <span className="block text-center text-[8px] font-bold text-amber-800 uppercase tracking-wider">
-                                        Amendment Pending Re-Attestation
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <div className="h-10 flex items-end pb-1 border-b border-dashed border-[#D4D4D4]">
-                                {onOpenSignModal ? (
-                                  <button
-                                    type="button"
-                                    onClick={onOpenSignModal}
-                                    className="no-print inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0A0A] hover:bg-neutral-800 text-white rounded text-[10px] font-semibold shadow-xs transition cursor-pointer"
-                                  >
-                                    <PenTool className="w-3 h-3" />
-                                    <span>Sign &amp; Accept Agreement</span>
-                                  </button>
-                                ) : (
-                                  <span className="text-[10px] text-[#A3A3A3] italic">Awaiting client signature</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Section 65B Electronic Audit Ledger */}
-                      {agreement.signedAt && (
-                        <div className="border border-[#E5E5E5] rounded-md overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2 bg-[#F5F5F5] border-b border-[#E5E5E5]">
-                            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#0A0A0A]">
-                              <ShieldCheck className="w-3.5 h-3.5 text-[#0A0A0A]" />
-                              <span>Electronic Execution Audit Ledger</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-[8px] font-mono text-[#737373]">
-                              <span>IT Act Section 10A &amp; IEA Section 65B</span>
-                              <span className="text-[#0A0A0A] font-semibold">SHA-256 Verified</span>
-                            </div>
-                          </div>
-
-                          {isAmendedAfterSigning ? (
-                            <div className="grid grid-cols-3 divide-x divide-[#E5E5E5]">
-                              <div className="px-3 py-2 text-[8.5px] font-mono">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                  <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">1. Initial Execution</span>
-                                </div>
-                                <p className="text-[#0A0A0A] font-semibold truncate">{agreement.signedByName || "Client"}</p>
-                                <p className="text-[#737373]">IP: {initialSignedIp || "Verified"}</p>
-                                <p className="text-[#737373]">{formatISTDateTime(initialSignedDate)}</p>
-                                {initialAuditHash && (
-                                  <p className="text-[#A3A3A3] truncate" title={initialAuditHash}>Seal: {initialAuditHash.slice(0, 16)}...</p>
-                                )}
-                              </div>
-                              <div className="px-3 py-2 text-[8.5px] font-mono">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                                  <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">2. SOW Amendment</span>
-                                </div>
-                                <p className="text-[#0A0A0A] font-semibold">Super Admin Revision</p>
-                                <p className="text-[#737373]">Notice of Variation Sent</p>
-                                <p className="text-[#737373]">{formattedAmendedDate}</p>
-                                <p className="text-amber-800 font-medium">Terms Updated</p>
-                              </div>
-                              <div className={`px-3 py-2 text-[8.5px] font-mono ${!hasReconfirmed ? "bg-[#FAFAFA]" : ""}`}>
-                                <div className="flex items-center gap-1 mb-1">
-                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasReconfirmed ? "bg-emerald-500" : "bg-amber-400 animate-pulse"}`}></span>
-                                  <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">3. Re-Confirmation</span>
-                                </div>
-                                {hasReconfirmed ? (
-                                  <>
-                                    <p className="text-[#0A0A0A] font-semibold truncate">{agreement.signedByName || "Client"}</p>
-                                    <p className="text-[#737373]">IP: {agreement.signedIp || "Verified"}</p>
-                                    <p className="text-[#737373]">{formatISTDateTime(agreement.signedAt)}</p>
-                                    {agreement.signedAuditHash && (
-                                      <p className="text-[#A3A3A3] truncate" title={agreement.signedAuditHash}>Seal: {agreement.signedAuditHash.slice(0, 16)}...</p>
-                                    )}
-                                  </>
-                                ) : (
-                                  <p className="text-amber-800 font-bold">Pending Client Re-Sign</p>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-2 divide-x divide-[#E5E5E5]">
-                              <div className="px-3 py-2 text-[8.5px] font-mono">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] shrink-0"></span>
-                                  <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">Contractor Certification</span>
-                                </div>
-                                <p className="text-[#0A0A0A] font-semibold">{agencyInfo.name}</p>
-                                <p className="text-[#737373]">Authorized Independent Engineer</p>
-                                <p className="text-[#737373]">West Bengal, India | Pre-Attested</p>
-                              </div>
-                              <div className="px-3 py-2 text-[8.5px] font-mono">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                  <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">Client Digital Attestation</span>
-                                </div>
-                                <p className="text-[#0A0A0A] font-semibold truncate">{agreement.signedByName || "Authorized Signatory"}</p>
-                                <p className="text-[#737373]">IP: {agreement.signedIp || "Verified"}</p>
-                                <p className="text-[#737373]">{formatISTDateTime(agreement.signedAt)}</p>
-                                {agreement.signedAuditHash && (
-                                  <p className="text-[#A3A3A3] truncate" title={agreement.signedAuditHash}>Seal: {agreement.signedAuditHash.slice(0, 16)}...</p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Statutory Compliance Notice */}
-                      <div className="flex items-start gap-2 px-3 py-2 bg-[#F9F9F9] border border-[#E5E5E5] rounded-md">
-                        <Shield className="w-3 h-3 text-[#0A0A0A] mt-0.5 shrink-0" />
-                        <p className="text-[9px] text-[#525252] leading-relaxed">
-                          {isAmendedAfterSigning
-                            ? hasReconfirmed
-                              ? `Amended Statement of Work re-confirmed on ${formatISTDateTime(agreement.signedAt)} pursuant to Section 10A of the Information Technology Act, 2000 and the Indian Contract Act, 1872.`
-                              : `Amended electronic record upgraded on ${formattedAmendedDate}. Pending client digital re-confirmation under IT Act, 2000 Section 10A.`
-                            : `This document constitutes a tamper-evident electronic record executed and binding pursuant to Section 10A of the Indian Information Technology Act, 2000 and the Indian Contract Act, 1872. Governing jurisdiction: ${agencyInfo.jurisdiction || "West Bengal, India"}.`}
-                        </p>
-                        <span className="shrink-0 font-mono text-[#0A0A0A] font-bold uppercase tracking-wider text-[7.5px] ml-auto pl-2 whitespace-nowrap">
-                          {isAmendedAfterSigning ? (hasReconfirmed ? "Re-Confirmed" : "Pending") : "Binding Record"}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-
-                )}
+                  {/* Inter-page continuation separator */}
+                  <div className="pt-3 flex items-center justify-between text-[9px] text-[#737373] italic border-t border-[#E5E5E5] mt-5">
+                    <span>
+                      {pIdx < termsPages.length - 1
+                        ? "- Terms of Engagement continue on next page -"
+                        : "- Terms of Engagement concluded • Special Commercial Stipulations & Execution follow on next page -"}
+                    </span>
+                    <span className="font-mono font-semibold not-italic text-[#525252]">
+                      Page {pageNum + 1} of {totalPages} &rarr;
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Page Bottom Footer */}
@@ -1064,6 +766,410 @@ export function AgreementDocumentPaper({
         );
       })}
 
+      {/* ==================================================================== */}
+      {/* DEDICATED FINAL PAGE: SECTION 5 STIPULATIONS & EXECUTION BLOCK */}
+      {/* ==================================================================== */}
+      <div className="no-print flex items-center gap-2 py-1 text-[11px] font-mono font-semibold text-[#737373] dark:text-neutral-500 select-none">
+        <span>Page {totalPages - 1} of {totalPages}</span>
+        <span className="w-8 h-px bg-[#E5E5E5] dark:bg-[#262626]"></span>
+        <span>Page {totalPages} of {totalPages}</span>
+      </div>
+
+      <div
+        ref={(el) => {
+          if (pagesRef) {
+            pagesRef.current[totalPages - 1] = el;
+            pagesRef.current.length = totalPages;
+          }
+        }}
+        id={`agreement-page-${totalPages}`}
+        className="w-[794px] min-h-[1123px] bg-white text-[#0A0A0A] px-9 py-8 shadow-sm border border-[#E5E5E5] dark:border-[#262626] font-sans flex flex-col justify-between text-left select-text rounded-xl"
+        style={{ width: "794px", minHeight: "1123px", boxSizing: "border-box" }}
+      >
+        <div className="space-y-4">
+          {/* Running Mini Header */}
+          <div className="border-b border-[#0A0A0A] pb-2.5 mb-3 select-none">
+            <div className="flex flex-row items-center justify-between text-xs">
+              {/* Left: Brand & Document Identity */}
+              <div className="flex items-center gap-2">
+                <span className="font-black text-xs tracking-wider text-[#0A0A0A] uppercase">
+                  {agencyInfo.brandName || "ABCD Agency"}
+                </span>
+                <span className="h-3 w-px bg-[#D4D4D4] inline-block"></span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#525252]">
+                  Statement of Work
+                </span>
+                <span className="text-[9px] text-[#737373] font-medium hidden sm:inline">
+                  | {agencyInfo.name}
+                </span>
+              </div>
+
+              {/* Right: Reference Number & Revision Status */}
+              <div className="flex items-center gap-2.5 text-right font-mono text-[9.5px]">
+                <span className="text-[#525252] font-semibold whitespace-nowrap">
+                  REF: {agreement.agreementNumber}
+                </span>
+                {isAmendedAfterSigning && (
+                  <span className="px-1.5 py-0.5 rounded bg-[#0A0A0A] text-white text-[7.5px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    Amended SOW
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Sub-line: Part Indicator & Upgraded Timestamp */}
+            <div className="flex items-center justify-between text-[8px] text-[#737373] font-mono mt-1">
+              <span>
+                Commercial Notes &amp; Electronic Execution Attestation | Final Execution Part
+              </span>
+              {isAmendedAfterSigning && (
+                <span className="text-[#0A0A0A] font-semibold whitespace-nowrap">
+                  Upgraded: {formattedAmendedDate}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Section 5: Special Commercial Stipulations & Notes */}
+          <div className="pt-1 pb-1">
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#0A0A0A] mb-2.5">
+              5. Special Commercial Stipulations &amp; Notes
+            </h4>
+            <div className="p-3.5 rounded-md border border-[#E5E5E5] bg-[#FAFAFA] min-h-[58px]">
+              <p className="text-[11.5px] text-[#333333] leading-relaxed whitespace-pre-line">
+                {agreement.notes && agreement.notes.trim().length > 0
+                  ? agreement.notes
+                  : "No supplementary commercial stipulations or special conditions specified for this project engagement. Standard independent contractor terms and milestone schedules apply in full."}
+              </p>
+            </div>
+          </div>
+
+          {/* Legal Recital Rule & Notice */}
+          <div className="border-t-2 border-[#0A0A0A] pt-3">
+            <p className="text-[9.5px] text-[#525252] leading-relaxed text-center italic">
+              IN WITNESS WHEREOF, the Parties have executed this Statement of Work as of the date first written above, each binding themselves to all terms, conditions, and obligations set forth herein.
+            </p>
+          </div>
+
+          {/* Dual Execution Columns - Party A | Party B */}
+          <div className="grid grid-cols-2 gap-0 border border-[#E5E5E5] rounded-md overflow-hidden">
+            {/* Party A: Contractor */}
+            <div className="p-4 bg-white border-r border-[#E5E5E5]">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#737373] mb-3">
+                Party A - Independent Contractor
+              </p>
+              <p className="text-[11px] font-bold text-[#0A0A0A] leading-tight">{agencyInfo.name}</p>
+              <p className="text-[10px] text-[#525252] leading-tight">{agencyInfo.roleTitle}</p>
+              <p className="text-[9.5px] text-[#737373]">{agencyInfo.brandName} | {agencyInfo.jurisdiction}</p>
+
+              <div className="mt-4 pt-3 border-t border-[#E5E5E5]">
+                <div className="h-10 flex items-end pb-1 border-b border-[#262626]">
+                  <span
+                    className="text-2xl italic text-[#0A0A0A] select-none"
+                    style={{ fontFamily: "'Dancing Script', Georgia, serif" }}
+                  >
+                    Suman Baidya
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[8.5px] text-[#737373] mt-1.5 font-mono">
+                  <span>Authorized Signature</span>
+                  <span>Pre-Certified</span>
+                </div>
+                <div className="mt-2 space-y-0.5 text-[9px] font-mono text-[#525252]">
+                  <div><span className="text-[#737373]">Name:</span> {agencyInfo.name}</div>
+                  <div><span className="text-[#737373]">Date:</span> {new Date(agreement.issuedAt || Date.now()).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                  <div><span className="text-[#737373]">Location:</span> West Bengal, India</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Party B: Client */}
+            <div className="p-4 bg-white">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#737373]">
+                  Party B | Client Organization
+                </p>
+                {agreement.signedAt ? (
+                  isAmendedAfterSigning ? (
+                    hasReconfirmed ? (
+                      <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                        Re-Confirmed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-amber-800 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        Pending Re-Sign
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-emerald-800 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                      Executed
+                    </span>
+                  )
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[8px] font-mono uppercase tracking-wider text-[#737373] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4D4D4]"></span>
+                    Pending
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] font-bold text-[#0A0A0A] leading-tight truncate">
+                {agreement.signedByName || agreement.clientContactPerson || agreement.clientName || "Authorized Signatory"}
+              </p>
+              <p className="text-[10px] text-[#525252] leading-tight truncate">
+                {agreement.signedByTitle || "Client Representative"}
+              </p>
+              <p className="text-[9.5px] text-[#737373] truncate">
+                {agreement.signedByEmail || agreement.clientEmail || "Email on record"}
+              </p>
+
+              <div className="mt-4 pt-3 border-t border-[#E5E5E5]">
+                {agreement.signedAt ? (
+                  <>
+                    <div className="h-10 flex items-end pb-1 border-b border-[#262626]">
+                      {agreement.signatureType === "TYPE" || !agreement.clientSignature?.startsWith("data:image/png") ? (
+                        <span
+                          className="text-2xl italic text-[#0A0A0A] tracking-wide select-none"
+                          style={{ fontFamily: "'Dancing Script', Georgia, serif", fontFeatureSettings: '"liga" 1' }}
+                        >
+                          {agreement.clientSignature && !agreement.clientSignature.startsWith("data:")
+                            ? agreement.clientSignature
+                            : agreement.signedByName || "Authorized Signatory"}
+                        </span>
+                      ) : (
+                        <img
+                          src={agreement.clientSignature}
+                          alt="Client Signature"
+                          className="max-h-9 max-w-[220px] object-contain"
+                          style={{ imageRendering: "-webkit-optimize-contrast" }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-[8.5px] text-[#737373] mt-1.5 font-mono">
+                      <span>Authorized Signature</span>
+                      <span>Digitally Executed</span>
+                    </div>
+                    <div className="mt-2 space-y-0.5 text-[9px] font-mono text-[#525252]">
+                      <div><span className="text-[#737373]">Name:</span> {agreement.signedByName || "Authorized Signatory"}</div>
+                      <div><span className="text-[#737373]">Date:</span> {formatISTDateTime(agreement.signedAt)}</div>
+                      <div><span className="text-[#737373]">IP Addr:</span> {agreement.signedIp || "Verified"}</div>
+                    </div>
+                    {isAmendedAfterSigning && !hasReconfirmed && (
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-[#E5E5E5]">
+                        {isClientView && onOpenSignModal ? (
+                          <button
+                            type="button"
+                            onClick={onOpenSignModal}
+                            className="no-print w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#0A0A0A] hover:bg-neutral-800 text-white rounded text-[10px] font-bold tracking-tight transition cursor-pointer shadow-xs"
+                          >
+                            <PenTool className="w-3 h-3" />
+                            <span>Re-Confirm Amendment</span>
+                          </button>
+                        ) : (
+                          <div className="text-center py-1.5 px-2 rounded bg-amber-500/10 border border-amber-500/20">
+                            <span className="block text-[8.5px] font-bold text-amber-800 tracking-wide font-mono">
+                              Awaiting Re-Confirmation
+                            </span>
+                            <span className="block text-[7.5px] text-[#737373] mt-0.5">
+                              Amendment record saved • Pending client re-attestation under IT Act, 2000 § 10A
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="h-10 flex items-end pb-1 border-b border-dashed border-[#D4D4D4]">
+                    {isClientView && onOpenSignModal ? (
+                      <button
+                        type="button"
+                        onClick={onOpenSignModal}
+                        className="no-print inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0A0A] hover:bg-neutral-800 text-white rounded text-[10px] font-semibold shadow-xs transition cursor-pointer"
+                      >
+                        <PenTool className="w-3 h-3" />
+                        <span>Sign &amp; Accept Agreement</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-[#A3A3A3] italic">Awaiting client signature</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 65B Electronic Audit Ledger */}
+          {agreement.signedAt ? (
+            <div className="border border-[#E5E5E5] rounded-md overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-[#F5F5F5] border-b border-[#E5E5E5]">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#0A0A0A]">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#0A0A0A]" />
+                  <span>Electronic Execution Audit Ledger</span>
+                </div>
+                <div className="flex items-center gap-3 text-[8px] font-mono text-[#737373]">
+                  <span>IT Act Section 10A &amp; IEA Section 65B</span>
+                  <span className="text-[#0A0A0A] font-semibold">SHA-256 Verified</span>
+                </div>
+              </div>
+
+              {isAmendedAfterSigning ? (
+                <div className="grid grid-cols-3 divide-x divide-[#E5E5E5]">
+                  <div className="px-3 py-2 text-[8.5px] font-mono">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">1. Initial Execution</span>
+                    </div>
+                    <p className="text-[#0A0A0A] font-semibold truncate">{agreement.signedByName || "Client"}</p>
+                    <p className="text-[#737373]">IP: {initialSignedIp || "Verified"}</p>
+                    <p className="text-[#737373]">{formatISTDateTime(initialSignedDate)}</p>
+                    {initialAuditHash && (
+                      <p className="text-[#A3A3A3] truncate" title={initialAuditHash}>Seal: {initialAuditHash.slice(0, 16)}...</p>
+                    )}
+                  </div>
+                  <div className="px-3 py-2 text-[8.5px] font-mono">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                      <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">2. SOW Amendment</span>
+                    </div>
+                    <p className="text-[#0A0A0A] font-semibold">Super Admin Revision</p>
+                    <p className="text-[#737373]">Notice of Variation Sent</p>
+                    <p className="text-[#737373]">{formattedAmendedDate}</p>
+                    <p className="text-amber-800 font-medium">Terms Updated</p>
+                  </div>
+                  <div className={`px-3 py-2 text-[8.5px] font-mono ${!hasReconfirmed ? "bg-[#FAFAFA]" : ""}`}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasReconfirmed ? "bg-emerald-500" : "bg-amber-400 animate-pulse"}`}></span>
+                      <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">3. Re-Confirmation</span>
+                    </div>
+                    {hasReconfirmed ? (
+                      <>
+                        <p className="text-[#0A0A0A] font-semibold truncate">{agreement.signedByName || "Client"}</p>
+                        <p className="text-[#737373]">IP: {agreement.signedIp || "Verified"}</p>
+                        <p className="text-[#737373]">{formatISTDateTime(agreement.signedAt)}</p>
+                        {agreement.signedAuditHash && (
+                          <p className="text-[#A3A3A3] truncate" title={agreement.signedAuditHash}>Seal: {agreement.signedAuditHash.slice(0, 16)}...</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-amber-800 font-bold">Pending Client Re-Sign</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 divide-x divide-[#E5E5E5]">
+                  <div className="px-3 py-2 text-[8.5px] font-mono">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] shrink-0"></span>
+                      <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">Contractor Certification</span>
+                    </div>
+                    <p className="text-[#0A0A0A] font-semibold">{agencyInfo.name}</p>
+                    <p className="text-[#737373]">Authorized Independent Engineer</p>
+                    <p className="text-[#737373]">West Bengal, India | Pre-Attested</p>
+                  </div>
+                  <div className="px-3 py-2 text-[8.5px] font-mono">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">Client Digital Attestation</span>
+                    </div>
+                    <p className="text-[#0A0A0A] font-semibold truncate">{agreement.signedByName || "Authorized Signatory"}</p>
+                    <p className="text-[#737373]">IP: {agreement.signedIp || "Verified"}</p>
+                    <p className="text-[#737373]">{formatISTDateTime(agreement.signedAt)}</p>
+                    {agreement.signedAuditHash && (
+                      <p className="text-[#A3A3A3] truncate" title={agreement.signedAuditHash}>Seal: {agreement.signedAuditHash.slice(0, 16)}...</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="border border-[#E5E5E5] rounded-md overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-[#F5F5F5] border-b border-[#E5E5E5]">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#0A0A0A]">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#0A0A0A]" />
+                  <span>Electronic Execution Audit Ledger</span>
+                </div>
+                <div className="flex items-center gap-3 text-[8px] font-mono text-[#737373]">
+                  <span>IT Act Section 10A &amp; IEA Section 65B</span>
+                  <span className="text-[#0A0A0A] font-semibold">SHA-256 Verified</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-[#E5E5E5]">
+                <div className="px-3 py-2 text-[8.5px] font-mono">
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] shrink-0"></span>
+                    <span className="font-bold text-[#0A0A0A] uppercase tracking-wide text-[7.5px]">Contractor Certification</span>
+                  </div>
+                  <p className="text-[#0A0A0A] font-semibold">{agencyInfo.name}</p>
+                  <p className="text-[#737373]">Authorized Independent Engineer</p>
+                  <p className="text-[#737373]">West Bengal, India | Pre-Attested</p>
+                </div>
+                <div className="px-3 py-2 text-[8.5px] font-mono bg-[#FAFAFA]">
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#A3A3A3] shrink-0"></span>
+                    <span className="font-bold text-[#737373] uppercase tracking-wide text-[7.5px]">Client Attestation</span>
+                  </div>
+                  <p className="text-[#737373] italic">Pending Execution</p>
+                  <p className="text-[#A3A3A3]">Awaiting client digital acceptance</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Statutory Compliance Notice */}
+          <div className="flex items-start gap-2 px-3 py-2 bg-[#F9F9F9] border border-[#E5E5E5] rounded-md">
+            <Shield className="w-3 h-3 text-[#0A0A0A] mt-0.5 shrink-0" />
+            <p className="text-[9px] text-[#525252] leading-relaxed">
+              {isAmendedAfterSigning
+                ? hasReconfirmed
+                  ? `Amended Statement of Work re-confirmed on ${formatISTDateTime(agreement.signedAt)} pursuant to Section 10A of the Information Technology Act, 2000 and the Indian Contract Act, 1872.`
+                  : `Amended electronic record upgraded on ${formattedAmendedDate}. Pending client digital re-confirmation under IT Act, 2000 Section 10A.`
+                : `This document constitutes a tamper-evident electronic record executed and binding pursuant to Section 10A of the Indian Information Technology Act, 2000 and the Indian Contract Act, 1872. Governing jurisdiction: ${agencyInfo.jurisdiction || "West Bengal, India"}.`}
+            </p>
+            <span className="shrink-0 font-mono text-[#0A0A0A] font-bold uppercase tracking-wider text-[7.5px] ml-auto pl-2 whitespace-nowrap">
+              {isAmendedAfterSigning ? (hasReconfirmed ? "Re-Confirmed" : "Pending") : "Binding Record"}
+            </span>
+          </div>
+        </div>
+
+        {/* Page Bottom Footer - Pinned to bottom */}
+        <div className="pt-3 border-t border-[#E5E5E5] flex items-end justify-between text-[9px] text-[#737373] mt-auto select-none">
+          {/* Left: Statutory Legal Notice & Non-Repudiation Reference */}
+          <div className="space-y-0.5 max-w-[530px]">
+            <div className="flex items-center gap-1.5 text-[#525252] text-[8.5px] leading-tight">
+              <Shield className="w-2.5 h-2.5 text-[#0A0A0A] shrink-0" />
+              <span className="font-medium">
+                This electronic record is generated pursuant to the Information Technology Act, 2000 (Section 10A) and Indian Contract Act, 1872.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[8px] font-mono text-[#737373]">
+              <span className="text-[#0A0A0A] font-semibold">Ref: {agreement.agreementNumber}</span>
+              <span>|</span>
+              <span>Governing Law: {agencyInfo.jurisdiction || "West Bengal, India"}</span>
+              {isAmendedAfterSigning && (
+                <>
+                  <span>|</span>
+                  <span className="text-[#0A0A0A] font-bold whitespace-nowrap">
+                    Upgraded: {formattedAmendedDate}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Right: High-End Monospace Pagination Slate */}
+          <div className="shrink-0 pl-4 text-right whitespace-nowrap">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-[#FAFAFA] border border-[#E5E5E5] font-mono text-[9px] text-[#0A0A0A] font-bold tracking-widest whitespace-nowrap shadow-2xs">
+              <span className="text-[#737373] font-medium text-[8px] tracking-wider">PAGE</span>
+              <span className="text-[#0A0A0A]">{String(totalPages).padStart(2, "0")}</span>
+              <span className="text-[#A3A3A3] font-normal">/</span>
+              <span className="text-[#737373]">{String(totalPages).padStart(2, "0")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -1101,12 +1207,17 @@ export function DirectPDFDownloader({
 
         const termsText = agreement.termsAndPolicy || DEFAULT_AGREEMENT_TERMS;
         const termsPages = paginateTerms(termsText, Boolean(agreement.notes));
-        const expectedTotalPages = 1 + termsPages.length;
+        const expectedTotalPages = 1 + termsPages.length + 1;
 
         const pages = (pagesRef.current || []).slice(0, expectedTotalPages).filter(Boolean) as HTMLDivElement[];
         if (pages.length === 0) return;
 
         await Promise.all(pages.map((p) => ensureImagesLoaded(p)));
+
+        const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+          import("jspdf"),
+          import("html2canvas-pro"),
+        ]);
 
         const pdf = new jsPDF({
           orientation: "portrait",
@@ -1187,6 +1298,7 @@ export function DirectPDFDownloader({
         agreement={agreement}
         agencyInfo={agencyInfo}
         pagesRef={pagesRef}
+        forPdf={true}
       />
     </div>,
     document.body
@@ -1686,6 +1798,7 @@ export function ProjectAgreementModal({
   );
 
   const isModalPendingReconfirmation = isModalAmended && !modalHasReconfirmed;
+  const isClientView = !canEdit && canSign;
 
   useEffect(() => {
     setCurrentAgreement(initialAgreement);
@@ -1696,13 +1809,25 @@ export function ProjectAgreementModal({
     setMounted(true);
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      coolDownAgreementNotifications(currentAgreement?.projectId);
     } else {
       document.body.style.overflow = "unset";
     }
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [isOpen, currentAgreement?.projectId]);
+
+  // Keyboard accessibility: Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen && !isEditing && !isSignModalOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isEditing, isSignModalOpen, onClose]);
 
   // Recalculate financial breakdown live
   const handleBudgetOrPercentChange = (
@@ -1840,7 +1965,7 @@ export function ProjectAgreementModal({
     try {
       const termsText = currentAgreement.termsAndPolicy || DEFAULT_AGREEMENT_TERMS;
       const termsPages = paginateTerms(termsText, Boolean(currentAgreement.notes));
-      const expectedTotalPages = 1 + termsPages.length;
+      const expectedTotalPages = 1 + termsPages.length + 1;
 
       const pages = (pagesRef.current || []).slice(0, expectedTotalPages).filter(Boolean) as HTMLDivElement[];
       if (pages.length === 0) {
@@ -1849,6 +1974,11 @@ export function ProjectAgreementModal({
       }
 
       await Promise.all(pages.map((p) => ensureImagesLoaded(p)));
+
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas-pro"),
+      ]);
 
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -1980,8 +2110,8 @@ export function ProjectAgreementModal({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Direct Sign CTA if unsigned */}
-            {!isEditing && !currentAgreement.signedAt && canSign && (
+            {/* Direct Sign CTA if unsigned - ONLY CLIENT */}
+            {!isEditing && !currentAgreement.signedAt && isClientView && (
               <button
                 type="button"
                 onClick={() => setIsSignModalOpen(true)}
@@ -1993,12 +2123,12 @@ export function ProjectAgreementModal({
               </button>
             )}
 
-            {/* Direct Re-Confirm CTA if amended after signing */}
-            {!isEditing && isModalPendingReconfirmation && canSign && (
+            {/* Direct Re-Confirm CTA if amended after signing - ONLY CLIENT */}
+            {!isEditing && isModalPendingReconfirmation && isClientView && (
               <button
                 type="button"
                 onClick={() => setIsSignModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 transition-opacity cursor-pointer shadow-xs no-print whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors cursor-pointer shadow-xs no-print whitespace-nowrap animate-pulse"
                 title="Re-Confirm & Accept Amended Agreement"
               >
                 <PenTool className="w-3.5 h-3.5 shrink-0" />
@@ -2012,14 +2142,22 @@ export function ProjectAgreementModal({
                 {isModalPendingReconfirmation ? (
                   <>
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse shrink-0"></span>
-                    <span>AMENDMENT PENDING</span>
+                    <span>Awaiting Re-Confirmation</span>
                   </>
                 ) : (
                   <>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
-                    <span>{modalHasReconfirmed ? "RE-CONFIRMED" : "EXECUTED"}</span>
+                    <span>{modalHasReconfirmed ? "Re-Confirmed" : "Executed"}</span>
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Non-client unsigned badge */}
+            {!isEditing && !currentAgreement.signedAt && !isClientView && (
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono font-semibold rounded-md whitespace-nowrap shrink-0 border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#141414] text-[#737373] dark:text-neutral-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 shrink-0"></span>
+                <span>AWAITING CLIENT SIGNATURE</span>
               </div>
             )}
 
@@ -2093,6 +2231,19 @@ export function ProjectAgreementModal({
               </>
             )}
 
+            {/* Quick Native Print (when not editing) */}
+            {!isEditing && (
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] transition-colors cursor-pointer shadow-2xs no-print whitespace-nowrap"
+                title="Print Document or Save via Browser Print Dialog"
+              >
+                <Printer className="w-3.5 h-3.5 shrink-0" />
+                <span>Print</span>
+              </button>
+            )}
+
             {/* Download PDF (when not editing) */}
             {!isEditing && (
               <button
@@ -2126,6 +2277,44 @@ export function ProjectAgreementModal({
             </button>
           </div>
         </div>
+
+        {/* Super Admin Status Banner: Awaiting Client Re-Confirmation */}
+        {!isEditing && !isClientView && isModalPendingReconfirmation && (
+          <div className="px-5 py-2.5 bg-amber-500/10 border-b border-amber-500/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-amber-900 dark:text-amber-200 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Clock className="w-4 h-4 shrink-0 text-amber-600" />
+              <span className="truncate">
+                Agreement amended. Notice of variation dispatched to client. Awaiting re-confirmation.
+              </span>
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 font-bold shrink-0 self-start sm:self-auto">
+              Pending Client Action
+            </span>
+          </div>
+        )}
+
+        {/* Client Attention Banner: Immediate Re-Confirmation CTA */}
+        {!isEditing && isClientView && isModalPendingReconfirmation && (
+          <div className="px-5 py-3 bg-amber-500/15 border-b border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-950 dark:text-amber-100 shrink-0">
+            <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+              <PenTool className="w-4 h-4 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5 sm:mt-0 animate-pulse" />
+              <div>
+                <span className="font-bold block text-[#0A0A0A] dark:text-white">Notice of Variation: Re-Confirmation Required</span>
+                <span className="text-[11px] text-[#525252] dark:text-neutral-300 block">
+                  ABCD Agency has published revisions for this Statement of Work. Please review and re-confirm the amendment.
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsSignModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 rounded-lg font-bold text-xs shrink-0 cursor-pointer shadow-xs transition"
+            >
+              <PenTool className="w-3.5 h-3.5" />
+              <span>Re-Confirm Amendment</span>
+            </button>
+          </div>
+        )}
 
         {/* Expandable Confirmation Audit Trail Panel */}
         {showAuditTrail && (
@@ -2277,9 +2466,10 @@ export function ProjectAgreementModal({
                 page1Ref={page1Ref}
                 page2Ref={page2Ref}
                 pagesRef={pagesRef}
-                onOpenSignModal={canSign && (!currentAgreement.signedAt || isModalPendingReconfirmation) ? () => setIsSignModalOpen(true) : undefined}
+                onOpenSignModal={isClientView && (!currentAgreement.signedAt || isModalPendingReconfirmation) ? () => setIsSignModalOpen(true) : undefined}
                 onGenerateInvoice={canEdit ? handleGenerateMilestoneInvoice : undefined}
                 generatingMilestone={generatingMilestone}
+                isClientView={isClientView}
               />
             </div>
           )}

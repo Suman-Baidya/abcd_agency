@@ -47,15 +47,81 @@ export async function getPortalData() {
     }),
   ]);
 
+  let client: any = fullUser?.clientRel || null;
+
+  // Fallback: If User.clientId is unlinked, locate Client record by email or user link
+  if (!client && user.email) {
+    client = await db.client.findFirst({
+      where: {
+        OR: [
+          { email: { equals: user.email.trim(), mode: "insensitive" } },
+          { userRel: { id: user.id } },
+        ],
+      },
+      include: {
+        projects: {
+          include: {
+            transactions: true,
+            revisionRequests: true,
+            tasks: { orderBy: [{ order: "asc" }, { createdAt: "desc" }] },
+          },
+        },
+        transactions: true,
+        documents: { orderBy: { createdAt: "desc" } },
+        revisionRequests: { orderBy: { createdAt: "desc" } },
+        meetings: { orderBy: { createdAt: "desc" } },
+      },
+    });
+
+    // Auto-link clientId to user record if unlinked
+    if (client && fullUser && !fullUser.clientId) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { clientId: client.id, role: "CLIENT" },
+      }).catch(() => {});
+    }
+  }
+
+  // Ensure all projects associated with client or user email are included
+  if (client) {
+    const extraProjects = await db.project.findMany({
+      where: {
+        OR: [
+          { clientId: client.id },
+          { client: user.email },
+          { clientRel: { email: user.email } },
+        ],
+      },
+      include: {
+        transactions: true,
+        revisionRequests: true,
+        tasks: { orderBy: [{ order: "asc" }, { createdAt: "desc" }] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (extraProjects.length > 0) {
+      const existingIds = new Set((client.projects || []).map((p: any) => p.id));
+      const combinedProjects = [...(client.projects || [])];
+      for (const p of extraProjects) {
+        if (!existingIds.has(p.id)) {
+          combinedProjects.push(p);
+          existingIds.add(p.id);
+        }
+      }
+      client.projects = combinedProjects;
+    }
+  }
+
   // Safely attach agreements to projects
-  if (fullUser?.clientRel?.projects?.length) {
+  if (client?.projects?.length) {
     try {
-      const projectIds = fullUser.clientRel.projects.map((p: any) => p.id);
+      const projectIds = client.projects.map((p: any) => p.id);
       const agreements = await (db as any).projectAgreement.findMany({
         where: { projectId: { in: projectIds } },
       });
       const map = new Map((agreements || []).map((a: any) => [a.projectId, a]));
-      for (const proj of fullUser.clientRel.projects) {
+      for (const proj of client.projects) {
         (proj as any).agreement = map.get(proj.id) || null;
       }
     } catch (e) {
@@ -65,7 +131,7 @@ export async function getPortalData() {
 
   return {
     user: fullUser,
-    client: fullUser?.clientRel || null,
+    client: client || null,
     pricingPackages,
     pricingServices,
     featuredProjects,

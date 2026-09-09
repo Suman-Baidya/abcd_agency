@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logUserActivity } from "@/lib/auth-session";
+import { sendPushToUser } from "@/lib/push-notifications";
 
 export async function getAdminRevisionsData() {
   try {
@@ -111,6 +112,29 @@ export async function replyToRevision(id: string, responseText: string, status?:
         "REVISION_REPLIED",
         `Admin responded to revision "${updated.title}"`
       );
+
+      // Send push alert to client
+      try {
+        const clientUser = await db.user.findFirst({
+          where: {
+            OR: [
+              { clientId: updated.clientRel.id },
+              { email: updated.clientRel.email },
+            ],
+          },
+          select: { id: true },
+        });
+        if (clientUser?.id) {
+          sendPushToUser(clientUser.id, {
+            title: `Admin Replied: ${updated.title}`,
+            body: responseText ? responseText.slice(0, 120) : "Engineering squad updated your revision ticket.",
+            url: "/portal/revisions",
+            tag: `revision-${updated.id}`,
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.warn("Could not dispatch push notification to client user:", err);
+      }
     }
 
     revalidatePath("/admin/revisions");

@@ -18,6 +18,8 @@ interface SidebarProps {
   unreadInquiriesCount?: number;
   newUsersCount?: number;
   pendingRevisionsCount?: number;
+  approvedAgreementsCount?: number;
+  approvedAgreementIds?: string[];
 }
 
 export function Sidebar({ 
@@ -28,6 +30,8 @@ export function Sidebar({
   unreadInquiriesCount = 0,
   newUsersCount = 0,
   pendingRevisionsCount = 0,
+  approvedAgreementsCount = 0,
+  approvedAgreementIds = [],
 }: SidebarProps) {
   const pathname = usePathname();
   const [isSmartMenuOpen, setIsSmartMenuOpen] = useState(false);
@@ -46,6 +50,62 @@ export function Sidebar({
   useEffect(() => {
     setIsSmartMenuOpen(false);
   }, [pathname]);
+
+  // Sync read notification IDs from localStorage and listen for live updates
+  const [mounted, setMounted] = useState(false);
+  const [readNotifIds, setReadNotifIds] = useState<string[]>([]);
+  const [lastAgreementViewedAt, setLastAgreementViewedAt] = useState<number>(0);
+
+  useEffect(() => {
+    const syncReadNotifs = () => {
+      try {
+        const stored = localStorage.getItem("abcd_read_notifications");
+        if (stored) {
+          setReadNotifIds(JSON.parse(stored));
+        }
+        const viewedAt = localStorage.getItem("abcd_last_agreement_viewed_at");
+        if (viewedAt) {
+          setLastAgreementViewedAt(Number(viewedAt) || 0);
+        }
+      } catch {}
+    };
+
+    syncReadNotifs();
+    setMounted(true);
+    window.addEventListener("notifications_updated", syncReadNotifs);
+    return () => window.removeEventListener("notifications_updated", syncReadNotifs);
+  }, []);
+
+  const effectiveApprovedAgreementsCount = mounted
+    ? (approvedAgreementIds.length > 0
+        ? approvedAgreementIds.filter((id) => {
+            if (readNotifIds.includes(id)) return false;
+            const [baseId, timeStr] = id.split(":");
+            if (baseId && readNotifIds.includes(baseId)) return false;
+            const notifTime = Number(timeStr) || 0;
+            if (lastAgreementViewedAt > 0 && notifTime > 0 && lastAgreementViewedAt >= notifTime) {
+              return false;
+            }
+            return true;
+          }).length
+        : Math.max(
+            0,
+            approvedAgreementsCount - readNotifIds.filter((id) => id.startsWith("agr-")).length
+          ))
+    : 0;
+
+  // Live-synced effective counts that immediately reflect read status & prevent refresh flicker
+  const effectiveInquiriesCount = mounted
+    ? Math.max(0, unreadInquiriesCount - readNotifIds.filter((id) => id.startsWith("inq-")).length)
+    : 0;
+
+  const effectiveNewUsersCount = mounted
+    ? Math.max(0, newUsersCount - readNotifIds.filter((id) => id.startsWith("usr-")).length)
+    : 0;
+
+  const effectiveRevisionsCount = mounted
+    ? Math.max(0, pendingRevisionsCount - readNotifIds.filter((id) => id.startsWith("rev-")).length)
+    : 0;
 
   // Lock body scroll when smart menu is open on mobile
   useEffect(() => {
@@ -73,6 +133,7 @@ export function Sidebar({
     { 
       label: "Projects", 
       href: "/admin/projects", 
+      badgeCount: effectiveApprovedAgreementsCount,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -82,7 +143,7 @@ export function Sidebar({
     { 
       label: "Revisions", 
       href: "/admin/revisions", 
-      badgeCount: pendingRevisionsCount,
+      badgeCount: effectiveRevisionsCount,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -105,7 +166,7 @@ export function Sidebar({
           label: "Users", 
           description: "All users, activity logs & conversion",
           href: "/admin/users", 
-          badgeCount: newUsersCount,
+          badgeCount: effectiveNewUsersCount,
           icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -136,7 +197,7 @@ export function Sidebar({
           label: "Revisions", 
           description: "Live client feedback & change requests",
           href: "/admin/revisions", 
-          badgeCount: pendingRevisionsCount,
+          badgeCount: effectiveRevisionsCount,
           icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -159,7 +220,7 @@ export function Sidebar({
           label: "Inquiries", 
           description: "Incoming project consultation leads",
           href: "/admin/inquiries", 
-          badgeCount: unreadInquiriesCount,
+          badgeCount: effectiveInquiriesCount,
           icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -199,13 +260,13 @@ export function Sidebar({
   // All flat items for desktop sidebar
   const allDesktopNavItems = [
     { label: "Overview", href: "/admin", icon: primaryNavItems[0].icon },
-    { label: "Users", href: "/admin/users", icon: smartMenuSections[0].items[0].icon, badgeCount: newUsersCount },
-    { label: "Projects", href: "/admin/projects", icon: primaryNavItems[1].icon },
+    { label: "Users", href: "/admin/users", icon: smartMenuSections[0].items[0].icon, badgeCount: effectiveNewUsersCount },
+    { label: "Projects", href: "/admin/projects", icon: primaryNavItems[1].icon, badgeCount: effectiveApprovedAgreementsCount },
     { label: "Clients", href: "/admin/clients", icon: smartMenuSections[0].items[1].icon },
     { label: "Blog", href: "/admin/blog", icon: <BookOpen className="w-5 h-5" strokeWidth={1.8} /> },
-    { label: "Revisions", href: "/admin/revisions", icon: primaryNavItems[2].icon, badgeCount: pendingRevisionsCount },
+    { label: "Revisions", href: "/admin/revisions", icon: primaryNavItems[2].icon, badgeCount: effectiveRevisionsCount },
     { label: "Finance", href: "/admin/finance", icon: primaryNavItems[3].icon },
-    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[6].icon, badgeCount: unreadInquiriesCount },
+    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[6].icon, badgeCount: effectiveInquiriesCount },
     { label: "Profile", href: "/admin/profile", icon: smartMenuSections[1].items[0].icon },
     { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[1].icon },
   ];
@@ -286,7 +347,7 @@ export function Sidebar({
                 <div className="flex items-center justify-between flex-1">
                   <span>{item.label}</span>
                   {item.badgeCount && item.badgeCount > 0 ? (
-                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-xs">
                       {item.badgeCount}
                     </span>
                   ) : null}
@@ -351,7 +412,7 @@ export function Sidebar({
               <div className="relative">
                 {item.icon}
                 {item.badgeCount && item.badgeCount > 0 ? (
-                  <span className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white dark:border-[#0A0A0A]">
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white dark:border-[#0A0A0A] shadow-xs">
                     {item.badgeCount > 9 ? "9+" : item.badgeCount}
                   </span>
                 ) : null}

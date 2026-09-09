@@ -15,10 +15,11 @@ import {
   formatISTDateTime,
   parseConfirmationHistory,
 } from "@/lib/agreement-defaults";
-import { getCurrentUser } from "@/lib/auth-session";
+import { getCurrentUser, logUserActivity } from "@/lib/auth-session";
 import { headers } from "next/headers";
 import crypto from "crypto";
 import { sendSignedAgreementEmail, sendAgreementAmendmentEmail } from "@/lib/email";
+import { sendPushToRole, sendPushToUser } from "@/lib/push-notifications";
 
 export async function getAvailableClients() {
   try {
@@ -699,6 +700,18 @@ export async function updateProjectAgreement(data: {
 
     const updatedAgreement = await getProjectAgreement(projectId);
 
+    if (currentUser?.id) {
+      try {
+        await logUserActivity(
+          currentUser.id,
+          "AGREEMENT_AMENDED",
+          `Agreement terms amended for project "${updatedAgreement?.projectTitle || projectId}" - Notice of Variation dispatched`
+        );
+      } catch (actErr) {
+        console.warn("Could not log user activity for agreement amendment:", actErr);
+      }
+    }
+
     // If agreement was already confirmed/executed by client, dispatch formal Notice of Variation
     if (existingAgr?.signedAt && updatedAgreement) {
       const recipientEmail = updatedAgreement.signedByEmail || updatedAgreement.clientEmail;
@@ -855,6 +868,29 @@ export async function signProjectAgreement(data: {
     revalidatePath("/portal/documents");
     revalidatePath("/portal/projects");
     revalidatePath("/portal");
+
+    const isAmendmentReconfirmation = !isFirstTime;
+    if (currentUser?.id) {
+      try {
+        await logUserActivity(
+          currentUser.id,
+          isAmendmentReconfirmation ? "AGREEMENT_RECONFIRMED" : "AGREEMENT_SIGNED",
+          `${legalName} (${currentUser.email || project.clientRel?.name || "Client"}) approved & ${isAmendmentReconfirmation ? "re-confirmed amended" : "executed"} agreement for project "${project.title}"`
+        );
+      } catch (actErr) {
+        console.warn("Could not log user activity for agreement execution:", actErr);
+      }
+    }
+
+    // Dispatch background push notification to all Super Admins & Admins (Android status bar alert)
+    sendPushToRole("ADMIN", {
+      title: isAmendmentReconfirmation ? "Client Approved Agreement Re-Confirmation" : "Client Executed Project Agreement",
+      body: `${legalName} (${currentUser.email || project.clientRel?.name || "Client"}) approved & ${isAmendmentReconfirmation ? "re-confirmed amended" : "executed"} agreement for "${project.title}"`,
+      url: "/admin/projects",
+      tag: `agreement-${projectId}`,
+    }).catch((pushErr) => {
+      console.warn("[Push Notification Suppressed]:", pushErr);
+    });
 
     // Send confirmation email asynchronously via Resend
     const clientEmail = currentUser.email || project.clientRel?.email;

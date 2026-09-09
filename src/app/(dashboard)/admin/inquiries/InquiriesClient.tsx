@@ -463,6 +463,15 @@ function InquiryRow({
 
   const handleView = () => {
     onView();
+    try {
+      const stored = localStorage.getItem("abcd_read_notifications");
+      const current = stored ? JSON.parse(stored) : [];
+      if (!current.includes(`inq-${inquiry.id}`)) {
+        const updated = [...current, `inq-${inquiry.id}`];
+        localStorage.setItem("abcd_read_notifications", JSON.stringify(updated));
+        window.dispatchEvent(new Event("notifications_updated"));
+      }
+    } catch {}
     if (inquiry.status === "New") {
       startMarkRead(async () => { await markInquiryAsRead(inquiry.id); });
     }

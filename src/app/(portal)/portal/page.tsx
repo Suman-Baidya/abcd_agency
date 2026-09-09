@@ -22,9 +22,11 @@ import {
   ShieldCheck,
   Zap,
   ArrowUpRight,
-  ChevronRight
+  ChevronRight,
+  PenTool
 } from "lucide-react";
 import { formatProjectDeadline } from "@/lib/formatDate";
+import { getAgreementAmendmentStatus } from "@/lib/agreement-defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -35,16 +37,22 @@ export default async function PortalDashboardPage() {
   const user = data.user;
   const client = data.client;
   const userInquiries = data.userInquiries || [];
-  const isProspect = user.role === "USER";
+  const isProspect = user.role === "USER" && !client && (!client?.projects || client.projects.length === 0);
 
   // Dynamic Onboarding Step Calculations
   const hasSubmittedBrief = userInquiries.length > 0;
   const hasReceivedProposal = userInquiries.some((i: any) => i.status === "Replied" || i.status === "Closed");
-  const isConvertedClient = user.role === "CLIENT" || !!client;
+  const isConvertedClient = user.role === "CLIENT" || (!!client && client?.projects?.length > 0);
 
   // Onboarding progress calculation
   const completedSteps = 1 + (hasSubmittedBrief ? 1 : 0) + (hasReceivedProposal ? 1 : 0) + (isConvertedClient ? 1 : 0);
   const progressPercent = completedSteps * 25;
+
+  // Check for any project awaiting client agreement amendment re-confirmation
+  const pendingReconfirmationProject = client?.projects?.find((p: any) => {
+    const agr = (p as any).agreement;
+    return agr && getAgreementAmendmentStatus(agr).isPendingReconfirmation;
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -370,6 +378,32 @@ export default async function PortalDashboardPage() {
             <StatCard label="Revisions / Requests" value={client.revisionRequests.length} color="default" />
           </div>
 
+          {/* Pending Agreement Re-Confirmation Attention Alert Banner */}
+          {pendingReconfirmationProject && (
+            <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                  <PenTool className="w-4 h-4 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                    Agreement Re-Confirmation Required
+                  </h3>
+                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                    ABCD Agency has amended the Statement of Work for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/portal/projects"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 rounded-lg text-xs font-bold transition shadow-xs shrink-0 cursor-pointer"
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                <span>Review &amp; Re-Confirm</span>
+              </Link>
+            </div>
+          )}
+
           {/* Active Projects List */}
           <div id="portal-client-projects" className="space-y-4">
             <div className="flex items-center justify-between">
@@ -381,66 +415,89 @@ export default async function PortalDashboardPage() {
 
             {client.projects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {client.projects.map((proj) => (
-                  <Card key={proj.id} className="p-6 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#737373]">
-                          {proj.category}
+                {client.projects.map((proj: any) => {
+                  const agrStatus = getAgreementAmendmentStatus(proj.agreement);
+                  return (
+                    <Card key={proj.id} className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#737373]">
+                            {proj.category}
+                          </span>
+                          <h3 className="text-base font-bold text-[#0A0A0A] dark:text-white mt-0.5">{proj.title}</h3>
+                        </div>
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-[#F5F5F5] dark:bg-[#222222] text-[#0A0A0A] dark:text-white border border-[#E5E5E5] dark:border-[#333333]">
+                          {proj.status}
                         </span>
-                        <h3 className="text-base font-bold text-[#0A0A0A] dark:text-white mt-0.5">{proj.title}</h3>
                       </div>
-                      <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-[#F5F5F5] dark:bg-[#222222] text-[#0A0A0A] dark:text-white border border-[#E5E5E5] dark:border-[#333333]">
-                        {proj.status}
-                      </span>
-                    </div>
 
-                    {/* Progress Bar */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <span className="text-[#737373]">Development Progress</span>
-                        <span className="text-[#0A0A0A] dark:text-white">{proj.progress}%</span>
+                      {/* Progress Bar */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-semibold">
+                          <span className="text-[#737373]">Development Progress</span>
+                          <span className="text-[#0A0A0A] dark:text-white">{proj.progress}%</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-[#E5E5E5] dark:bg-[#262626] overflow-hidden">
+                          <div
+                            className="h-full bg-[#0A0A0A] dark:bg-white rounded-full transition-all duration-500"
+                            style={{ width: `${proj.progress}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-[#E5E5E5] dark:bg-[#262626] overflow-hidden">
-                        <div
-                          className="h-full bg-[#0A0A0A] dark:bg-white rounded-full transition-all duration-500"
-                          style={{ width: `${proj.progress}%` }}
-                        />
+
+                      <div className="flex items-center justify-between text-xs pt-3 border-t border-[#E5E5E5] dark:border-[#262626] text-[#737373]">
+                        <span>Budget: <strong className="text-[#0A0A0A] dark:text-white">{proj.budget || "Custom"}</strong></span>
+                        <span>Target: <strong className="text-[#0A0A0A] dark:text-white">{formatProjectDeadline(proj.deadline).dateRange}</strong></span>
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between text-xs pt-3 border-t border-[#E5E5E5] dark:border-[#262626] text-[#737373]">
-                      <span>Budget: <strong className="text-[#0A0A0A] dark:text-white">{proj.budget || "Custom"}</strong></span>
-                      <span>Target: <strong className="text-[#0A0A0A] dark:text-white">{formatProjectDeadline(proj.deadline).dateRange}</strong></span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-1.5">
+                          {agrStatus.isPendingReconfirmation ? (
+                            <Link
+                              href="/portal/projects"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-md bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition-colors animate-pulse"
+                              title="Re-Confirmation Required"
+                            >
+                              <PenTool className="w-3.5 h-3.5" />
+                              <span>Re-Confirm</span>
+                            </Link>
+                          ) : agrStatus.isUnsigned ? (
+                            <Link
+                              href="/portal/projects"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] rounded-md hover:opacity-90 transition-opacity"
+                              title="Sign SOW"
+                            >
+                              <PenTool className="w-3.5 h-3.5" />
+                              <span>Sign SOW</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href="/portal/projects"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors"
+                              title="Open Project Agreement"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Agreement</span>
+                            </Link>
+                          )}
+                          <Link
+                            href="/portal/projects"
+                            className="p-1 border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors"
+                            title="Download Agreement PDF"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
                         <Link
                           href="/portal/projects"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors"
-                          title="Open Project Agreement"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-[#0A0A0A] dark:text-white hover:underline"
                         >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>Agreement</span>
-                        </Link>
-                        <Link
-                          href="/portal/projects"
-                          className="p-1 border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors"
-                          title="Download Agreement PDF"
-                        >
-                          <Download className="w-3.5 h-3.5" />
+                          Sprint Board <ArrowRight className="w-3 h-3" />
                         </Link>
                       </div>
-                      <Link
-                        href="/portal/projects"
-                        className="inline-flex items-center gap-1 text-xs font-bold text-[#0A0A0A] dark:text-white hover:underline"
-                      >
-                        Sprint Board <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="p-8 text-center space-y-3">

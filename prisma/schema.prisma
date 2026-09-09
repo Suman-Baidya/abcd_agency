@@ -392,3 +392,18 @@ model BlogPost {
   @@index([published])
   @@index([category])
 }
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  role      String?  // "ADMIN" | "SUPER_ADMIN" | "CLIENT" | "USER"
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([role])
+}

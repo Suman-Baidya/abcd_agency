@@ -8,6 +8,7 @@ import { ProjectFilters } from "@/components/dashboard/ProjectFilters";
 import { ProjectPagination } from "@/components/dashboard/ProjectPagination";
 import { CategoryManager } from "@/components/dashboard/CategoryManager";
 import { db } from "@/lib/prisma";
+import { AgreementApprovalBanner } from "@/components/dashboard/AgreementApprovalBanner";
 
 import { getAvailableClients } from "./actions";
 import { parseCurrencyToNumber } from "@/lib/sync-financials";
@@ -45,7 +46,7 @@ export default async function ProjectsPage({
   else if (sort === "z-a") orderBy = { title: "desc" };
   else if (sort === "progress") orderBy = { progress: "desc" };
 
-  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allTasks, allProjectsUnfiltered] = await Promise.all([
+  const [projects, totalProjects, projectCategories, allStatusGroup, totalAll, clients, allTasks, allProjectsUnfiltered, recentAgreementApprovals] = await Promise.all([
     db.project.findMany({
       where,
       orderBy,
@@ -85,7 +86,33 @@ export default async function ProjectsPage({
         clientRel: { select: { id: true, name: true, email: true } },
       },
     }),
+    db.userActivity.findMany({
+      where: {
+        action: { in: ["AGREEMENT_RECONFIRMED", "AGREEMENT_SIGNED"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 2,
+      include: {
+        userRel: { select: { id: true, name: true, companyName: true, email: true } },
+      },
+    }),
   ]);
+
+  // Attach agreements to projects for real-time status indication
+  if (projects?.length) {
+    try {
+      const projectIds = projects.map((p: any) => p.id);
+      const agreements = await (db as any).projectAgreement.findMany({
+        where: { projectId: { in: projectIds } },
+      });
+      const map = new Map((agreements || []).map((a: any) => [a.projectId, a]));
+      for (const proj of projects) {
+        (proj as any).agreement = map.get(proj.id) || null;
+      }
+    } catch (err) {
+      console.warn("Could not attach agreements in admin projects:", err);
+    }
+  }
 
   const totalBudgetRaw = allProjectsUnfiltered.reduce(
     (sum: number, p: any) => sum + (p.budgetRaw > 0 ? p.budgetRaw : parseCurrencyToNumber(p.budget)),
@@ -130,6 +157,11 @@ export default async function ProjectsPage({
           <NewProjectButton categories={categoryNames} clients={clients} />
         </div>
       </div>
+
+      {/* Client Agreement Approval Notification Banner */}
+      <AgreementApprovalBanner
+        approval={recentAgreementApprovals && recentAgreementApprovals.length > 0 ? (recentAgreementApprovals[0] as any) : null}
+      />
 
       {/* Stats row */}
       <div id="admin-projects-kpi" className="grid grid-cols-2 sm:grid-cols-4 gap-4">

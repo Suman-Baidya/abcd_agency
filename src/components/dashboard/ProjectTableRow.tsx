@@ -11,6 +11,7 @@ import { ProjectViewDetails } from "./ProjectViewDetails";
 import { ProjectAgreementModal } from "./ProjectAgreementModal";
 import { quickUpdateStatus, quickUpdateProgress, deleteProject } from "@/app/(dashboard)/admin/projects/quick-actions";
 import { getProjectAgreement } from "@/app/(dashboard)/admin/projects/actions";
+import { getAgreementAmendmentStatus, coolDownAgreementNotifications } from "@/lib/agreement-defaults";
 import { Project } from "@prisma/client";
 
 interface ProjectTableRowProps {
@@ -29,7 +30,10 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
   const [agreementData, setAgreementData] = useState<any>(null);
   const [loadingAgreement, setLoadingAgreement] = useState(false);
 
+  const agrStatus = project.agreement ? getAgreementAmendmentStatus(project.agreement) : null;
+
   const handleOpenAgreement = async () => {
+    coolDownAgreementNotifications(project.id);
     setLoadingAgreement(true);
     try {
       const res = await getProjectAgreement(project.id);
@@ -118,6 +122,26 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
             </span>
             {project.isFeatured && (
               <Badge variant="outline" size="sm" className="ml-2 text-[9px] shrink-0">Featured</Badge>
+            )}
+            {agrStatus?.isPendingReconfirmation && (
+              <span 
+                onClick={handleOpenAgreement}
+                className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono font-bold rounded-md bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 animate-pulse shrink-0 cursor-pointer"
+                title="Agreement terms amended • Awaiting client re-confirmation"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                Awaiting Re-Confirmation
+              </span>
+            )}
+            {agrStatus?.hasReconfirmed && (
+              <span 
+                onClick={handleOpenAgreement}
+                className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono font-bold rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 shrink-0 cursor-pointer"
+                title="Amended agreement approved & re-confirmed by client"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                Re-Confirmed
+              </span>
             )}
             {project._count?.revisionRequests > 0 && (
               <Link
@@ -246,10 +270,25 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
           <button
             onClick={handleOpenAgreement}
             disabled={loadingAgreement}
-            className="p-1.5 text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white transition-colors rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#262626]"
-            title="View & Download Official Agreement"
+            className={`p-1.5 transition-colors rounded-md relative cursor-pointer ${
+              agrStatus?.isPendingReconfirmation
+                ? "text-amber-700 dark:text-amber-400 bg-amber-500/15 hover:bg-amber-500/25"
+                : agrStatus?.hasReconfirmed
+                ? "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20"
+                : "text-[#737373] hover:text-[#0A0A0A] dark:text-neutral-400 dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#262626]"
+            }`}
+            title={
+              agrStatus?.isPendingReconfirmation
+                ? "Agreement amended • Awaiting client re-confirmation"
+                : agrStatus?.hasReconfirmed
+                ? "Amended agreement re-confirmed by client"
+                : "View & Download Official Agreement"
+            }
           >
             <FileText className="w-4 h-4" />
+            {agrStatus?.isPendingReconfirmation && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            )}
           </button>
           <button
             onClick={() => setIsViewOpen(true)}
@@ -367,6 +406,7 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
         onClose={() => setIsAgreementOpen(false)}
         agreement={agreementData}
         canEdit={true}
+        canSign={false}
         onSave={(updated) => setAgreementData(updated)}
       />
     )}

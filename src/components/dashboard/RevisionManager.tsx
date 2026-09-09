@@ -110,6 +110,15 @@ export function RevisionManager({
     setSelectedTicket(ticket);
     setReplyMessage(ticket.response || "");
     setNewStatus(ticket.status || "In Progress");
+    try {
+      const stored = localStorage.getItem("abcd_read_notifications");
+      const current = stored ? JSON.parse(stored) : [];
+      if (!current.includes(`rev-${ticket.id}`)) {
+        const updated = [...current, `rev-${ticket.id}`];
+        localStorage.setItem("abcd_read_notifications", JSON.stringify(updated));
+        window.dispatchEvent(new Event("notifications_updated"));
+      }
+    } catch {}
   };
 
   // KPIs

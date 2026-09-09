@@ -7,6 +7,7 @@ import { db } from "@/lib/prisma";
 import { PortalSidebar } from "@/components/portal/PortalSidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { ScrollProgressBar } from "@/components/ui/ScrollProgressBar";
+import { getAgreementAmendmentStatus } from "@/lib/agreement-defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -49,11 +50,11 @@ export default async function PortalLayout({
 
   // Resolve client ID with fallback for clients without direct clientId on User
   let effectiveClientId = user.clientId;
-  if (!effectiveClientId && user.role !== "USER") {
+  if (!effectiveClientId) {
     const clientRecord = await db.client.findFirst({
       where: {
         OR: [
-          { email: user.email },
+          { email: { equals: user.email.trim(), mode: "insensitive" } },
           { userRel: { id: user.id } },
         ],
       },
@@ -64,8 +65,29 @@ export default async function PortalLayout({
     }
   }
 
+  // Find all projects belonging to this client/user
+  const clientProjects = await db.project.findMany({
+    where: effectiveClientId
+      ? {
+          OR: [
+            { clientId: effectiveClientId },
+            { client: user.email },
+            { clientRel: { email: user.email } },
+          ],
+        }
+      : {
+          OR: [
+            { client: user.email },
+            { clientRel: { email: user.email } },
+          ],
+        },
+    select: { id: true, title: true, clientId: true },
+  });
+
+  const projectIds = clientProjects.map((p: any) => p.id);
+
   // Load client/prospect-specific notifications
-  const [repliedRevisions, scheduledMeetings, repliedInquiries, clientDocs] = await Promise.all([
+  const [repliedRevisions, scheduledMeetings, repliedInquiries, clientDocs, rawClientAgreements] = await Promise.all([
     effectiveClientId
       ? db.revisionRequest.findMany({
           where: {
@@ -101,12 +123,41 @@ export default async function PortalLayout({
           take: 5,
         })
       : Promise.resolve([]),
+    projectIds.length > 0
+      ? (db as any).projectAgreement.findMany({
+          where: {
+            projectId: { in: projectIds },
+          },
+        }).catch((e: any) => {
+          console.warn("Could not query client agreements in layout:", e);
+          return [];
+        })
+      : Promise.resolve([]),
   ]);
+
+  const projMap = new Map(clientProjects.map((p: any) => [p.id, p]));
+  const clientAgreements = (rawClientAgreements || []).map((agr: any) => ({
+    ...agr,
+    project: projMap.get(agr.projectId) || null,
+  }));
 
   // Extract array of all revision IDs that have engineer responses
   const repliedRevisionIds = repliedRevisions
     .filter((rev: any) => rev.response && rev.response.trim().length > 0)
     .map((rev: any) => `rev-${rev.id}`);
+
+  // Pending re-confirmation agreements requiring client action
+  const pendingReconfirmationAgreements = clientAgreements.filter(
+    (agr: any) => getAgreementAmendmentStatus(agr).isPendingReconfirmation
+  );
+
+  const pendingAgreementIds = pendingReconfirmationAgreements.map(
+    (agr: any) => `agr-${agr.id}-${new Date(agr.updatedAt || Date.now()).getTime()}`
+  );
+  const pendingAgreementsCount = pendingAgreementIds.length;
+
+  // Dynamic role determination: active clients with projects or clientId get full client portal access
+  const isProspect = user.role === "USER" && !effectiveClientId && clientProjects.length === 0;
 
   // Combine and format notifications
   const portalNotifications = [
@@ -117,6 +168,14 @@ export default async function PortalLayout({
       subtitle: rev.response || `Ticket status: ${rev.status}`,
       createdAt: rev.updatedAt,
       href: "/portal/revisions",
+    })),
+    ...pendingReconfirmationAgreements.map((agr: any) => ({
+      id: `agr-${agr.id}-${new Date(agr.updatedAt || Date.now()).getTime()}`,
+      name: "ABCD Legal & Scope",
+      title: "Action Required: Agreement Amended",
+      subtitle: `SOW for "${agr.project?.title || "Project"}" has been amended. Re-confirmation required.`,
+      createdAt: agr.updatedAt,
+      href: "/portal/projects",
     })),
     ...scheduledMeetings.map((m: any) => ({
       id: `meet-${m.id}`,
@@ -154,6 +213,9 @@ export default async function PortalLayout({
         agencyName={siteConfig.agencyName}
         repliedRevisionIds={repliedRevisionIds}
         repliedRevisionsCount={repliedRevisionIds.length}
+        pendingAgreementsCount={pendingAgreementsCount}
+        pendingAgreementIds={pendingAgreementIds}
+        isProspect={isProspect}
       />
 
       {/* Main Content Wrapper with unified Topbar */}
@@ -164,7 +226,7 @@ export default async function PortalLayout({
           darkLogoUrl={siteConfig.darkLogoUrl} 
           agencyName={siteConfig.agencyName} 
           userName={user.name}
-          userRole={user.role === "USER" ? "Prospect Portal" : "Client Portal"}
+          userRole={isProspect ? "Prospect Portal" : "Client Portal"}
           notifications={portalNotifications}
           isEligibleForAutoTour={isEligibleForAutoTour}
           userId={user.id}

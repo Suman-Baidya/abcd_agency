@@ -54,6 +54,10 @@ Every UI change must obey this system. Do not introduce new colors, fonts, or sp
   2. Add the corresponding 3–5 step spotlight configuration to `src/components/dashboard/ContextTourButton.tsx` in `getTourConfigForPath(pathname)` so that users instantly get an interactive element-by-element guided tour.
 - Buttons: solid black on white (primary), outline black (secondary), ghost (tertiary). No filled colored buttons.
 - All interactive elements need visible focus states (`focus-visible:ring-2 ring-black`) for accessibility.
+- **Agreement Document Print & Pagination (`ProjectAgreementModal.tsx`)**:
+  - **Structure**: Page 1 = SOW (Scope, Milestones, Review Window), Middle Pages = Section 4 (Terms of Engagement), Final Page = Section 5 (Special Commercial Stipulations & Notes + Recital + Dual Signatures + Audit Ledger).
+  - **Middle Page Line Capacity**: Standard capacity is strictly **43 lines per middle page** (`MAX_LINES_PER_PAGE = 43` with `estimateClauseLines` calibrated to ~115 chars/line, 20px line-height, and `space-y-4`). Never reduce this capacity or prematurely break pages to prevent awkward bottom whitespace.
+  - **Section 4 Header**: "4. Independent Contractor Terms of Engagement" must only render on the first terms page (`pIdx === 0`), never repeated on subsequent middle pages.
 
 ---
 

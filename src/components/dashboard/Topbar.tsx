@@ -40,7 +40,9 @@ export function Topbar({
   userId
 }: TopbarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [readNotifIds, setReadNotifIds] = useState<string[]>([]);
+  const [lastAgreementViewedAt, setLastAgreementViewedAt] = useState<number>(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load dismissed/read notification IDs from localStorage and listen for updates
@@ -51,10 +53,15 @@ export function Topbar({
         if (stored) {
           setReadNotifIds(JSON.parse(stored));
         }
+        const viewedAt = localStorage.getItem("abcd_last_agreement_viewed_at");
+        if (viewedAt) {
+          setLastAgreementViewedAt(Number(viewedAt) || 0);
+        }
       } catch {}
     };
 
     syncReadNotifs();
+    setMounted(true);
     window.addEventListener("notifications_updated", syncReadNotifs);
     return () => window.removeEventListener("notifications_updated", syncReadNotifs);
   }, []);
@@ -106,8 +113,17 @@ export function Topbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter out notifications that have already been clicked / viewed
-  const unreadNotifications = notifications.filter((n) => !readNotifIds.includes(n.id));
+  // Filter out notifications that have already been clicked / viewed or cooled down
+  const unreadNotifications = mounted
+    ? notifications.filter((n) => {
+        if (readNotifIds.includes(n.id)) return false;
+        if (n.id.startsWith("agr-") && lastAgreementViewedAt > 0 && n.createdAt) {
+          const notifTime = new Date(n.createdAt).getTime();
+          if (lastAgreementViewedAt >= notifTime) return false;
+        }
+        return true;
+      })
+    : [];
   const isClientPortal = userRole?.toLowerCase().includes("portal") || userRole?.toLowerCase().includes("client") || userRole?.toLowerCase().includes("prospect");
 
   return (
@@ -162,9 +178,8 @@ export function Topbar({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             {unreadNotifications.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 border border-white dark:border-[#0A0A0A]"></span>
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#0A0A0A] shadow-xs animate-in zoom-in-75">
+                {unreadNotifications.length > 9 ? "9+" : unreadNotifications.length}
               </span>
             )}
           </button>

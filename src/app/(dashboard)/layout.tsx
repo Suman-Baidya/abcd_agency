@@ -32,6 +32,7 @@ export default async function DashboardLayout({
     newUsers,
     pendingRevisions,
     recentSecurityAlerts,
+    recentAgreementActivities,
     unreadInquiriesCount,
     newUsersCount,
     pendingRevisionsCount
@@ -59,6 +60,12 @@ export default async function DashboardLayout({
       orderBy: { createdAt: "desc" },
       take: 4,
       select: { id: true, action: true, description: true, ipAddress: true, createdAt: true },
+    }),
+    db.userActivity.findMany({
+      where: { action: { in: ["AGREEMENT_RECONFIRMED", "AGREEMENT_SIGNED"] } },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      include: { userRel: { select: { name: true, companyName: true } } },
     }),
     db.inquiry.count({
       where: { status: "New" },
@@ -100,6 +107,15 @@ export default async function DashboardLayout({
       type: "inquiry" as const,
       href: "/admin/revisions",
     })),
+    ...recentAgreementActivities.map((act: any) => ({
+      id: `agr-${act.id}`,
+      name: act.userRel?.companyName || act.userRel?.name || "Client",
+      title: act.action === "AGREEMENT_RECONFIRMED" ? "Agreement Re-Confirmed" : "Agreement Signed",
+      subtitle: act.description || "Client completed digital execution",
+      createdAt: act.createdAt,
+      type: "inquiry" as const,
+      href: "/admin/projects",
+    })),
     ...recentSecurityAlerts.map((alert: any) => ({
       id: `sec-${alert.id}`,
       name: alert.ipAddress || "Security Guard",
@@ -110,6 +126,11 @@ export default async function DashboardLayout({
       href: "/admin/users",
     })),
   ].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const approvedAgreementIds = recentAgreementActivities
+    ? recentAgreementActivities.map((act: any) => `agr-${act.id}:${new Date(act.createdAt).getTime()}`)
+    : [];
+  const approvedAgreementsCount = approvedAgreementIds.length;
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0A0A0A] transition-colors duration-200">
@@ -122,6 +143,8 @@ export default async function DashboardLayout({
         unreadInquiriesCount={unreadInquiriesCount}
         newUsersCount={newUsersCount}
         pendingRevisionsCount={pendingRevisionsCount}
+        approvedAgreementsCount={approvedAgreementsCount}
+        approvedAgreementIds={approvedAgreementIds}
       />
 
       {/* Main Content Wrapper */}

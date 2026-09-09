@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronDown, User, ShieldCheck, MonitorSmartphone } from "lucide-react";
-
+import { PushNotificationToggle } from "@/components/dashboard/PushNotificationToggle";
 
 export default function ProfilePage() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -104,7 +104,10 @@ export default function ProfilePage() {
         </Card>
 
         {/* Edit Form Accordions */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-5">
+          {/* PWA Push Notifications Device Control */}
+          <PushNotificationToggle />
+
           {/* Personal Info Accordion */}
           <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-sm">
             <button

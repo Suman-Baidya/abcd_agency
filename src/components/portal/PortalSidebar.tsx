@@ -33,6 +33,9 @@ interface PortalSidebarProps {
   agencyName?: string;
   repliedRevisionsCount?: number;
   repliedRevisionIds?: string[];
+  pendingAgreementsCount?: number;
+  pendingAgreementIds?: string[];
+  isProspect?: boolean;
 }
 
 export function PortalSidebar({ 
@@ -42,12 +45,16 @@ export function PortalSidebar({
   agencyName = "ABCD Agency",
   repliedRevisionsCount = 0,
   repliedRevisionIds = [],
+  pendingAgreementsCount = 0,
+  pendingAgreementIds = [],
+  isProspect: isProspectProp,
 }: PortalSidebarProps) {
   const pathname = usePathname();
   const [isSmartMenuOpen, setIsSmartMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [readNotifIds, setReadNotifIds] = useState<string[]>([]);
 
-  const isProspect = user.role === "USER";
+  const isProspect = isProspectProp !== undefined ? isProspectProp : user.role === "USER";
 
   // Sync read notification IDs from localStorage
   useEffect(() => {
@@ -61,14 +68,27 @@ export function PortalSidebar({
     };
 
     syncReadNotifs();
+    setMounted(true);
     window.addEventListener("notifications_updated", syncReadNotifs);
     return () => window.removeEventListener("notifications_updated", syncReadNotifs);
   }, []);
 
   // Filter against specific active replied revision IDs
-  const effectiveRevisionsCount = repliedRevisionIds.length > 0
-    ? repliedRevisionIds.filter((id) => !readNotifIds.includes(id)).length
-    : Math.max(0, repliedRevisionsCount - readNotifIds.filter((id) => id.startsWith("rev-")).length);
+  const effectiveRevisionsCount = mounted
+    ? (repliedRevisionIds.length > 0
+        ? repliedRevisionIds.filter((id) => !readNotifIds.includes(id)).length
+        : Math.max(0, repliedRevisionsCount - readNotifIds.filter((id) => id.startsWith("rev-")).length))
+    : 0;
+
+  // Smart countdown for pending agreements requiring re-confirmation
+  const effectiveAgreementsCount = mounted
+    ? (pendingAgreementIds.length > 0
+        ? pendingAgreementIds.filter((id) => !readNotifIds.includes(id)).length
+        : Math.max(
+            0,
+            pendingAgreementsCount - readNotifIds.filter((id) => id.startsWith("agr-")).length
+          ))
+    : 0;
 
   // Lock body scroll on mobile smart menu open
   useEffect(() => {
@@ -98,7 +118,13 @@ export function PortalSidebar({
   // Short menu names for Client account
   const clientNavItems = [
     { label: "Overview", href: "/portal", icon: <LayoutDashboard className="w-5 h-5" strokeWidth={2} />, description: "Account snapshot & deliverables" },
-    { label: "Projects", href: "/portal/projects", icon: <FolderKanban className="w-5 h-5" strokeWidth={2} />, description: "Sprint boards & milestone progress" },
+    { 
+      label: "Projects", 
+      href: "/portal/projects", 
+      icon: <FolderKanban className="w-5 h-5" strokeWidth={2} />, 
+      description: "Sprint boards & milestone progress",
+      badgeCount: effectiveAgreementsCount,
+    },
     { label: "Documents", href: "/portal/documents", icon: <FileText className="w-5 h-5" strokeWidth={2} />, description: "Shared agreements & technical specs" },
     { label: "Revisions", href: "/portal/revisions", icon: <RotateCcw className="w-5 h-5" strokeWidth={2} />, description: "Quality assurance & change tickets", badgeCount: effectiveRevisionsCount },
     { label: "Meetings", href: "/portal/meetings", icon: <Calendar className="w-5 h-5" strokeWidth={2} />, description: "Book & join scheduled calls" },
@@ -119,7 +145,12 @@ export function PortalSidebar({
       ]
     : [
         { label: "Overview", href: "/portal", icon: <LayoutDashboard className="w-5 h-5" strokeWidth={2} /> },
-        { label: "Projects", href: "/portal/projects", icon: <FolderKanban className="w-5 h-5" strokeWidth={2} /> },
+        { 
+          label: "Projects", 
+          href: "/portal/projects", 
+          icon: <FolderKanban className="w-5 h-5" strokeWidth={2} />,
+          badgeCount: effectiveAgreementsCount,
+        },
         { label: "Finance", href: "/portal/billing", icon: <IndianRupee className="w-5 h-5" strokeWidth={2} /> },
         { label: "Revisions", href: "/portal/revisions", icon: <RotateCcw className="w-5 h-5" strokeWidth={2} />, badgeCount: effectiveRevisionsCount },
       ];
@@ -131,6 +162,11 @@ export function PortalSidebar({
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  const hasMoreNotifications = mounted && currentNavItems.some((item) => {
+    const isPrimary = mobilePrimaryNav.some((p: any) => p.href === item.href);
+    return !isPrimary && (item as any).badgeCount && (item as any).badgeCount > 0;
+  });
 
   return (
     <>
@@ -190,7 +226,7 @@ export function PortalSidebar({
                 <div className="flex items-center justify-between flex-1">
                   <span>{item.label}</span>
                   {item.badgeCount && item.badgeCount > 0 ? (
-                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-xs">
                       {item.badgeCount}
                     </span>
                   ) : null}
@@ -254,7 +290,9 @@ export function PortalSidebar({
               <div className="relative">
                 {item.icon}
                 {item.badgeCount && item.badgeCount > 0 ? (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-[#0A0A0A] animate-pulse"></span>
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white dark:border-[#0A0A0A] shadow-xs">
+                    {item.badgeCount > 9 ? "9+" : item.badgeCount}
+                  </span>
                 ) : null}
               </div>
               <span className="mt-0.5">{item.label}</span>
@@ -265,9 +303,14 @@ export function PortalSidebar({
         {!isProspect && (
           <button
             onClick={() => setIsSmartMenuOpen(true)}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-lg text-[10px] font-medium text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white"
+            className="flex flex-col items-center justify-center py-1 px-3 rounded-lg text-[10px] font-medium text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white relative cursor-pointer"
           >
-            <Menu className="w-5 h-5" strokeWidth={2} />
+            <div className="relative">
+              <Menu className="w-5 h-5" strokeWidth={2} />
+              {hasMoreNotifications && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#0A0A0A] animate-pulse" />
+              )}
+            </div>
             <span className="mt-0.5">More</span>
           </button>
         )}
@@ -317,7 +360,7 @@ export function PortalSidebar({
                     </div>
                     <div className="flex items-center gap-2">
                       {(item as any).badgeCount && (item as any).badgeCount > 0 && (
-                        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-xs">
                           {(item as any).badgeCount}
                         </span>
                       )}

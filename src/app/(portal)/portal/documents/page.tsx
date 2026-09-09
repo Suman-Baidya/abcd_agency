@@ -6,10 +6,11 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TablePagination } from "@/components/ui/TablePagination";
-import { FileText, Download, FileCode, FileSpreadsheet, Shield, UploadCloud, Search, ArrowUpDown, Lock, X, Folder } from "lucide-react";
+import { FileText, Download, FileCode, FileSpreadsheet, Shield, UploadCloud, Search, ArrowUpDown, Lock, X, Folder, PenTool, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
-import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
+import { DEFAULT_AGREEMENT_TERMS, getAgreementAmendmentStatus, coolDownAgreementNotifications } from "@/lib/agreement-defaults";
+import { getProjectAgreement } from "@/app/(dashboard)/admin/projects/actions";
 
 export default function PortalDocumentsPage() {
   const [data, setData] = useState<any>(null);
@@ -89,12 +90,23 @@ export default function PortalDocumentsPage() {
       contractorSignedAt: agr.contractorSignedAt,
       contractorSignature: agr.contractorSignature,
       signedAuditHash: agr.signedAuditHash,
+      originalSignedAt: agr.originalSignedAt || null,
+      originalSignedIp: agr.originalSignedIp || null,
+      originalAuditHash: agr.originalAuditHash || null,
+      confirmationHistory: agr.confirmationHistory || null,
     };
   };
 
   const handleOpenAgreement = (project: any) => {
-    setSelectedAgreement(buildAgreementData(project));
+    coolDownAgreementNotifications(project.id);
+    const localAgr = buildAgreementData(project);
+    setSelectedAgreement(localAgr);
     setIsAgreementModalOpen(true);
+    getProjectAgreement(project.id)
+      .then((fresh) => {
+        if (fresh) setSelectedAgreement(fresh);
+      })
+      .catch(() => {});
   };
 
   const handleDirectDownload = (project: any) => {
@@ -115,6 +127,13 @@ export default function PortalDocumentsPage() {
 
     const clientDocs = client?.documents || [];
     return [...agreementDocs, ...clientDocs];
+  }, [client]);
+
+  const pendingReconfirmationProject = useMemo(() => {
+    return (client?.projects || []).find((p: any) => {
+      const status = getAgreementAmendmentStatus(p.agreement);
+      return status.isPendingReconfirmation;
+    }) || null;
   }, [client]);
 
   // Stat metrics
@@ -199,7 +218,7 @@ export default function PortalDocumentsPage() {
             href="/portal/inquiries"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
           >
-            Submit Project Inquiry
+            Submit Inquiry
           </Link>
         </Card>
       </div>
@@ -207,15 +226,15 @@ export default function PortalDocumentsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="space-y-6 animate-in fade-in">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5E5] dark:border-[#262626] pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
-            Files & Shared Documents
+          <h1 className="text-2xl font-bold tracking-tight text-[#0A0A0A] dark:text-white">
+            Files & Document Vault
           </h1>
-          <p className="text-sm text-[#737373] dark:text-neutral-400 mt-1">
-            Access your signed contracts, architecture blueprints, sprint releases, and design packages.
+          <p className="text-xs text-[#737373] mt-1">
+            Access, download, and review official Statements of Work, digital contracts, architectural specs, and client deliverables.
           </p>
         </div>
 
@@ -231,6 +250,33 @@ export default function PortalDocumentsPage() {
         <StatCard label="PDF Specifications" value={pdfDocsCount} color="default" />
         <StatCard label="Design & Archives" value={archiveDocsCount} color="amber" />
       </div>
+
+      {/* Pending Agreement Re-Confirmation Attention Alert Banner */}
+      {pendingReconfirmationProject && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+              <PenTool className="w-4 h-4 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                Statement of Work Re-Confirmation Required
+              </h3>
+              <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                ABCD Agency has amended the agreement for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleOpenAgreement(pendingReconfirmationProject)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 rounded-lg text-xs font-bold transition shadow-xs shrink-0 cursor-pointer"
+          >
+            <PenTool className="w-3.5 h-3.5" />
+            <span>Review &amp; Re-Confirm</span>
+          </button>
+        </div>
+      )}
 
       {/* Documents Table Card */}
       <Card id="documents-table-card" className="overflow-hidden !p-0 rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs bg-white dark:bg-[#0A0A0A]">
@@ -343,13 +389,32 @@ export default function PortalDocumentsPage() {
                       </td>
 
                       <td className="px-5 py-4 text-center whitespace-nowrap">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                          doc.isAgreement
-                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
-                            : "bg-[#F5F5F5] dark:bg-[#222222] text-[#0A0A0A] dark:text-white border-[#E5E5E5] dark:border-[#333333]"
-                        }`}>
-                          {doc.fileType}
-                        </span>
+                        {doc.isAgreement ? (() => {
+                          const status = getAgreementAmendmentStatus(doc.project?.agreement);
+                          if (status.isPendingReconfirmation) {
+                            return (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 animate-pulse">
+                                Re-Confirm Required
+                              </span>
+                            );
+                          }
+                          if (status.isUnsigned) {
+                            return (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md border bg-[#F5F5F5] dark:bg-[#222222] text-[#737373] border-[#E5E5E5] dark:border-[#333333]">
+                                Pending Signature
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="px-2 py-0.5 text-[10px] font-bold rounded-md border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                              {status.hasReconfirmed ? "Re-Confirmed" : "Executed"}
+                            </span>
+                          );
+                        })() : (
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border bg-[#F5F5F5] dark:bg-[#222222] text-[#0A0A0A] dark:text-white border-[#E5E5E5] dark:border-[#333333]`}>
+                            {doc.fileType}
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-[#737373] dark:text-neutral-400 whitespace-nowrap font-mono text-xs">
@@ -369,30 +434,68 @@ export default function PortalDocumentsPage() {
                       </td>
 
                       <td className="px-5 py-4 text-right whitespace-nowrap">
-                        {doc.isAgreement ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAgreement(doc.project)}
-                              className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
-                              title="Open Agreement Document"
-                            >
-                              <FileText className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDirectDownload(doc.project)}
-                              className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
-                              title="Download Agreement as PDF"
-                            >
-                              <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
-                            </button>
-                          </div>
-                        ) : (
+                        {doc.isAgreement ? (() => {
+                          const status = getAgreementAmendmentStatus(doc.project?.agreement);
+                          return (
+                            <div className="flex items-center justify-end gap-2">
+                              {status.isPendingReconfirmation && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAgreement(doc.project)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all shadow-xs cursor-pointer animate-pulse"
+                                  title="Agreement amended by agency — Re-Confirmation Required"
+                                >
+                                  <PenTool className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Re-Confirm</span>
+                                </button>
+                              )}
+                              {status.isUnsigned && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAgreement(doc.project)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 transition-all shadow-xs cursor-pointer"
+                                  title="Review and legally execute Statement of Work"
+                                >
+                                  <PenTool className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Sign SOW</span>
+                                </button>
+                              )}
+                              {!status.isPendingReconfirmation && !status.isUnsigned && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAgreement(doc.project)}
+                                  className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                                  title="Open Agreement Document"
+                                >
+                                  <FileText className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDirectDownload(doc.project)}
+                                className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                                title="Download Agreement as PDF"
+                              >
+                                <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                              </button>
+                            </div>
+                          );
+                        })() : (
                           <a
                             href={doc.fileUrl || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => {
+                              try {
+                                const stored = localStorage.getItem("abcd_read_notifications");
+                                const current = stored ? JSON.parse(stored) : [];
+                                if (!current.includes(`doc-${doc.id}`)) {
+                                  const updated = [...current, `doc-${doc.id}`];
+                                  localStorage.setItem("abcd_read_notifications", JSON.stringify(updated));
+                                  window.dispatchEvent(new Event("notifications_updated"));
+                                }
+                              } catch {}
+                            }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-[#E5E5E5] dark:border-[#262626] rounded-md hover:bg-[#F5F5F5] dark:hover:bg-[#202020] text-[#0A0A0A] dark:text-white transition-colors cursor-pointer"
                           >
                             <Download className="w-3 h-3" />

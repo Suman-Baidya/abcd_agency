@@ -173,6 +173,15 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, isViewed: true } : u))
       );
+      try {
+        const stored = localStorage.getItem("abcd_read_notifications");
+        const current = stored ? JSON.parse(stored) : [];
+        if (!current.includes(`usr-${user.id}`)) {
+          const updated = [...current, `usr-${user.id}`];
+          localStorage.setItem("abcd_read_notifications", JSON.stringify(updated));
+          window.dispatchEvent(new Event("notifications_updated"));
+        }
+      } catch {}
       markUserAsViewed(user.id).catch(() => {});
     }
 

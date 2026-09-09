@@ -121,6 +121,64 @@ export function parseConfirmationHistory(
   }
 }
 
+export function getAgreementAmendmentStatus(agreement?: ProjectAgreementData | any | null): {
+  isAmendedAfterSigning: boolean;
+  hasReconfirmed: boolean;
+  isPendingReconfirmation: boolean;
+  isUnsigned: boolean;
+  isExecuted: boolean;
+} {
+  if (!agreement) {
+    return {
+      isAmendedAfterSigning: false,
+      hasReconfirmed: false,
+      isPendingReconfirmation: false,
+      isUnsigned: true,
+      isExecuted: false,
+    };
+  }
+
+  const isUnsigned = !agreement.signedAt;
+  if (isUnsigned) {
+    return {
+      isAmendedAfterSigning: false,
+      hasReconfirmed: false,
+      isPendingReconfirmation: false,
+      isUnsigned: true,
+      isExecuted: false,
+    };
+  }
+
+  const historyList = parseConfirmationHistory(agreement.confirmationHistory);
+  const initialExecutionEvent = historyList.find((e) => e.event === "INITIAL_EXECUTION");
+  const reconfirmationEvents = historyList.filter((e) => e.event === "AMENDMENT_RECONFIRMATION");
+  const latestReconfirmation = reconfirmationEvents.length > 0 ? reconfirmationEvents[reconfirmationEvents.length - 1] : null;
+
+  const initialSignedDate = agreement.originalSignedAt || initialExecutionEvent?.timestamp || agreement.signedAt;
+
+  const isAmendedAfterSigning = Boolean(
+    initialSignedDate &&
+    agreement.updatedAt &&
+    new Date(agreement.updatedAt).getTime() > new Date(initialSignedDate).getTime() + 5000
+  );
+
+  const hasReconfirmed = Boolean(
+    isAmendedAfterSigning &&
+    latestReconfirmation &&
+    new Date(latestReconfirmation.timestamp).getTime() >= (agreement.updatedAt ? new Date(agreement.updatedAt).getTime() - 5000 : 0)
+  );
+
+  const isPendingReconfirmation = isAmendedAfterSigning && !hasReconfirmed;
+
+  return {
+    isAmendedAfterSigning,
+    hasReconfirmed,
+    isPendingReconfirmation,
+    isUnsigned: false,
+    isExecuted: !isPendingReconfirmation,
+  };
+}
+
 
 export function calculateAgreementFinancials(
   budgetRaw: number,
@@ -153,6 +211,33 @@ export function generateAgreementNumber(projectIndex?: number, slug?: string): s
   }
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   return `ABCD-AGR-${currentYear}-${randomSuffix}`;
+}
+
+/**
+ * Cooldown helper: when super admin or client opens/views an agreement document,
+ * marks agreement notifications as viewed and instantly clears the unread badge.
+ */
+export function coolDownAgreementNotifications(projectId?: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const now = Date.now();
+    localStorage.setItem("abcd_last_agreement_viewed_at", String(now));
+
+    const stored = localStorage.getItem("abcd_read_notifications");
+    const parsed: string[] = stored ? JSON.parse(stored) : [];
+    const toAdd = [`agr-viewed-${now}`];
+    if (projectId) {
+      toAdd.push(`agr-proj-${projectId}`);
+    }
+    const updated = Array.from(new Set([...parsed, ...toAdd]));
+    localStorage.setItem("abcd_read_notifications", JSON.stringify(updated));
+
+    setTimeout(() => {
+      window.dispatchEvent(new Event("notifications_updated"));
+    }, 0);
+  } catch (err) {
+    console.warn("Could not cool down agreement notification:", err);
+  }
 }
 
 export const DEFAULT_CONTRACTOR_INFO = {

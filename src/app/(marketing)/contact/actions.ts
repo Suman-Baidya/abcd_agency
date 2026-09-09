@@ -5,6 +5,7 @@ import { z } from "zod";
 import { contactFormSchema, type ContactFormData } from "@/lib/validations/contact";
 import { inquiryLimiter, getClientIp } from "@/lib/rate-limit";
 import { checkSpamShield } from "@/lib/spam-protection";
+import { sendPushToRole } from "@/lib/push-notifications";
 
 export async function submitInquiry(data: ContactFormData) {
   try {
@@ -66,6 +67,14 @@ export async function submitInquiry(data: ContactFormData) {
         priority: "Medium",
       },
     });
+
+    // Dispatch background push alert to Admins (Android status bar)
+    sendPushToRole("ADMIN", {
+      title: `New Inquiry: ${parsedData.name}`,
+      body: `${parsedData.projectType || "Consultation request"} • Budget: ${parsedData.budget || "Flexible"}`,
+      url: "/admin/inquiries",
+      tag: `inquiry-${inquiry.id}`,
+    }).catch(() => {});
 
     return { success: true, inquiryId: inquiry.id };
   } catch (error) {

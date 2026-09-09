@@ -31,14 +31,16 @@ import {
   HelpCircle,
   Calendar,
   FileText,
-  Download
+  Download,
+  PenTool
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatProjectDeadline, evaluateTaskUrgency } from "@/lib/formatDate";
-import { ProjectSelectDropdown } from "@/components/ui/ProjectSelectDropdown";
 import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
-import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
+import { DEFAULT_AGREEMENT_TERMS, getAgreementAmendmentStatus, coolDownAgreementNotifications } from "@/lib/agreement-defaults";
+import { getProjectAgreement } from "@/app/(dashboard)/admin/projects/actions";
+import { ProjectSelectDropdown } from "@/components/ui/ProjectSelectDropdown";
 
 const CLIENT_KANBAN_LANES = [
   { id: "Backlog", title: "Backlog", color: "border-t-indigo-500", badgeBg: "bg-indigo-50 dark:bg-indigo-950/40", badgeText: "text-indigo-600 dark:text-indigo-300" },
@@ -159,12 +161,23 @@ export default function PortalProjectsPage() {
       contractorSignedAt: agr.contractorSignedAt,
       contractorSignature: agr.contractorSignature,
       signedAuditHash: agr.signedAuditHash,
+      originalSignedAt: agr.originalSignedAt || null,
+      originalSignedIp: agr.originalSignedIp || null,
+      originalAuditHash: agr.originalAuditHash || null,
+      confirmationHistory: agr.confirmationHistory || null,
     };
   };
 
   const handleOpenAgreement = (project: any) => {
-    setSelectedAgreement(buildAgreementData(project));
+    coolDownAgreementNotifications(project.id);
+    const localAgr = buildAgreementData(project);
+    setSelectedAgreement(localAgr);
     setIsAgreementModalOpen(true);
+    getProjectAgreement(project.id)
+      .then((fresh) => {
+        if (fresh) setSelectedAgreement(fresh);
+      })
+      .catch(() => {});
   };
 
   const handleDirectDownload = (project: any) => {
@@ -256,7 +269,7 @@ export default function PortalProjectsPage() {
   };
 
   const client = data?.client;
-  const isProspect = data?.user?.role === "USER";
+  const isProspect = data?.user?.role === "USER" && !data?.client && (!data?.client?.projects || data?.client?.projects.length === 0);
   
   // Dynamically compute project progress live from tasks
   const projects: any[] = useMemo(() => {
@@ -272,6 +285,13 @@ export default function PortalProjectsPage() {
       };
     });
   }, [client]);
+
+  const pendingReconfirmationProject = useMemo(() => {
+    return projects.find((p: any) => {
+      const agrStatus = getAgreementAmendmentStatus(p.agreement);
+      return agrStatus.isPendingReconfirmation;
+    }) || null;
+  }, [projects]);
 
   // Active selected project for Kanban sprint deep dive
   const activeSelectedProject = useMemo(() => {
@@ -463,6 +483,33 @@ export default function PortalProjectsPage() {
         <StatCard label="Delivered & Live" value={completedProjects} color="emerald" />
       </div>
 
+      {/* Pending Agreement Re-Confirmation Attention Alert Banner */}
+      {pendingReconfirmationProject && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+              <PenTool className="w-4 h-4 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                Agreement Re-Confirmation Required
+              </h3>
+              <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                ABCD Agency has published an amended Statement of Work for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleOpenAgreement(pendingReconfirmationProject)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 rounded-lg text-xs font-bold transition shadow-xs shrink-0 cursor-pointer"
+          >
+            <PenTool className="w-3.5 h-3.5" />
+            <span>Review &amp; Re-Confirm</span>
+          </button>
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. DATA TABLE VIEW */}
       {/* ========================================================================= */}
@@ -616,24 +663,53 @@ export default function PortalProjectsPage() {
                       </td>
 
                       <td className="px-5 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenAgreement(proj)}
-                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
-                            title="Open Agreement Document"
-                          >
-                            <FileText className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDirectDownload(proj)}
-                            className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
-                            title="Download Agreement as PDF"
-                          >
-                            <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
-                          </button>
-                        </div>
+                        {(() => {
+                          const agrStatus = getAgreementAmendmentStatus(proj.agreement);
+                          return (
+                            <div className="flex items-center justify-center gap-2">
+                              {agrStatus.isPendingReconfirmation ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAgreement(proj)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all shadow-xs cursor-pointer animate-pulse"
+                                  title="Agreement amended by agency — Re-Confirmation Required"
+                                >
+                                  <PenTool className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Re-Confirm</span>
+                                </button>
+                              ) : agrStatus.isUnsigned ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAgreement(proj)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] hover:opacity-90 transition-all shadow-xs cursor-pointer"
+                                  title="Review and legally execute Statement of Work"
+                                >
+                                  <PenTool className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Sign SOW</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAgreement(proj)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#262626] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-all cursor-pointer shadow-2xs"
+                                  title="View executed agreement document"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <span className="font-mono text-[11px]">{agrStatus.hasReconfirmed ? "Re-Confirmed" : "Executed"}</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleDirectDownload(proj)}
+                                className="p-1.5 border border-[#E5E5E5] dark:border-[#262626] rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#202020] transition-all cursor-pointer shadow-2xs group"
+                                title="Download Agreement as PDF"
+                              >
+                                <Download className="w-4 h-4 text-[#0A0A0A] dark:text-white group-hover:scale-110 transition-transform" />
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       <td className="px-5 py-4 text-right whitespace-nowrap">
@@ -1225,15 +1301,32 @@ export default function PortalProjectsPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#262626]">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleOpenAgreement(selectedProject)}
-                className="inline-flex items-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>View Agreement (PDF)</span>
-              </Button>
+              {(() => {
+                const agrStatus = getAgreementAmendmentStatus(selectedProject.agreement);
+                if (agrStatus.isPendingReconfirmation) {
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAgreement(selectedProject)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors cursor-pointer shadow-xs animate-pulse"
+                    >
+                      <PenTool className="w-3.5 h-3.5" />
+                      <span>Re-Confirm Amended SOW</span>
+                    </button>
+                  );
+                }
+                return (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleOpenAgreement(selectedProject)}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>View Agreement (PDF)</span>
+                  </Button>
+                );
+              })()}
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={() => setSelectedProject(null)}>
                   Close

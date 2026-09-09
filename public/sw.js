@@ -1,5 +1,5 @@
-// Service Worker for ABCD Agency PWA (v1.4)
-const CACHE_NAME = "abcd-agency-cache-v1.4";
+// Service Worker for ABCD Agency PWA (v1.5 - Push Notifications Enabled)
+const CACHE_NAME = "abcd-agency-cache-v1.5";
 const STATIC_ASSETS = [
   "/",
   "/offline.html",
@@ -84,5 +84,63 @@ self.addEventListener("fetch", (event) => {
           return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
         });
       })
+  );
+});
+
+// =========================================================================
+// PUSH NOTIFICATIONS (Android Notification Bar, Desktop & iOS)
+// =========================================================================
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { title: "ABCD Agency", body: event.data.text() };
+    }
+  }
+
+  const title = data.title || "ABCD Agency Alert";
+  const options = {
+    body: data.body || "New update in your project dashboard.",
+    icon: data.icon || "/images/abcd_square_logo.png",
+    badge: data.badge || "/favicon.ico",
+    vibrate: [200, 100, 200, 100, 200],
+    tag: data.tag || `abcd-notif-${Date.now()}`,
+    renotify: true,
+    requireInteraction: false,
+    data: {
+      url: data.url || "/portal",
+      timestamp: Date.now(),
+    },
+    actions: data.actions || [
+      { action: "open", title: "Open App" }
+    ],
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      // If a window is already open on this origin, focus it and navigate
+      for (const client of windowClients) {
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          if ("navigate" in client && targetUrl) {
+            client.navigate(targetUrl);
+          }
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });

@@ -20,6 +20,7 @@ import {
   Lock
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { PushNotificationToggle } from "@/components/dashboard/PushNotificationToggle";
 
 export default function PortalProfilePage() {
   const [data, setData] = useState<any>(null);
@@ -266,7 +267,10 @@ export default function PortalProfilePage() {
         </Card>
 
         {/* Edit Form Accordions (Matching Super Admin Profile Accordion style) */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-5">
+          {/* PWA Push Notifications Device Control */}
+          <PushNotificationToggle />
+
           {/* 1. Personal & Organization Details Accordion */}
           <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#0A0A0A] overflow-hidden transition-all duration-300 shadow-xs">
             <button

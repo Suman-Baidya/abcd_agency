@@ -44,8 +44,9 @@ import {
 
 import { ClientProjectItem } from "@/app/(dashboard)/admin/clients/actions";
 import { ProjectAgreementModal, DirectPDFDownloader } from "@/components/dashboard/ProjectAgreementModal";
-import { DEFAULT_AGREEMENT_TERMS } from "@/lib/agreement-defaults";
+import { DEFAULT_AGREEMENT_TERMS, coolDownAgreementNotifications } from "@/lib/agreement-defaults";
 import { parseCurrencyToNumber } from "@/lib/sync-financials";
+import { getProjectAgreement } from "@/app/(dashboard)/admin/projects/actions";
 
 export interface ClientItem {
   id: string;
@@ -170,6 +171,7 @@ export function ClientManager({
   };
 
   const handleOpenAgreement = (client: ClientItem) => {
+    coolDownAgreementNotifications(client.id);
     setAgreementModalData(buildClientAgreementData(client));
     setIsAgreementModalOpen(true);
   };
@@ -1506,7 +1508,16 @@ export function ClientManager({
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
+                                try {
+                                  const fresh = await getProjectAgreement(proj.id);
+                                  if (fresh) {
+                                    setAgreementModalData(fresh);
+                                    setIsAgreementModalOpen(true);
+                                    return;
+                                  }
+                                } catch (e) {}
+
                                 const budgetRaw = proj.budgetRaw > 0 ? proj.budgetRaw : parseCurrencyToNumber(proj.budget);
                                 const agr = (proj as any).agreement || {};
                                 const agreementData: any = {
@@ -1530,6 +1541,22 @@ export function ClientManager({
                                   termsAndPolicy: agr.termsAndPolicy || DEFAULT_AGREEMENT_TERMS,
                                   notes: agr.notes || undefined,
                                   issuedAt: agr.issuedAt || new Date(),
+                                  updatedAt: agr.updatedAt || null,
+                                  signedAt: agr.signedAt || null,
+                                  signedByName: agr.signedByName || null,
+                                  signedByEmail: agr.signedByEmail || null,
+                                  signedByTitle: agr.signedByTitle || null,
+                                  signedIp: agr.signedIp || null,
+                                  signedUserAgent: agr.signedUserAgent || null,
+                                  signatureType: agr.signatureType || "DRAW",
+                                  clientSignature: agr.clientSignature || null,
+                                  contractorSignedAt: agr.contractorSignedAt || null,
+                                  contractorSignature: agr.contractorSignature || null,
+                                  signedAuditHash: agr.signedAuditHash || null,
+                                  originalSignedAt: agr.originalSignedAt || null,
+                                  originalSignedIp: agr.originalSignedIp || null,
+                                  originalAuditHash: agr.originalAuditHash || null,
+                                  confirmationHistory: agr.confirmationHistory || null,
                                   projectTitle: proj.title,
                                   projectCategory: proj.category,
                                   projectSummary: `Official statement of work and service agreement for ${proj.title}.`,
@@ -1957,6 +1984,7 @@ export function ClientManager({
           onClose={() => setIsAgreementModalOpen(false)}
           agreement={agreementModalData}
           canEdit={true}
+          canSign={false}
           onSave={(updated) => setAgreementModalData(updated)}
         />
       )}
