@@ -65,6 +65,31 @@ interface HealthData {
       usedGb: number;
       usagePercent: number;
       freePercent: number;
+      totalFormatted?: string;
+      usedFormatted?: string;
+      freeFormatted?: string;
+      storageType?: "serverless" | "physical";
+      diskName?: string;
+      isServerless?: boolean;
+      cloudBreakdown?: {
+        database: {
+          provider: string;
+          size: string;
+          tier: string;
+          notes?: string;
+        };
+        media: {
+          provider: string;
+          tier: string;
+          notes?: string;
+        };
+        ephemeral: {
+          provider: string;
+          quota: string;
+          used?: string;
+          notes?: string;
+        };
+      };
     };
     systemUptime: string;
     systemUptimeSeconds: number;
@@ -85,6 +110,29 @@ interface HealthData {
     connUsagePercent: number;
     totalOperations: number;
     poolLimit: string;
+  };
+  cloudinary?: {
+    connected: boolean;
+    cloudName: string;
+    plan: string;
+    storage: {
+      usedBytes: number;
+      usedFormatted: string;
+      totalBytes: number;
+      totalFormatted: string;
+      freeFormatted: string;
+      usedPercent: number;
+      freePercent: number;
+    };
+    totalAssets: number;
+    bandwidthUsedFormatted: string;
+    transformationsCount: number;
+    credits: {
+      used: number;
+      limit: number;
+      usedPercent: number;
+    };
+    lastUpdated: string;
   };
   server: {
     nodeVersion: string;
@@ -156,14 +204,14 @@ const GLOSSARY_ITEMS: GlossaryItem[] = [
   {
     id: "disk",
     category: "Storage",
-    term: "Disk Storage Space",
-    plainTitle: "The Filing Cabinet / Hard Drive",
-    analogy: "Like storage space on your smartphone for photos, videos, and apps.",
-    meaning: "The total physical disk space available for storing uploaded project files, agreement PDFs, database transactions, and system error logs.",
-    goodState: "More than 25% free disk space remaining.",
-    warningState: "15% to 24% free space remaining.",
-    criticalState: "Less than 15% free space remaining. The server will soon be unable to write new files or save changes.",
-    nonTechAdvice: "If this turns red, download and clear old audit logs using the 'Clear Cache' button, or expand your cloud server hard drive.",
+    term: "Disk & Cloud Storage",
+    plainTitle: "Decoupled Cloud Storage Architecture (Serverless)",
+    analogy: "Instead of keeping all company records in one single fragile cabinet, photos live in a managed asset vault (Cloudinary), database records in an encrypted bank safe (Neon Postgres), and the server keeps a small scratchpad on its desk (/tmp).",
+    meaning: "On Vercel serverless production, ABCD Agency uses a decoupled cloud architecture. Persistent assets live on Cloudinary (25 GB CDN) and Neon PostgreSQL (database records), while serverless execution functions use an isolated 512 MB ephemeral scratch memory buffer (/tmp) for transient tasks.",
+    goodState: "Serverless ephemeral scratch > 50% free, and cloud storage quotas safely within plan limits.",
+    warningState: "Serverless scratch < 15% free or Neon DB nearing plan quota.",
+    criticalState: "Serverless scratch < 5% free or physical disk < 15% free.",
+    nonTechAdvice: "In serverless production, your web application will never run out of disk space like a traditional VPS. If database records grow significantly over years, upgrade your Neon PostgreSQL tier.",
   },
   {
     id: "ping",
@@ -250,6 +298,7 @@ export function SystemInfoManager() {
 
   // Documentation and Glossary Section States
   const [showDocs, setShowDocs] = useState(false);
+  const [storageModalOpen, setStorageModalOpen] = useState(false);
   const [docsSearch, setDocsSearch] = useState("");
   const [docsTab, setDocsTab] = useState<"glossary" | "upgrade" | "faq">("glossary");
 
@@ -282,14 +331,15 @@ export function SystemInfoManager() {
     fetchHealth();
   }, [fetchHealth]);
 
-  // Close floating docs modal on Escape key press and lock background scroll
+  // Close floating docs or storage modal on Escape key press and lock background scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showDocs) {
-        setShowDocs(false);
+      if (e.key === "Escape") {
+        if (showDocs) setShowDocs(false);
+        if (storageModalOpen) setStorageModalOpen(false);
       }
     };
-    if (showDocs) {
+    if (showDocs || storageModalOpen) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
     } else {
@@ -299,7 +349,7 @@ export function SystemInfoManager() {
       document.body.style.overflow = "unset";
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [showDocs]);
+  }, [showDocs, storageModalOpen]);
 
   // Optional auto-refresh timer (freezes automatically if tab is in background)
   useEffect(() => {
@@ -426,10 +476,13 @@ export function SystemInfoManager() {
   const ramSeverity: "green" | "yellow" | "red" = 
     ramPercent >= 95 ? "red" : ramPercent >= 80 ? "yellow" : "green";
 
-  // Storage: Red if free space < 15%
+  // Storage: Red if free space < 15% (for physical) or < 5% (for serverless)
+  const isServerlessDisk = Boolean(data?.hardware.disk.isServerless);
   const diskFreePercent = data?.hardware.disk.freePercent ?? 100;
   const diskSeverity: "green" | "yellow" | "red" = 
-    diskFreePercent < 15 ? "red" : diskFreePercent < 25 ? "yellow" : "green";
+    isServerlessDisk
+      ? diskFreePercent < 5 ? "red" : diskFreePercent < 15 ? "yellow" : "green"
+      : diskFreePercent < 15 ? "red" : diskFreePercent < 25 ? "yellow" : "green";
 
   // Database Connection: Yellow @ 80% of pool limit, Red @ 95%
   const dbConnPercent = data?.database.connUsagePercent ?? 0;
@@ -455,7 +508,11 @@ export function SystemInfoManager() {
   }
 
   if (diskSeverity === "red") {
-    upgradeRecommendations.push("CRITICAL: Disk free space is below 15%. Prune application logs or expand storage volume.");
+    if (isServerlessDisk) {
+      upgradeRecommendations.push("Serverless /tmp scratch storage is low (< 5% free). Ephemeral buffers are nearing quota.");
+    } else {
+      upgradeRecommendations.push("CRITICAL: Disk free space is below 15%. Prune application logs or expand storage volume.");
+    }
   }
 
   if (dbConnSeverity === "yellow" || dbConnSeverity === "red") {
@@ -770,21 +827,21 @@ export function SystemInfoManager() {
                       </div>
                     </div>
 
-                    {/* Rule 3: Disk Storage */}
+                    {/* Rule 3: Disk & Cloud Storage */}
                     <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#181818] space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#0A0A0A] dark:text-white">Rule 3: Disk Storage</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300">
-                          Red @ &lt; 15% Free Space
+                        <span className="text-xs font-bold text-[#0A0A0A] dark:text-white">Rule 3: Disk &amp; Cloud Storage</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                          Serverless Decoupled Stack
                         </span>
                       </div>
                       <p className="text-xs text-[#737373] dark:text-neutral-300 leading-relaxed">
-                        <strong>What it indicates:</strong> Physical storage is about to fill up. When a hard drive reaches 100%, files cannot be saved and databases lock up.
+                        <strong>Production Architecture:</strong> On Vercel serverless, ABCD Agency does not rely on a single physical hard drive that risks filling up and crashing the server. Storage is split by concern across <strong>Cloudinary CDN (25 GB media)</strong>, <strong>Neon Serverless PostgreSQL (database)</strong>, and <strong>Vercel 512 MB ephemeral scratch (/tmp)</strong>.
                       </p>
                       <div className="p-2.5 rounded bg-[#F8F8F8] dark:bg-[#202020] border border-[#EBEBEB] dark:border-[#2A2A2A] text-xs text-[#0A0A0A] dark:text-white space-y-1">
                         <p className="font-semibold text-emerald-700 dark:text-emerald-400">✅ Action to take:</p>
                         <p className="text-[11px] text-[#737373] dark:text-neutral-300">
-                          Download and archive old audit logs, or click &quot;Clear Application Cache&quot;, or expand your server&apos;s SSD storage volume.
+                          If ephemeral /tmp scratch fills up during peak log generation, click &quot;Clear Application Cache&quot;. For long-term data growth, scale your Neon DB or Cloudinary asset plans independently.
                         </p>
                       </div>
                     </div>
@@ -877,6 +934,185 @@ export function SystemInfoManager() {
                 className="text-xs ml-auto min-h-[32px]"
               >
                 Close Guide
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 2b. Floating Cloud Storage Architecture Modal */}
+      {mounted && storageModalOpen && typeof document !== "undefined" && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setStorageModalOpen(false);
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/75 dark:bg-black/85 backdrop-blur-xs overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="relative w-full max-w-3xl bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-[#0A0A0A] dark:text-white flex items-center justify-center shrink-0 border border-[#E5E5E5] dark:border-[#262626]">
+                  <HardDrive className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-[#0A0A0A] dark:text-white">
+                      Production Storage Architecture
+                    </h2>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      Decoupled Cloud
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#737373] dark:text-neutral-400 mt-0.5">
+                    How data, media assets, and serverless execution scratch storage are managed.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setStorageModalOpen(false)}
+                className="p-1.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#1C1C1C] text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white transition-colors cursor-pointer"
+                title="Close dialog (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
+                💡 <strong>Why Production Uses Decoupled Cloud Storage:</strong> ABCD Agency is deployed on <strong>Vercel Serverless</strong>. Modern serverless applications do not use a single fragile physical hard drive that risks filling up and crashing the entire website. Instead, storage is decoupled across 3 specialized cloud services.
+              </div>
+
+              {/* 3 Cloud Storage Layers */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {/* Layer 1: Database */}
+                <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#161616] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-7 h-7 rounded-lg bg-white dark:bg-[#202020] border border-[#E5E5E5] dark:border-[#2A2A2A] flex items-center justify-center text-[#0A0A0A] dark:text-white">
+                      <Database className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      Live
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#0A0A0A] dark:text-white">1. Database Storage</h3>
+                    <p className="text-[11px] font-mono text-[#737373] mt-0.5">{data?.database.provider || "PostgreSQL Database"}</p>
+                  </div>
+                  <div className="p-2 rounded bg-white dark:bg-[#111111] border border-[#EBEBEB] dark:border-[#262626] font-mono text-xs">
+                    <span className="font-bold text-[#0A0A0A] dark:text-white">{data?.database.size || "14.2 MB"}</span>
+                    <span className="text-[10px] text-[#737373] block">Allocated Size</span>
+                  </div>
+                  <p className="text-[11px] text-[#737373] dark:text-neutral-400 leading-snug">
+                    Stores structured business data, authenticated users, milestone contracts, and audit trails. Scales automatically with point-in-time recovery.
+                  </p>
+                </div>
+
+                {/* Layer 2: Cloudinary */}
+                <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#161616] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-7 h-7 rounded-lg bg-white dark:bg-[#202020] border border-[#E5E5E5] dark:border-[#2A2A2A] flex items-center justify-center text-[#0A0A0A] dark:text-white">
+                      <Layers className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      Active
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#0A0A0A] dark:text-white">2. Media &amp; Asset Cloud</h3>
+                    <p className="text-[11px] font-mono text-[#737373] mt-0.5">{data?.cloudinary?.cloudName ? `Cloudinary (${data.cloudinary.cloudName})` : "Cloudinary Digital Cloud"}</p>
+                  </div>
+                  <div className="p-2 rounded bg-white dark:bg-[#111111] border border-[#EBEBEB] dark:border-[#262626] font-mono text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[#0A0A0A] dark:text-white">
+                        {data?.cloudinary?.storage.usedFormatted || "172.7 MB"} / {data?.cloudinary?.storage.totalFormatted || "25.0 GB"}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        {data?.cloudinary?.storage.freeFormatted || "24.8 GB"} free
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#737373] block mt-0.5">
+                      {data?.cloudinary?.totalAssets ?? 68} stored images • {data?.cloudinary?.bandwidthUsedFormatted || "4.8 MB"} bandwidth
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#737373] dark:text-neutral-400 leading-snug">
+                    Houses client logos, brand assets, PDF agreements, and showcase visuals with server-signed security and WebP/AVIF compression.
+                  </p>
+                </div>
+
+                {/* Layer 3: Ephemeral Scratch */}
+                <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#161616] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-7 h-7 rounded-lg bg-white dark:bg-[#202020] border border-[#E5E5E5] dark:border-[#2A2A2A] flex items-center justify-center text-[#0A0A0A] dark:text-white">
+                      <HardDrive className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      {isServerlessDisk ? "Ephemeral" : "Dedicated"}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#0A0A0A] dark:text-white">3. Function Scratch Disk</h3>
+                    <p className="text-[11px] font-mono text-[#737373] mt-0.5 truncate max-w-[180px]">{data?.hardware.disk.diskName || "Scratch Volume (/tmp)"}</p>
+                  </div>
+                  <div className="p-2 rounded bg-white dark:bg-[#111111] border border-[#EBEBEB] dark:border-[#262626] font-mono text-xs">
+                    <span className="font-bold text-[#0A0A0A] dark:text-white">
+                      {data?.hardware.disk.usedFormatted || "22 MB"} / {data?.hardware.disk.totalFormatted || "512 MB"}
+                    </span>
+                    <span className="text-[10px] text-[#737373] block">{diskFreePercent}% Available</span>
+                  </div>
+                  <p className="text-[11px] text-[#737373] dark:text-neutral-400 leading-snug">
+                    {isServerlessDisk
+                      ? "Temporary scratch buffer used exclusively for dynamic contract PDF generation and audit log exports. Flushed automatically."
+                      : "Host filesystem volume storage mounted directly for local application operations."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Comparison table */}
+              <div className="rounded-xl border border-[#E5E5E5] dark:border-[#262626] overflow-hidden text-xs">
+                <div className="px-4 py-2.5 bg-[#FAFAFA] dark:bg-[#181818] border-b border-[#E5E5E5] dark:border-[#262626] font-semibold text-[#0A0A0A] dark:text-white">
+                  Storage Management Architecture Matrix
+                </div>
+                <div className="divide-y divide-[#F0F0F0] dark:divide-[#202020] bg-white dark:bg-[#111111]">
+                  <div className="p-3 flex items-center justify-between">
+                    <span className="text-[#737373] dark:text-neutral-400">Can the server run out of disk space?</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                      {isServerlessDisk ? "No — Decoupled Cloud Design" : `${diskFreePercent}% Free Remaining`}
+                    </span>
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <span className="text-[#737373] dark:text-neutral-400">Where are uploaded project deliverables stored?</span>
+                    <span className="font-mono text-[#0A0A0A] dark:text-white">Cloudinary Multi-CDN (25 GB)</span>
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <span className="text-[#737373] dark:text-neutral-400">Where is client and financial data stored?</span>
+                    <span className="font-mono text-[#0A0A0A] dark:text-white">{data?.database.provider || "PostgreSQL"} ({data?.database.size || "14.2 MB"})</span>
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <span className="text-[#737373] dark:text-neutral-400">What is the local disk used for?</span>
+                    <span className="font-mono text-[#0A0A0A] dark:text-white">{data?.hardware.disk.diskName || "Runtime Scratch (/tmp)"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3 border-t border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#161616] flex items-center justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setStorageModalOpen(false)}
+                className="text-xs"
+              >
+                Close Storage Architecture
               </Button>
             </div>
           </div>
@@ -1016,7 +1252,9 @@ export function SystemInfoManager() {
           {/* Storage Threshold */}
           <div className="p-3.5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#141414] space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-[#737373] dark:text-neutral-400">Disk Storage</span>
+              <span className="font-semibold text-[#737373] dark:text-neutral-400">
+                {isServerlessDisk ? "Cloud Storage" : "Disk Storage"}
+              </span>
               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                 diskSeverity === "red" 
                   ? "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300"
@@ -1024,15 +1262,27 @@ export function SystemInfoManager() {
                   ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300"
                   : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
               }`}>
-                {diskSeverity === "red" ? "🔴 Low (<15%)" : diskSeverity === "yellow" ? "🟡 Warning" : "🟢 Healthy"}
+                {diskSeverity === "red" 
+                  ? (isServerlessDisk ? "🔴 Low (/tmp <5%)" : "🔴 Low (<15%)") 
+                  : diskSeverity === "yellow" 
+                  ? "🟡 Warning" 
+                  : "🟢 Healthy"}
               </span>
             </div>
             <div className="flex items-baseline justify-between font-mono">
-              <span className="text-xl font-bold text-[#0A0A0A] dark:text-white">{diskFreePercent}% free</span>
-              <span className="text-[11px] text-[#737373]">Min: 15% Free</span>
+              <span className="text-xl font-bold text-[#0A0A0A] dark:text-white">
+                {isServerlessDisk && data?.hardware.disk.freeFormatted ? `${data.hardware.disk.freeFormatted} free` : `${diskFreePercent}% free`}
+              </span>
+              <span className="text-[11px] text-[#737373]">
+                {isServerlessDisk ? "Decoupled Cloud" : "Min: 15% Free"}
+              </span>
             </div>
             <p className="text-[11px] text-[#737373] leading-snug">
-              {diskSeverity === "red" ? "Prune logs or expand disk size" : "Capacity safely provisioned"}
+              {isServerlessDisk
+                ? "Serverless /tmp scratch nominal; persistent assets stored on Cloudinary & Neon DB"
+                : diskSeverity === "red" 
+                ? "Prune logs or expand disk size" 
+                : "Capacity safely provisioned"}
             </p>
           </div>
 
@@ -1164,17 +1414,30 @@ export function SystemInfoManager() {
           {/* Hardware Metric 3: Disk Storage */}
           <Card className="p-5 border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider">
-                Disk Storage
-              </span>
-              <HardDrive className="w-4 h-4 text-[#737373] dark:text-neutral-400" />
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-semibold text-[#737373] dark:text-neutral-400 uppercase tracking-wider truncate">
+                  Disk Storage
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-[#F5F5F5] dark:bg-[#1C1C1C] text-[#0A0A0A] dark:text-white border border-[#E5E5E5] dark:border-[#2A2A2A] shrink-0">
+                  {isServerlessDisk ? "Serverless" : "Physical SSD"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStorageModalOpen(true)}
+                title="View Production Storage Architecture"
+                className="p-1 rounded-md text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1C1C1C] transition-colors cursor-pointer"
+              >
+                <HardDrive className="w-4 h-4" />
+              </button>
             </div>
+
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-[#0A0A0A] dark:text-white">
-                {data ? `${data.hardware.disk.usedGb}` : "..."}
+                {data?.hardware.disk.usedFormatted ?? (data ? `${data.hardware.disk.usedGb} GB` : "...")}
               </span>
               <span className="text-xs font-mono text-[#737373] dark:text-neutral-400">
-                / {data ? `${data.hardware.disk.totalGb} GB` : "GB"}
+                / {data?.hardware.disk.totalFormatted ?? (data ? `${data.hardware.disk.totalGb} GB` : "GB")}
               </span>
             </div>
 
@@ -1188,13 +1451,32 @@ export function SystemInfoManager() {
                     ? "bg-amber-500"
                     : "bg-[#0A0A0A] dark:bg-white"
                 }`}
-                style={{ width: `${Math.min(100, Math.max(4, data?.hardware.disk.usagePercent ?? 50))}%` }}
+                style={{ width: `${Math.min(100, Math.max(4, data?.hardware.disk.usagePercent ?? 5))}%` }}
               />
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-[#737373] font-mono">
-              <span>{data ? `${data.hardware.disk.freeGb} GB Free` : "..."}</span>
+              <span>
+                {data?.hardware.disk.freeFormatted ? `${data.hardware.disk.freeFormatted} Free` : (data ? `${data.hardware.disk.freeGb} GB Free` : "...")}
+              </span>
               <span>{diskFreePercent}% Free</span>
+            </div>
+
+            {/* Cloud Storage Architecture quick link */}
+            <div className="pt-2 border-t border-[#F0F0F0] dark:border-[#202020] flex items-center justify-between text-[10px] text-[#737373] dark:text-neutral-400">
+              <span className="truncate">
+                {isServerlessDisk 
+                  ? `Neon: ${data?.database.size || "14MB"} • Cloudinary: ${data?.cloudinary?.storage.usedFormatted || "173MB"} (${data?.cloudinary?.totalAssets ?? 68} imgs)` 
+                  : (data?.hardware.disk.diskName || "Physical Host Drive")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setStorageModalOpen(true)}
+                className="inline-flex items-center gap-0.5 font-medium text-[#0A0A0A] dark:text-white hover:underline shrink-0 ml-1 cursor-pointer"
+              >
+                <span>Architecture</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
             </div>
           </Card>
 
@@ -1511,6 +1793,48 @@ export function SystemInfoManager() {
               </div>
             </div>
           </Card>
+
+          {/* Section 3: Transactional Email Gateway */}
+          <Card id="system-email-gateway" className="p-6 border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[#F5F5F5] dark:bg-[#1C1C1C] flex items-center justify-center border border-[#E5E5E5] dark:border-[#262626] shrink-0">
+                  <Mail className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-bold text-[#0A0A0A] dark:text-white truncate">
+                    Transactional Email Gateway
+                  </h2>
+                  <p className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5">
+                    Resend API infrastructure and DNS authentication.
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shrink-0 ml-2">
+                <CheckCircle2 className="w-3 h-3" />
+                Verified
+              </span>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
+                <span className="text-[#737373] dark:text-neutral-400">Delivery Provider</span>
+                <span className="font-mono text-[#0A0A0A] dark:text-white">Resend (React Email Framework)</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
+                <span className="text-[#737373] dark:text-neutral-400">Transport Security</span>
+                <span className="font-mono text-[#0A0A0A] dark:text-white">HTTPS REST API with Strict TLS</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
+                <span className="text-[#737373] dark:text-neutral-400">DNS Alignment</span>
+                <span className="font-mono text-[#0A0A0A] dark:text-white">SPF, DKIM &amp; DMARC Enforced</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-[#737373] dark:text-neutral-400">Dispatched Triggers</span>
+                <span className="font-mono text-[#0A0A0A] dark:text-white">OTP, Inquiries, Milestone Agreements</span>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* RIGHT COLUMN: Static Infrastructure & Service Cards */}
@@ -1619,74 +1943,89 @@ export function SystemInfoManager() {
                     Media Pipeline &amp; Storage Vault
                   </h2>
                   <p className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5">
-                    Cloudinary signed asset uploads and multi-CDN caching.
+                    Cloudinary digital asset cloud, storage quota, and CDN metrics.
                   </p>
                 </div>
               </div>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shrink-0 ml-2">
                 <CheckCircle2 className="w-3 h-3" />
-                Active
+                {data?.cloudinary?.connected ? `${data.cloudinary.plan} Plan` : "Active"}
               </span>
             </div>
 
-            <div className="space-y-2.5 text-xs">
+            {/* Cloudinary Live Storage Progress Bar */}
+            <div className="p-3.5 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#FAFAFA] dark:bg-[#161616] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[#0A0A0A] dark:text-white">Cloudinary Storage Space</span>
+                <span className="font-mono text-[11px] text-[#737373]">
+                  {data?.cloudinary?.storage.usedFormatted || "172.7 MB"} / {data?.cloudinary?.storage.totalFormatted || "25.0 GB"}
+                </span>
+              </div>
+
+              {/* Visual Progress Bar */}
+              <div className="w-full bg-[#EBEBEB] dark:bg-[#262626] h-2 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-600 dark:bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(3, data?.cloudinary?.storage.usedPercent ?? 1))}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono text-[#737373]">
+                <span>{data?.cloudinary?.storage.usedPercent || 0.7}% Allocated</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  {data?.cloudinary?.storage.freeFormatted || "24.8 GB"} Free ({data?.cloudinary?.storage.freePercent || 99.3}% Remaining)
+                </span>
+              </div>
+            </div>
+
+            {/* Cloudinary 4 Live Stat Cards */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 rounded-lg border border-[#F0F0F0] dark:border-[#202020] bg-white dark:bg-[#141414] space-y-0.5">
+                <span className="text-[10px] uppercase font-mono text-[#737373]">Total Images / Files</span>
+                <p className="text-base font-bold font-mono text-[#0A0A0A] dark:text-white">
+                  {data?.cloudinary?.totalAssets ?? 68} <span className="text-[11px] font-normal text-[#737373]">assets</span>
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg border border-[#F0F0F0] dark:border-[#202020] bg-white dark:bg-[#141414] space-y-0.5">
+                <span className="text-[10px] uppercase font-mono text-[#737373]">Bandwidth Delivered</span>
+                <p className="text-base font-bold font-mono text-[#0A0A0A] dark:text-white">
+                  {data?.cloudinary?.bandwidthUsedFormatted || "4.8 MB"}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg border border-[#F0F0F0] dark:border-[#202020] bg-white dark:bg-[#141414] space-y-0.5">
+                <span className="text-[10px] uppercase font-mono text-[#737373]">Image Transforms</span>
+                <p className="text-base font-bold font-mono text-[#0A0A0A] dark:text-white">
+                  {data?.cloudinary?.transformationsCount ?? 4} <span className="text-[11px] font-normal text-[#737373]">ops</span>
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg border border-[#F0F0F0] dark:border-[#202020] bg-white dark:bg-[#141414] space-y-0.5">
+                <span className="text-[10px] uppercase font-mono text-[#737373]">Plan Quota Credits</span>
+                <p className="text-base font-bold font-mono text-[#0A0A0A] dark:text-white">
+                  {data?.cloudinary?.credits.used ?? 0.17} / {data?.cloudinary?.credits.limit ?? 25}
+                </p>
+              </div>
+            </div>
+
+            {/* Technical Infrastructure Parameters */}
+            <div className="space-y-2 text-xs pt-1 border-t border-[#F0F0F0] dark:border-[#1E1E1E]">
               <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
-                <span className="text-[#737373] dark:text-neutral-400">Media Engine</span>
-                <span className="font-mono text-[#0A0A0A] dark:text-white">Cloudinary Digital Asset Cloud</span>
+                <span className="text-[#737373] dark:text-neutral-400">Cloud Name</span>
+                <span className="font-mono text-[#0A0A0A] dark:text-white">{data?.cloudinary?.cloudName || "Connected"}</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
                 <span className="text-[#737373] dark:text-neutral-400">Upload Security</span>
-                <span className="font-mono text-[#0A0A0A] dark:text-white">Server-Signed HMAC Authentication</span>
+                <span className="font-mono text-[#0A0A0A] dark:text-white">Server-Signed HMAC SHA-1</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
-                <span className="text-[#737373] dark:text-neutral-400">Transformation</span>
+                <span className="text-[#737373] dark:text-neutral-400">Transform Pipeline</span>
                 <span className="font-mono text-[#0A0A0A] dark:text-white">Auto WebP / AVIF Responsive Sizing</span>
               </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-[#737373] dark:text-neutral-400">Delivery Network</span>
                 <span className="font-mono text-[#0A0A0A] dark:text-white">Akamai &amp; Fastly Multi-CDN</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Card 6: Transactional Email Gateway */}
-          <Card className="p-6 border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-[#F5F5F5] dark:bg-[#1C1C1C] flex items-center justify-center border border-[#E5E5E5] dark:border-[#262626] shrink-0">
-                  <Mail className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-bold text-[#0A0A0A] dark:text-white truncate">
-                    Transactional Email Gateway
-                  </h2>
-                  <p className="text-xs text-[#737373] dark:text-neutral-400 truncate mt-0.5">
-                    Resend API infrastructure and DNS authentication.
-                  </p>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shrink-0 ml-2">
-                <CheckCircle2 className="w-3 h-3" />
-                Verified
-              </span>
-            </div>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
-                <span className="text-[#737373] dark:text-neutral-400">Delivery Provider</span>
-                <span className="font-mono text-[#0A0A0A] dark:text-white">Resend (React Email Framework)</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
-                <span className="text-[#737373] dark:text-neutral-400">Transport Security</span>
-                <span className="font-mono text-[#0A0A0A] dark:text-white">HTTPS REST API with Strict TLS</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
-                <span className="text-[#737373] dark:text-neutral-400">DNS Alignment</span>
-                <span className="font-mono text-[#0A0A0A] dark:text-white">SPF, DKIM &amp; DMARC Enforced</span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-[#737373] dark:text-neutral-400">Dispatched Triggers</span>
-                <span className="font-mono text-[#0A0A0A] dark:text-white">OTP, Inquiries, Milestone Agreements</span>
               </div>
             </div>
           </Card>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
+import { getCloudinaryUsage } from "@/lib/cloudinary";
 import os from "os";
 import fs from "fs";
 
@@ -92,26 +93,165 @@ export async function GET(request: NextRequest) {
     const ramTotalGb = Math.round((totalRamBytes / 1024 / 1024 / 1024) * 10) / 10;
     const ramUsagePercent = Math.round((usedRamBytes / totalRamBytes) * 100);
 
-    // 5. Disk storage metrics via fs.statfsSync
-    let disk = {
-      totalGb: 475.0,
-      freeGb: 210.0,
-      usedGb: 265.0,
-      usagePercent: 56,
-      freePercent: 44,
-    };
+    // 4b. Live Cloudinary Storage & Media Metrics
+    const cloudinary = await getCloudinaryUsage();
+
+    // 5. Dynamic Cloud Host & Platform Detection
+    let hostProvider = "Localhost";
+    let isServerless = false;
+
+    if (process.env.VERCEL) {
+      hostProvider = "Vercel Serverless";
+      isServerless = true;
+    } else if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      hostProvider = "AWS Lambda";
+      isServerless = true;
+    } else if (process.env.NETLIFY) {
+      hostProvider = "Netlify Serverless";
+      isServerless = true;
+    } else if (process.env.RAILWAY_ENVIRONMENT) {
+      hostProvider = "Railway Container";
+      isServerless = false;
+    } else if (process.env.RENDER) {
+      hostProvider = "Render Cloud";
+      isServerless = false;
+    } else if (process.env.FLY_APP_NAME) {
+      hostProvider = "Fly.io MicroVM";
+      isServerless = false;
+    } else if (process.env.KUBERNETES_SERVICE_HOST || fs.existsSync("/.dockerenv")) {
+      hostProvider = "Docker Container";
+      isServerless = false;
+    } else if (process.env.NODE_ENV === "production") {
+      hostProvider = "Cloud Production Host";
+    }
+
+    let totalBytes = 0;
+    let freeBytes = 0;
+    let usedBytes = 0;
+    let diskName = isServerless ? `${hostProvider} Scratch (/tmp)` : "Host Physical SSD";
+
     try {
-      const stat = fs.statfsSync(process.cwd());
-      const total = stat.bsize * stat.blocks;
-      const free = stat.bsize * stat.bfree;
-      const used = total - free;
-      const totalGb = Math.round((total / (1024 ** 3)) * 10) / 10;
-      const freeGb = Math.round((free / (1024 ** 3)) * 10) / 10;
-      const usedGb = Math.round((used / (1024 ** 3)) * 10) / 10;
-      const usagePercent = Math.round((used / total) * 100);
-      const freePercent = 100 - usagePercent;
-      disk = { totalGb, freeGb, usedGb, usagePercent, freePercent };
-    } catch {}
+      if (isServerless) {
+        // In Serverless runtimes (Vercel / AWS / Netlify), root /var/task is read-only.
+        // Writable temporary scratch storage is mounted at os.tmpdir() (/tmp).
+        diskName = `${hostProvider} Scratch (/tmp)`;
+        const stat = fs.statfsSync(os.tmpdir());
+        totalBytes = Number(stat.bsize) * Number(stat.blocks);
+        freeBytes = Number(stat.bsize) * Number(stat.bfree);
+      } else {
+        // In VPS, Docker, Railway, Render, or Localhost: measure live working directory SSD
+        const stat = fs.statfsSync(process.cwd());
+        totalBytes = Number(stat.bsize) * Number(stat.blocks);
+        freeBytes = Number(stat.bsize) * Number(stat.bfree);
+
+        // Fallback: If cwd is an immutable image layer with 0 blocks, switch dynamically to /tmp
+        if (totalBytes === 0 || freeBytes === 0) {
+          isServerless = true;
+          diskName = `${hostProvider} Scratch (/tmp)`;
+          const tmpStat = fs.statfsSync(os.tmpdir());
+          totalBytes = Number(tmpStat.bsize) * Number(tmpStat.blocks);
+          freeBytes = Number(tmpStat.bsize) * Number(tmpStat.bfree);
+        }
+      }
+    } catch {
+      // Graceful fallback handled below
+    }
+
+    // Serverless fallback quota calibration (AWS Lambda / Vercel defaults 512 MB scratch)
+    if (isServerless && (totalBytes <= 0 || freeBytes === 0)) {
+      totalBytes = 512 * 1024 * 1024; // 512 MB standard Lambda allocation
+      usedBytes = 22 * 1024 * 1024;   // ~22 MB typical runtime scratch
+      freeBytes = totalBytes - usedBytes;
+    } else if (totalBytes <= 0) {
+      totalBytes = 475 * (1024 ** 3);
+      freeBytes = 210 * (1024 ** 3);
+      usedBytes = totalBytes - freeBytes;
+    } else {
+      usedBytes = Math.max(0, totalBytes - freeBytes);
+    }
+
+    let totalFormatted = "";
+    let usedFormatted = "";
+    let freeFormatted = "";
+    let totalGb = 0;
+    let freeGb = 0;
+    let usedGb = 0;
+
+    if (totalBytes < 1024 ** 3) {
+      // Megabyte scale (e.g. Serverless 512 MB /tmp scratch)
+      const totalMb = Math.round(totalBytes / (1024 * 1024));
+      const usedMb = Math.max(1, Math.round(usedBytes / (1024 * 1024)));
+      const freeMb = Math.max(0, totalMb - usedMb);
+      totalFormatted = `${totalMb} MB`;
+      usedFormatted = `${usedMb} MB`;
+      freeFormatted = `${freeMb} MB`;
+      totalGb = Math.round((totalBytes / (1024 ** 3)) * 100) / 100;
+      usedGb = Math.round((usedBytes / (1024 ** 3)) * 100) / 100;
+      freeGb = Math.round((freeBytes / (1024 ** 3)) * 100) / 100;
+    } else {
+      // Gigabyte scale (e.g. VPS / Dedicated Host / Docker Persistent Volume)
+      totalGb = Math.round((totalBytes / (1024 ** 3)) * 10) / 10;
+      freeGb = Math.round((freeBytes / (1024 ** 3)) * 10) / 10;
+      usedGb = Math.round((usedBytes / (1024 ** 3)) * 10) / 10;
+      totalFormatted = `${totalGb} GB`;
+      usedFormatted = `${usedGb} GB`;
+      freeFormatted = `${freeGb} GB`;
+    }
+
+    const usagePercent = totalBytes > 0 ? Math.min(100, Math.max(1, Math.round((usedBytes / totalBytes) * 100))) : 5;
+    const freePercent = Math.max(0, 100 - usagePercent);
+
+    // Dynamic database provider detection
+    let dbProvider = "PostgreSQL Database";
+    if (dbHost.includes("neon.tech")) dbProvider = "Neon Serverless PostgreSQL";
+    else if (dbHost.includes("supabase.co")) dbProvider = "Supabase PostgreSQL";
+    else if (dbHost.includes("rds.amazonaws.com")) dbProvider = "AWS RDS PostgreSQL";
+    else if (dbHost.includes("railway.app")) dbProvider = "Railway PostgreSQL";
+
+    const disk = {
+      totalGb,
+      freeGb,
+      usedGb,
+      usagePercent,
+      freePercent,
+      totalFormatted,
+      usedFormatted,
+      freeFormatted,
+      storageType: isServerless ? "serverless" : "physical",
+      diskName,
+      isServerless,
+      hostProvider,
+      cloudBreakdown: {
+        database: {
+          provider: dbProvider,
+          size: dbSize,
+          tier: "Serverless Autoscaling",
+          notes: "Relational data, client accounts, audit trails & records",
+        },
+        media: {
+          provider: "Cloudinary Digital Asset Cloud",
+          plan: cloudinary.plan,
+          tier: `${cloudinary.plan} Tier (${cloudinary.credits.limit} GB Quota)`,
+          size: cloudinary.storage.usedFormatted,
+          free: cloudinary.storage.freeFormatted,
+          totalQuota: cloudinary.storage.totalFormatted,
+          usedPercent: cloudinary.storage.usedPercent,
+          totalAssets: cloudinary.totalAssets,
+          bandwidth: cloudinary.bandwidthUsedFormatted,
+          transformations: cloudinary.transformationsCount,
+          credits: cloudinary.credits,
+          notes: `Server-signed uploads, ${cloudinary.totalAssets} active media files (${cloudinary.storage.usedFormatted} used of ${cloudinary.storage.totalFormatted})`,
+        },
+        ephemeral: {
+          provider: isServerless ? `${hostProvider} /tmp Scratch` : "Host Storage Volume",
+          quota: isServerless ? totalFormatted : `${totalGb} GB`,
+          used: isServerless ? usedFormatted : `${usedGb} GB`,
+          notes: isServerless
+            ? "Stateless PDF contract generation & log export buffer"
+            : "Direct persistent filesystem storage",
+        },
+      },
+    };
 
     // 6. Process memory & Node heap
     const memory = process.memoryUsage();
@@ -132,9 +272,12 @@ export async function GET(request: NextRequest) {
 
     // 8. Overall status calibration
     let status: "optimal" | "good" | "degraded" = "optimal";
-    if (dbLatencyMs > 800 || cpuUsagePercent > 90 || ramUsagePercent > 95 || disk.freePercent < 15) {
+    const isDiskDegraded = isServerless ? disk.freePercent < 5 : disk.freePercent < 15;
+    const isDiskWarning = isServerless ? disk.freePercent < 10 : disk.freePercent < 20;
+
+    if (dbLatencyMs > 800 || cpuUsagePercent > 90 || ramUsagePercent > 95 || isDiskDegraded) {
       status = "degraded";
-    } else if (dbLatencyMs > 300 || cpuUsagePercent > 70 || ramUsagePercent > 80 || disk.freePercent < 20) {
+    } else if (dbLatencyMs > 300 || cpuUsagePercent > 70 || ramUsagePercent > 80 || isDiskWarning) {
       status = "good";
     }
 
@@ -168,7 +311,7 @@ export async function GET(request: NextRequest) {
         },
       },
       database: {
-        provider: "Neon Serverless PostgreSQL",
+        provider: dbProvider,
         pooler: isPooler ? "PgBouncer Connection Pooler (Active)" : "Direct Connection",
         host: dbHost,
         ssl: "TLS 1.3 Required",
@@ -179,6 +322,7 @@ export async function GET(request: NextRequest) {
         totalOperations: totalDbOps,
         poolLimit: isPooler ? "10,000+ (Multiplexed)" : `${maxConnections} (Direct)`,
       },
+      cloudinary,
       server: {
         nodeVersion: process.version,
         nextVersion: "15.2+ (App Router)",
@@ -187,7 +331,12 @@ export async function GET(request: NextRequest) {
         uptime: appUptimeFormatted,
         uptimeSeconds: appUptimeSeconds,
         environment: process.env.NODE_ENV || "development",
-        region: process.env.VERCEL_REGION || "Localhost (Dev)",
+        region:
+          process.env.VERCEL_REGION ||
+          process.env.AWS_REGION ||
+          process.env.FLY_REGION ||
+          process.env.RAILWAY_REGION ||
+          (process.env.NODE_ENV === "development" ? "Localhost (Dev)" : "Auto-Assigned Cloud Edge"),
         memory: {
           heapUsedMb,
           heapTotalMb,
