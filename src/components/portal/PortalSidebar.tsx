@@ -17,7 +17,8 @@ import {
   Users2, 
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Briefcase
 } from "lucide-react";
 
 interface PortalSidebarProps {
@@ -110,7 +111,8 @@ export function PortalSidebar({
   // Short menu names for Prospect / User account
   const prospectNavItems = [
     { label: "Overview", href: "/portal", icon: <LayoutDashboard className="w-5 h-5" strokeWidth={2} />, description: "Account overview & quick actions" },
-    { label: "Our Services", href: "/portal/services", icon: <Layers className="w-5 h-5" strokeWidth={2} />, description: "Explore agency services & tiers" },
+    { label: "Our Services", href: "/portal/services", icon: <Briefcase className="w-5 h-5" strokeWidth={2} />, description: "Explore agency services & tiers" },
+    { label: "Ecosys", href: "/portal/ecosystem", icon: <Layers className="w-5 h-5" strokeWidth={2} />, description: "Proprietary AI tools & SaaS platforms" },
     { label: "Inquiries", href: "/portal/inquiries", icon: <Send className="w-5 h-5" strokeWidth={2} />, description: "Submit & track project briefs" },
     { label: "Profile", href: "/portal/profile", icon: <User className="w-5 h-5" strokeWidth={2} />, description: "Account credentials & company info" },
   ];
@@ -125,6 +127,7 @@ export function PortalSidebar({
       description: "Sprint boards & milestone progress",
       badgeCount: effectiveAgreementsCount,
     },
+    { label: "Ecosys", href: "/portal/ecosystem", icon: <Layers className="w-5 h-5" strokeWidth={2} />, description: "Proprietary AI tools & SaaS platforms" },
     { label: "Documents", href: "/portal/documents", icon: <FileText className="w-5 h-5" strokeWidth={2} />, description: "Shared agreements & technical specs" },
     { label: "Revisions", href: "/portal/revisions", icon: <RotateCcw className="w-5 h-5" strokeWidth={2} />, description: "Quality assurance & change tickets", badgeCount: effectiveRevisionsCount },
     { label: "Meetings", href: "/portal/meetings", icon: <Calendar className="w-5 h-5" strokeWidth={2} />, description: "Book & join scheduled calls" },
@@ -139,7 +142,7 @@ export function PortalSidebar({
   const mobilePrimaryNav = isProspect
     ? [
         { label: "Overview", href: "/portal", icon: <LayoutDashboard className="w-5 h-5" strokeWidth={2} /> },
-        { label: "Services", href: "/portal/services", icon: <Layers className="w-5 h-5" strokeWidth={2} /> },
+        { label: "Services", href: "/portal/services", icon: <Briefcase className="w-5 h-5" strokeWidth={2} /> },
         { label: "Inquiries", href: "/portal/inquiries", icon: <Send className="w-5 h-5" strokeWidth={2} /> },
         { label: "Profile", href: "/portal/profile", icon: <User className="w-5 h-5" strokeWidth={2} /> },
       ]

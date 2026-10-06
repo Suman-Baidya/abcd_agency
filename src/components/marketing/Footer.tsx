@@ -206,8 +206,8 @@ export async function Footer() {
             </p>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <Link href="/about" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
-                  About Us
+                <Link href="/ecosystem" className="text-[#0A0A0A] dark:text-[#E5E5E5] hover:underline">
+                  Ecosys
                 </Link>
               </li>
               <li>

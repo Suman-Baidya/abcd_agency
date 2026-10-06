@@ -30,13 +30,15 @@ export function getDb(): PrismaClient {
   const hasThumbnail = Array.isArray(runtimeFields)
     ? runtimeFields.some((f: any) => f.name === "thumbnailUrl")
     : false;
+  const hasEcoSystem = Boolean((globalThis.prisma as any)?.ecoSystemPlatform);
 
   if (
     !globalThis.prisma ||
     !(globalThis.prisma as any).blogPost ||
     !(globalThis.prisma as any).blogCategory ||
     !(globalThis.prisma as any).projectAgreement ||
-    !hasThumbnail
+    !hasThumbnail ||
+    !hasEcoSystem
   ) {
     globalThis.prisma = createPrismaClient();
   }
@@ -380,4 +382,5 @@ export const db = new Proxy({} as any, {
   blogCategory: any;
   blogPost: any;
   projectAgreement: any;
+  ecoSystemPlatform: any;
 };

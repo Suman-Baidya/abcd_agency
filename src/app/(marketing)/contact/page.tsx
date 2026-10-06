@@ -29,7 +29,9 @@ export default function ContactPage() {
         {/* Split Layout: Form Left, Info Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-7">
-            <ContactForm />
+            <React.Suspense fallback={<div className="h-96 rounded-xl border border-[#E5E5E5] dark:border-[#262626] animate-pulse bg-neutral-50 dark:bg-[#111111]" />}>
+              <ContactForm />
+            </React.Suspense>
           </div>
           <div className="lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
             <ContactInfo />

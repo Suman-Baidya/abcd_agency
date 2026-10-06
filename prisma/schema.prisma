@@ -418,3 +418,32 @@ model PushSubscription {
   @@index([userId])
   @@index([role])
 }
+
+model EcoSystemPlatform {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  tagline        String
+  description    String   @db.Text
+  category       String   @default("AI Automation") // e.g. "EdTech SaaS", "AI Automation", "Marketing Engine", "Enterprise Software"
+  status         String   @default("Live Platform") // "Live Platform", "Beta Access", "Enterprise Ready", "Coming Soon"
+  statusColor    String?  @default("emerald")
+  appUrl         String?  // Live hosted application or demo URL
+  demoEmail      String?  // Optional demo user credential
+  demoPassword   String?  // Optional demo password credential
+  thumbnailUrl   String?  // Screenshot or banner image
+  screenshots    String[] @default([]) // Multiple showcase images for sliding carousel
+  features       String[] @default([]) // Key features/capabilities
+  techStack      String[] @default([]) // Underlying technologies
+  targetAudience String?  // e.g. "Schools, Coaching Centers, Universities"
+  pricingModel   String?  @default("SaaS & Custom White-Label Licensing")
+  isFeatured     Boolean  @default(false)
+  isPublished    Boolean  @default(true)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+}

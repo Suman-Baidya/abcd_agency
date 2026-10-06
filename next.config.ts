@@ -42,7 +42,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/about",
+        destination: "/ecosystem",
+        permanent: true,
+      },
+    ];
+  },
 };
 
-// Restart trigger for updated Prisma schema: Project thumbnailUrl (reloaded at 2026-10-06)
+// Restart trigger for updated Prisma schema: EcoSystemPlatform (reloaded at 2026-10-06)
 export default nextConfig;

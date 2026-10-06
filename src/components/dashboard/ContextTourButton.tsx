@@ -127,6 +127,123 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
     };
   }
 
+  // Admin EcoSystem Platforms (/admin/ecosystem)
+  if (path === "/admin/ecosystem") {
+    return {
+      title: "Apps & Software Management Tour",
+      steps: [
+        {
+          element: "#admin-ecosystem-header",
+          popover: {
+            title: "1. Software Catalog Suite",
+            description:
+              "Manage proprietary SaaS products, AI automation engines, and multi-tenant platforms offered to clients.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#admin-ecosystem-create-btn",
+          popover: {
+            title: "2. Add New Platform",
+            description:
+              "Publish new web applications with live demo sandbox credentials, multi-image screenshots, and tech stack details.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: "#admin-ecosystem-kpis",
+          popover: {
+            title: "3. Live Telemetry",
+            description:
+              "Track active public apps, AI automation pipelines, and draft deployments at a glance.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#admin-ecosystem-table",
+          popover: {
+            title: "4. Platforms Ledger",
+            description:
+              "Toggle 1-click public visibility, inspect target audience, edit platform specifications, or test live hosted environments.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
+  // Portal EcoSystem Platforms (/portal/ecosystem)
+  if (path === "/portal/ecosystem") {
+    return {
+      title: "Proprietary Apps & Systems Tour",
+      steps: [
+        {
+          element: "#portal-ecosystem-header",
+          popover: {
+            title: "1. Software Catalog",
+            description:
+              "Explore ready-to-deploy multi-tenant SaaS engines, AI marketing workflows, and custom digital platforms engineered by ABCD Agency.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#portal-ecosystem-benefit-banner",
+          popover: {
+            title: "2. Client Advantage",
+            description:
+              "Existing clients receive priority white-label deployment terms, custom API integrations, and direct database migration into our ecosystem.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#portal-ecosystem-showcase-list",
+          popover: {
+            title: "3. Interactive Sandboxes & Image Sliders",
+            description:
+              "Test drive live software with pre-configured demo logins, explore multi-image UI preview carousels, and review architectural specifications.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
+  // Portal Services (/portal/services)
+  if (path === "/portal/services") {
+    return {
+      title: "Agency Services & Packages Tour",
+      steps: [
+        {
+          element: "#portal-services-kpis",
+          popover: {
+            title: "1. Core Warranties & SLAs",
+            description:
+              "Review our 30-day post-launch warranty, 100% full IP source code ownership, 99.9% uptime SLA, and sub-24h architect response turnaround.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#portal-services-packages",
+          popover: {
+            title: "2. Milestone Delivery Packages",
+            description:
+              "Choose from our fixed-scope delivery packages: Startup MVP (1-2 wks), Core Platform (2-4 wks), or Enterprise AI (4-8 wks).",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
   // 2. Portal Inquiries (/portal/inquiries)
   if (path === "/portal/inquiries") {
     return {

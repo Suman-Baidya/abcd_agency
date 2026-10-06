@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { submitPortalInquiry, getPortalData } from "../actions";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -74,7 +75,7 @@ const SUPPORT_CONTACTS = {
   email: "sb.abcd321@gmail.com",
 };
 
-export default function PortalInquiriesPage() {
+function PortalInquiriesContent() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,9 +104,36 @@ export default function PortalInquiriesPage() {
     });
   };
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const notes = searchParams.get("notes");
+    const pkg = searchParams.get("package");
+    const service = searchParams.get("service");
+
+    if (notes) {
+      setFormData((prev) => ({
+        ...prev,
+        message: notes,
+      }));
+      setSelectedServices(["Custom Software", "Web Application Development"]);
+      setShowInquiryModal(true);
+    } else if (pkg) {
+      setFormData((prev) => ({
+        ...prev,
+        message: `Inquiry regarding delivery package: ${pkg}`,
+      }));
+      setShowInquiryModal(true);
+    } else if (service) {
+      setSelectedServices([service]);
+      setShowInquiryModal(true);
+    }
+  }, [searchParams]);
 
   const toggleService = (service: string) => {
     setSelectedServices((prev) =>
@@ -719,5 +747,13 @@ export default function PortalInquiriesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PortalInquiriesPage() {
+  return (
+    <React.Suspense fallback={<div className="h-96 rounded-xl border border-[#E5E5E5] dark:border-[#262626] animate-pulse bg-neutral-50 dark:bg-[#111111]" />}>
+      <PortalInquiriesContent />
+    </React.Suspense>
   );
 }

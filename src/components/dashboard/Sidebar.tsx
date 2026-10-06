@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { IndianRupee, BookOpen, Activity } from "lucide-react";
+import { IndianRupee, BookOpen, Activity, Layers } from "lucide-react";
 
 interface SidebarProps {
   user?: {
@@ -141,6 +141,11 @@ export function Sidebar({
       )
     },
     { 
+      label: "Ecosys", 
+      href: "/admin/ecosystem", 
+      icon: <Layers className="w-5 h-5" strokeWidth={1.8} />
+    },
+    { 
       label: "Revisions", 
       href: "/admin/revisions", 
       badgeCount: effectiveRevisionsCount,
@@ -192,6 +197,12 @@ export function Sidebar({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           )
+        },
+        { 
+          label: "Ecosys", 
+          description: "Proprietary AI automations & SaaS tools",
+          href: "/admin/ecosystem", 
+          icon: <Layers className="w-5 h-5" strokeWidth={1.8} />
         },
         { 
           label: "Revisions", 
@@ -268,11 +279,12 @@ export function Sidebar({
     { label: "Overview", href: "/admin", icon: primaryNavItems[0].icon },
     { label: "Users", href: "/admin/users", icon: smartMenuSections[0].items[0].icon, badgeCount: effectiveNewUsersCount },
     { label: "Projects", href: "/admin/projects", icon: primaryNavItems[1].icon, badgeCount: effectiveApprovedAgreementsCount },
+    { label: "Ecosys", href: "/admin/ecosystem", icon: <Layers className="w-5 h-5" strokeWidth={1.8} /> },
     { label: "Clients", href: "/admin/clients", icon: smartMenuSections[0].items[1].icon },
     { label: "Blog", href: "/admin/blog", icon: <BookOpen className="w-5 h-5" strokeWidth={1.8} /> },
-    { label: "Revisions", href: "/admin/revisions", icon: primaryNavItems[2].icon, badgeCount: effectiveRevisionsCount },
-    { label: "Finance", href: "/admin/finance", icon: primaryNavItems[3].icon },
-    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[6].icon, badgeCount: effectiveInquiriesCount },
+    { label: "Revisions", href: "/admin/revisions", icon: primaryNavItems[3].icon, badgeCount: effectiveRevisionsCount },
+    { label: "Finance", href: "/admin/finance", icon: primaryNavItems[4].icon },
+    { label: "Inquiries", href: "/admin/inquiries", icon: smartMenuSections[0].items[7].icon, badgeCount: effectiveInquiriesCount },
     { label: "Profile", href: "/admin/profile", icon: smartMenuSections[1].items[0].icon },
     { label: "System Info", href: "/admin/system", icon: <Activity className="w-5 h-5" strokeWidth={1.8} /> },
     { label: "Settings", href: "/admin/settings", icon: smartMenuSections[1].items[2].icon },

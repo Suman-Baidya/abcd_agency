@@ -351,13 +351,33 @@ export default function PortalServicesPage() {
       </div>
 
       {/* ===================================================================== */}
-      {/* 4 CORE TRUST KPI STATS */}
+      {/* 4 CORE NUMERICAL METRIC & SLA CARDS */}
       {/* ===================================================================== */}
       <div id="portal-services-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Launch Warranty" value="30 Days Included" color="emerald" />
-        <StatCard label="Quality Assurance" value="Multi-Stage QA" color="emerald" />
-        <StatCard label="Security Standard" value="Role-Based RBAC" color="default" />
-        <StatCard label="Response SLA" value="< 24h Turnaround" color="default" />
+        <StatCard 
+          label="Launch Warranty" 
+          value="30 Days" 
+          subtext="Full post-delivery warranty" 
+          color="emerald" 
+        />
+        <StatCard 
+          label="Code Ownership" 
+          value="100%" 
+          subtext="Full client IP & repo handover" 
+          color="emerald" 
+        />
+        <StatCard 
+          label="Production SLA" 
+          value="99.9%" 
+          subtext="High-availability edge uptime" 
+          color="default" 
+        />
+        <StatCard 
+          label="Response SLA" 
+          value="< 24h" 
+          subtext="Senior architect turnaround" 
+          color="default" 
+        />
       </div>
 
       {/* ===================================================================== */}

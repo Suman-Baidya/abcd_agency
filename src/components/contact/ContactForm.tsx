@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -304,6 +305,30 @@ export function ContactForm() {
   const selectedServices = watch("services") || [];
   const selectedBusiness = watch("businessType");
   const nameValue = watch("name");
+  const searchParams = useSearchParams();
+
+  // Auto-prefill form if inquiry/platform/service parameter exists in URL
+  useEffect(() => {
+    if (!searchParams) return;
+    const inquiry = searchParams.get("inquiry");
+    const service = searchParams.get("service");
+    const pkg = searchParams.get("package");
+
+    if (inquiry) {
+      setValue(
+        "message",
+        `Inquiry regarding: ${inquiry}\n\nWe are interested in exploring licensing, deployment timeline, and commercial white-label terms for our organization.`
+      );
+      if (inquiry.toLowerCase().includes("apps license") || inquiry.toLowerCase().includes("ecosystem")) {
+        setValue("services", ["Custom Software", "Web Application Development"]);
+        setValue("projectType", "custom-saas");
+      }
+    } else if (service) {
+      setValue("services", [service]);
+    } else if (pkg) {
+      setValue("message", `Selected Delivery Package: ${pkg}`);
+    }
+  }, [searchParams, setValue]);
 
   // Auto-sync offline draft upon internet reconnection
   useEffect(() => {
