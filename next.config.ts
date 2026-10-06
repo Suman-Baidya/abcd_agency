@@ -44,5 +44,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Restart trigger for updated Prisma schema: BlogPost
+// Restart trigger for updated Prisma schema: Project thumbnailUrl (reloaded at 2026-10-06)
 export default nextConfig;

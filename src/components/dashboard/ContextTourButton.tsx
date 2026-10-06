@@ -78,6 +78,55 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
     };
   }
 
+  // Admin Project Deliverables (/admin/projects)
+  if (path === "/admin/projects") {
+    return {
+      title: "Project Deliverables Tour",
+      steps: [
+        {
+          element: "#admin-projects-actions",
+          popover: {
+            title: "1. Manage Categories & New Projects",
+            description:
+              "Quickly create live sandbox blueprints or commissioned client deliverables, configure thumbnail banners, and manage categories.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: "#admin-projects-kpi",
+          popover: {
+            title: "2. Key Delivery Metrics",
+            description:
+              "Review aggregate project delivery health, on-track milestones, delays, and total contractual budget volume.",
+            side: "bottom",
+            align: "center",
+          },
+        },
+        {
+          element: "#admin-projects-container",
+          popover: {
+            title: "3. Table vs. Kanban Sprint Views",
+            description:
+              "Toggle between tabular project ledger with quick inline controls and a visual Drag-and-Drop Kanban board.",
+            side: "top",
+            align: "center",
+          },
+        },
+        {
+          element: "#admin-projects-table-card",
+          popover: {
+            title: "4. Project Ledger & Quick Actions",
+            description:
+              "Inline status selection, real-time progress slider, 1-click public showcase visibility toggle, and full agreement management.",
+            side: "top",
+            align: "center",
+          },
+        },
+      ],
+    };
+  }
+
   // 2. Portal Inquiries (/portal/inquiries)
   if (path === "/portal/inquiries") {
     return {

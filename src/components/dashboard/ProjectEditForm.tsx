@@ -3,9 +3,10 @@
 import React, { useTransition, useState, useMemo, useRef, useEffect } from "react";
 import { Project } from "@prisma/client";
 import { Button } from "@/components/ui/Button";
-import { Search, Check, ChevronsUpDown, Building2, X } from "lucide-react";
+import { Search, Check, ChevronsUpDown, Building2, X, Globe, KeyRound, ShieldCheck, Eye, EyeOff, Sparkles, Image as ImageIcon } from "lucide-react";
 import { updateProjectFull, createProjectInline } from "@/app/(dashboard)/admin/projects/actions";
 import { slugify } from "@/lib/slugify";
+import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
 
 interface ProjectEditFormProps {
   project?: any;
@@ -32,9 +33,13 @@ function parseDeadline(deadline: string | undefined | null) {
 export function ProjectEditForm({ project, categories, clients = [], onSuccess, onCancel }: ProjectEditFormProps) {
   const [isPending, startTransition] = useTransition();
 
+  // Project Type & Visibility
+  const [projectType, setProjectType] = useState<string>(project?.projectType || "SANDBOX");
+  const [isPublished, setIsPublished] = useState<boolean>(project?.isPublished !== undefined ? Boolean(project.isPublished) : true);
+
   // Find initial client
   const initialClientId = project?.clientId || (clients.find(c => c.name.toLowerCase() === (project?.client || "").toLowerCase())?.id) || "";
-  const initialClientName = project?.client || (clients.find(c => c.id === initialClientId)?.name) || "";
+  const initialClientName = project?.client || (clients.find(c => c.id === initialClientId)?.name) || (projectType === "SANDBOX" ? "ABCD Agency Blueprint" : "");
 
   const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId);
   const [clientName, setClientName] = useState<string>(initialClientName);
@@ -87,11 +92,17 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError(null);
-    if (!clientName.trim()) {
+    if (projectType === "CLIENT_WORK" && !clientName.trim()) {
       setIsClientOpen(true);
       return;
     }
     const formData = new FormData(e.currentTarget);
+    formData.set("projectType", projectType);
+    formData.set("isPublished", isPublished ? "true" : "false");
+    if (projectType === "SANDBOX" && !clientName.trim()) {
+      formData.set("client", "ABCD Agency Blueprint");
+    }
+
     startTransition(async () => {
       try {
         if (project) {
@@ -116,6 +127,164 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
         {formError && (
           <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-xs text-red-700 dark:text-red-400 font-medium">
             {formError}
+          </div>
+        )}
+
+        {/* Showcase Classification & Public Visibility */}
+        <div className="space-y-4 p-4 border border-[#E5E5E5] dark:border-[#262626] rounded-xl bg-[#FAFAFA] dark:bg-[#141414]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-mono uppercase tracking-wider text-[#737373] dark:text-neutral-400">
+                Showcase Type &amp; Public Visibility
+              </span>
+              <p className="text-xs text-[#0A0A0A] dark:text-neutral-300 font-medium mt-0.5">
+                Classify this system and control whether it appears on the public /work showcase.
+              </p>
+            </div>
+
+            {/* Public Visibility Toggle */}
+            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="isPublished"
+                checked={isPublished}
+                onChange={(e) => setIsPublished(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-[#E5E5E5] peer-focus:outline-none rounded-full peer dark:bg-[#262626] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-[#0A0A0A] dark:peer-checked:bg-white dark:peer-checked:after:bg-[#0A0A0A] relative"></div>
+              <span className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
+                {isPublished ? "Publicly Visible" : "Hidden (Draft)"}
+              </span>
+            </label>
+          </div>
+
+          {/* Project Type Segmented Selector */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setProjectType("SANDBOX");
+                if (!clientName || clientName === "Agency Client") {
+                  setClientName("ABCD Agency Blueprint");
+                }
+              }}
+              className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                projectType === "SANDBOX"
+                  ? "border-[#0A0A0A] dark:border-white bg-white dark:bg-[#0A0A0A] shadow-xs"
+                  : "border-[#E5E5E5] dark:border-[#262626] bg-transparent opacity-75 hover:opacity-100"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold text-[#0A0A0A] dark:text-white flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5" />
+                  Interactive Sandbox Blueprint
+                </span>
+                {projectType === "SANDBOX" && (
+                  <span className="w-2 h-2 rounded-full bg-[#0A0A0A] dark:bg-white" />
+                )}
+              </div>
+              <p className="text-[11px] text-[#737373] dark:text-neutral-400 leading-relaxed">
+                Proprietary agency dashboard hosted live (Vercel/Netlify) with demo credentials for prospective clients to test-drive.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setProjectType("CLIENT_WORK");
+                if (clientName === "ABCD Agency Blueprint") {
+                  setClientName("");
+                  setSelectedClientId("");
+                }
+              }}
+              className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                projectType === "CLIENT_WORK"
+                  ? "border-[#0A0A0A] dark:border-white bg-white dark:bg-[#0A0A0A] shadow-xs"
+                  : "border-[#E5E5E5] dark:border-[#262626] bg-transparent opacity-75 hover:opacity-100"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold text-[#0A0A0A] dark:text-white flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" />
+                  Client Deliverable
+                </span>
+                {projectType === "CLIENT_WORK" && (
+                  <span className="w-2 h-2 rounded-full bg-[#0A0A0A] dark:bg-white" />
+                )}
+              </div>
+              <p className="text-[11px] text-[#737373] dark:text-neutral-400 leading-relaxed">
+                Commissioned system delivered for a verified client account with official agreement and financial ledger tracking.
+              </p>
+            </button>
+          </div>
+        </div>
+
+        {/* Live Sandbox Credentials Panel (When SANDBOX is active) */}
+        {projectType === "SANDBOX" && (
+          <div className="space-y-4 p-4 border border-[#E5E5E5] dark:border-[#262626] rounded-xl bg-white dark:bg-[#111111]">
+            <div className="flex items-center gap-2 border-b border-[#E5E5E5] dark:border-[#262626] pb-2">
+              <KeyRound className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
+              <h3 className="text-xs font-bold text-[#0A0A0A] dark:text-white uppercase tracking-wider">
+                Interactive Sandbox Access Details
+              </h3>
+            </div>
+            <p className="text-xs text-[#737373] dark:text-neutral-400">
+              Provide the live link (e.g. on Vercel or custom domain) and test credentials. These will be cleanly presented on the /work page with 1-click copy buttons for visitors.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white flex items-center gap-1">
+                  Live Hosted URL <span className="text-[#737373] dark:text-neutral-400 font-normal">(Vercel, Netlify, or custom domain)</span>
+                </label>
+                <input
+                  type="url"
+                  name="demoUrl"
+                  defaultValue={project?.demoUrl || ""}
+                  placeholder="https://crm.abcdagency.com or https://your-app.vercel.app"
+                  className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
+                  Demo Login Email / Username
+                </label>
+                <input
+                  type="text"
+                  name="demoEmail"
+                  defaultValue={project?.demoEmail || ""}
+                  placeholder="demo@abcdagency.com"
+                  className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
+                  Demo Password
+                </label>
+                <input
+                  type="text"
+                  name="demoPassword"
+                  defaultValue={project?.demoPassword || ""}
+                  placeholder="sandbox2026"
+                  className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
+                  Demo User Role / Permission Scope
+                </label>
+                <input
+                  type="text"
+                  name="demoRole"
+                  defaultValue={project?.demoRole || "Admin (Test Data Sandbox)"}
+                  placeholder="e.g. Admin (Test Data Sandbox)"
+                  className="w-full text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -152,10 +321,10 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
           <div className="space-y-2 relative" ref={dropdownRef}>
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">
-                Client / Account <span className="text-red-500">*</span>
+                Client / Account {projectType === "CLIENT_WORK" ? <span className="text-red-500">*</span> : <span className="text-[#737373] text-xs font-normal">(Optional)</span>}
               </label>
               <span className="text-[11px] text-[#737373] dark:text-neutral-400">
-                Select existing client
+                {projectType === "SANDBOX" ? "Defaults to ABCD Agency Blueprint" : "Select client account"}
               </span>
             </div>
 
@@ -292,6 +461,20 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
               ))}
             </select>
           </div>
+
+          {/* Project Thumbnail / Banner Image */}
+          <div className="space-y-2 sm:col-span-2 p-3.5 border border-[#E5E5E5] dark:border-[#262626] rounded-xl bg-[#FAFAFA] dark:bg-[#141414]">
+            <ImageUploadInput
+              name="thumbnailUrl"
+              label="Project Thumbnail / Banner Image"
+              defaultValue={project?.thumbnailUrl || ""}
+              folder="abcd_agency/projects"
+            />
+            <p className="text-[11px] text-[#737373] dark:text-neutral-400">
+              Upload a high-fidelity screenshot or preview banner of the application. If not provided, an engineered black &amp; white blueprint graphic is displayed automatically.
+            </p>
+          </div>
+
           <div className="space-y-2 sm:col-span-2">
             <label className="text-sm font-medium text-[#0A0A0A] dark:text-white">Tagline</label>
             <input type="text" name="tagline" defaultValue={project?.tagline} required className="w-full text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none" />

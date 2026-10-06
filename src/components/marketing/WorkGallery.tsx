@@ -11,18 +11,27 @@ import {
   SlidersHorizontal,
   Briefcase,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Globe,
+  Building2,
 } from "lucide-react";
 import { ProjectCard } from "@/components/ui/ProjectCard";
 
 export interface SerializedProject {
   title: string;
   slug: string;
+  client?: string;
   category: string;
   tagline: string;
   summary: string;
   impact: string;
   techStack: string[];
+  thumbnailUrl?: string | null;
+  projectType?: string;
+  demoUrl?: string | null;
+  demoEmail?: string | null;
+  demoPassword?: string | null;
+  demoRole?: string | null;
   createdAt: string;
 }
 
@@ -39,11 +48,13 @@ export function WorkGallery({ initialProjects }: WorkGalleryProps) {
   // Read initial states from URL params or defaults
   const paramQuery = searchParams.get("q") || "";
   const paramCategory = searchParams.get("category") || "All";
+  const paramType = searchParams.get("type") || "all";
   const paramSort = searchParams.get("sort") || "newest";
   const paramPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 
   const [searchQuery, setSearchQuery] = useState(paramQuery);
   const [selectedCategory, setSelectedCategory] = useState(paramCategory);
+  const [typeFilter, setTypeFilter] = useState<string>(paramType);
   const [sortBy, setSortBy] = useState(paramSort);
   const [currentPage, setCurrentPage] = useState(paramPage);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -52,9 +63,21 @@ export function WorkGallery({ initialProjects }: WorkGalleryProps) {
   useEffect(() => {
     setSearchQuery(searchParams.get("q") || "");
     setSelectedCategory(searchParams.get("category") || "All");
+    setTypeFilter(searchParams.get("type") || "all");
     setSortBy(searchParams.get("sort") || "newest");
     setCurrentPage(Math.max(1, parseInt(searchParams.get("page") || "1", 10)));
   }, [searchParams]);
+
+  // Extract counts for types
+  const { sandboxCount, clientCount } = useMemo(() => {
+    let sandboxes = 0;
+    let clients = 0;
+    initialProjects.forEach((p) => {
+      if ((p.projectType || "SANDBOX") === "SANDBOX") sandboxes++;
+      if (p.projectType === "CLIENT_WORK") clients++;
+    });
+    return { sandboxCount: sandboxes, clientCount: clients };
+  }, [initialProjects]);
 
   // Extract distinct categories and their counts
   const { categories, categoryCounts } = useMemo(() => {
@@ -75,10 +98,11 @@ export function WorkGallery({ initialProjects }: WorkGalleryProps) {
   }, [initialProjects]);
 
   // Helper to update URL search params quietly
-  const updateUrlParams = (newQ: string, newCat: string, newSort: string, newPage: number) => {
+  const updateUrlParams = (newQ: string, newCat: string, newType: string, newSort: string, newPage: number) => {
     const params = new URLSearchParams();
     if (newQ.trim()) params.set("q", newQ.trim());
     if (newCat && newCat !== "All") params.set("category", newCat);
+    if (newType && newType !== "all") params.set("type", newType);
     if (newSort && newSort !== "newest") params.set("sort", newSort);
     if (newPage > 1) params.set("page", newPage.toString());
 
@@ -90,6 +114,13 @@ export function WorkGallery({ initialProjects }: WorkGalleryProps) {
   // Filter & Sort Logic
   const filteredAndSortedProjects = useMemo(() => {
     let result = [...initialProjects];
+
+    // 0. Filter by Showcase Type
+    if (typeFilter === "sandbox") {
+      result = result.filter((p) => (p.projectType || "SANDBOX") === "SANDBOX");
+    } else if (typeFilter === "client") {
+      result = result.filter((p) => p.projectType === "CLIENT_WORK");
+    }
 
     // 1. Filter by Category
     if (selectedCategory !== "All") {
@@ -147,28 +178,34 @@ export function WorkGallery({ initialProjects }: WorkGalleryProps) {
   }, [filteredAndSortedProjects, safeCurrentPage, pageSize]);
 
   // Handlers
+  const handleTypeChange = (type: string) => {
+    setTypeFilter(type);
+    setCurrentPage(1);
+    updateUrlParams(searchQuery, selectedCategory, type, sortBy, 1);
+  };
+
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
-    updateUrlParams(searchQuery, cat, sortBy, 1);
+    updateUrlParams(searchQuery, cat, typeFilter, sortBy, 1);
   };
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
     setCurrentPage(1);
-    updateUrlParams(val, selectedCategory, sortBy, 1);
+    updateUrlParams(val, selectedCategory, typeFilter, sortBy, 1);
   };
 
   const handleSortChange = (sort: string) => {
     setSortBy(sort);
     setCurrentPage(1);
-    updateUrlParams(searchQuery, selectedCategory, sort, 1);
+    updateUrlParams(searchQuery, selectedCategory, typeFilter, sort, 1);
   };
 
   const handlePageChange = (page: number) => {
     const targetPage = Math.max(1, Math.min(totalPages, page));
     setCurrentPage(targetPage);
-    updateUrlParams(searchQuery, selectedCategory, sortBy, targetPage);
+    updateUrlParams(searchQuery, selectedCategory, typeFilter, sortBy, targetPage);
 
     // Smooth scroll to top of gallery
     if (galleryRef.current) {
@@ -180,15 +217,55 @@ export function WorkGallery({ initialProjects }: WorkGalleryProps) {
   const handleResetFilters = () => {
     setSearchQuery("");
     setSelectedCategory("All");
+    setTypeFilter("all");
     setSortBy("newest");
     setCurrentPage(1);
-    updateUrlParams("", "All", "newest", 1);
+    updateUrlParams("", "All", "all", "newest", 1);
   };
 
-  const hasActiveFilters = searchQuery.trim() !== "" || selectedCategory !== "All" || sortBy !== "newest";
+  const hasActiveFilters = searchQuery.trim() !== "" || selectedCategory !== "All" || typeFilter !== "all" || sortBy !== "newest";
 
   return (
-    <div ref={galleryRef} className="space-y-8">
+    <div ref={galleryRef} className="space-y-6 sm:space-y-8">
+      {/* Top Filter Pills: All Systems, Live Sandboxes, Client Deliverables */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => handleTypeChange("all")}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            typeFilter === "all"
+              ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
+              : "border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white"
+          }`}
+        >
+          All Systems ({initialProjects.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTypeChange("sandbox")}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            typeFilter === "sandbox"
+              ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
+              : "border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white"
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>Live Sandboxes ({sandboxCount})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTypeChange("client")}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            typeFilter === "client"
+              ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs"
+              : "border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#737373] dark:text-neutral-400 hover:text-[#0A0A0A] dark:hover:text-white"
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Client Deliverables ({clientCount})</span>
+        </button>
+      </div>
+
       {/* Control Bar: Compact Search, Category Select Box, Sort, and Items Per Page */}
       <div className="rounded-2xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] p-2 sm:p-3 shadow-2xs">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">

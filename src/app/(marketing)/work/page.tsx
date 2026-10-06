@@ -10,30 +10,74 @@ export const metadata = {
   description:
     "Explore our portfolio of web applications, SaaS dashboards, and automated business systems engineered for measurable growth.",
 };
-
 export default async function WorkPage() {
-  const rawProjects = await db.project.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      title: true,
-      slug: true,
-      category: true,
-      tagline: true,
-      summary: true,
-      impact: true,
-      techStack: true,
-      createdAt: true,
-    },
-  });
+  let rawProjects: any[] = [];
+  try {
+    rawProjects = await db.project.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        title: true,
+        slug: true,
+        client: true,
+        category: true,
+        tagline: true,
+        summary: true,
+        impact: true,
+        techStack: true,
+        thumbnailUrl: true,
+        projectType: true,
+        demoUrl: true,
+        demoEmail: true,
+        demoPassword: true,
+        demoRole: true,
+        createdAt: true,
+      },
+    });
+  } catch (error: any) {
+    console.warn("[WorkPage] Primary query failed, falling back to base fields:", error?.message);
+    try {
+      rawProjects = await db.project.findMany({
+        where: { isPublished: true },
+        orderBy: { createdAt: "desc" },
+        select: {
+          title: true,
+          slug: true,
+          client: true,
+          category: true,
+          tagline: true,
+          summary: true,
+          impact: true,
+          techStack: true,
+          projectType: true,
+          demoUrl: true,
+          demoEmail: true,
+          demoPassword: true,
+          demoRole: true,
+          createdAt: true,
+        },
+      });
+    } catch (fallbackError) {
+      console.error("[WorkPage] Critical error fetching projects:", fallbackError);
+      rawProjects = [];
+    }
+  }
 
   const serializedProjects: SerializedProject[] = rawProjects.map((p: any) => ({
     title: p.title,
     slug: p.slug,
+    client: p.client,
     category: p.category,
     tagline: p.tagline,
     summary: p.summary,
     impact: p.impact,
     techStack: p.techStack,
+    thumbnailUrl: p.thumbnailUrl || null,
+    projectType: p.projectType || "SANDBOX",
+    demoUrl: p.demoUrl || null,
+    demoEmail: p.demoEmail || null,
+    demoPassword: p.demoPassword || null,
+    demoRole: p.demoRole || null,
     createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
   }));
 

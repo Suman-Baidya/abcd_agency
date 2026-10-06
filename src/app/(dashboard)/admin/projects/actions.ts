@@ -240,6 +240,13 @@ export async function createProject(formData: FormData) {
   const techStack = techStackRaw ? techStackRaw.split(",").map(t => t.trim()) : [];
   
   const isFeatured = formData.get("isFeatured") === "on";
+  const thumbnailUrl = (formData.get("thumbnailUrl") as string)?.trim() || null;
+  const isPublished = formData.get("isPublished") === "true" || formData.get("isPublished") === "on";
+  const projectType = (formData.get("projectType") as string) || "SANDBOX";
+  const demoUrl = (formData.get("demoUrl") as string)?.trim() || null;
+  const demoEmail = (formData.get("demoEmail") as string)?.trim() || null;
+  const demoPassword = (formData.get("demoPassword") as string)?.trim() || null;
+  const demoRole = (formData.get("demoRole") as string)?.trim() || (projectType === "SANDBOX" ? "Admin (Test Mode)" : null);
   
   const status = (formData.get("status") as string) || "In Review";
   
@@ -258,14 +265,23 @@ export async function createProject(formData: FormData) {
   const deadline = JSON.stringify({ startDate, endDate });
   const content = formData.get("content") as string || "";
 
-  const { resolvedClientId, resolvedClientName } = await resolveAndPromoteClient(clientIdFromForm, client);
-  client = resolvedClientName;
+  let resolvedClientId: string | null = null;
+  let resolvedClientName: string = "ABCD Agency Blueprint";
+
+  if (projectType === "CLIENT_WORK") {
+    const promo = await resolveAndPromoteClient(clientIdFromForm, client);
+    resolvedClientId = promo.resolvedClientId;
+    resolvedClientName = promo.resolvedClientName;
+    client = resolvedClientName;
+  } else {
+    client = client || "ABCD Agency Blueprint";
+  }
 
   const project = await db.project.create({
     data: {
       title,
       slug,
-      client: client || "Agency Client",
+      client: client || "ABCD Agency Blueprint",
       clientId: resolvedClientId,
       category,
       tagline,
@@ -273,6 +289,13 @@ export async function createProject(formData: FormData) {
       impact,
       techStack,
       isFeatured,
+      thumbnailUrl,
+      isPublished,
+      projectType,
+      demoUrl,
+      demoEmail,
+      demoPassword,
+      demoRole,
       status,
       statusColor,
       progress,
@@ -314,6 +337,13 @@ export async function updateProjectFull(id: string, formData: FormData) {
   const techStack = techStackRaw ? techStackRaw.split(",").map(t => t.trim()) : [];
   
   const isFeatured = formData.get("isFeatured") === "on";
+  const thumbnailUrl = (formData.get("thumbnailUrl") as string)?.trim() || null;
+  const isPublished = formData.get("isPublished") === "true" || formData.get("isPublished") === "on";
+  const projectType = (formData.get("projectType") as string) || "SANDBOX";
+  const demoUrl = (formData.get("demoUrl") as string)?.trim() || null;
+  const demoEmail = (formData.get("demoEmail") as string)?.trim() || null;
+  const demoPassword = (formData.get("demoPassword") as string)?.trim() || null;
+  const demoRole = (formData.get("demoRole") as string)?.trim() || (projectType === "SANDBOX" ? "Admin (Test Mode)" : null);
   
   const status = (formData.get("status") as string) || "In Review";
   const statusColor = (formData.get("statusColor") as string) || "neutral";
@@ -327,15 +357,24 @@ export async function updateProjectFull(id: string, formData: FormData) {
   const deadline = JSON.stringify({ startDate, endDate });
   const content = formData.get("content") as string || "";
 
-  const { resolvedClientId, resolvedClientName } = await resolveAndPromoteClient(clientIdFromForm, client);
-  client = resolvedClientName;
+  let resolvedClientId: string | null = null;
+  let resolvedClientName: string = "ABCD Agency Blueprint";
+
+  if (projectType === "CLIENT_WORK") {
+    const promo = await resolveAndPromoteClient(clientIdFromForm, client);
+    resolvedClientId = promo.resolvedClientId;
+    resolvedClientName = promo.resolvedClientName;
+    client = resolvedClientName;
+  } else {
+    client = client || "ABCD Agency Blueprint";
+  }
 
   const updated = await db.project.update({
     where: { id },
     data: {
       title,
       slug,
-      client: client || "Agency Client",
+      client: client || "ABCD Agency Blueprint",
       clientId: resolvedClientId,
       category,
       tagline,
@@ -343,6 +382,13 @@ export async function updateProjectFull(id: string, formData: FormData) {
       impact,
       techStack,
       isFeatured,
+      thumbnailUrl,
+      isPublished,
+      projectType,
+      demoUrl,
+      demoEmail,
+      demoPassword,
+      demoRole,
       status,
       statusColor,
       progress,
@@ -382,6 +428,13 @@ export async function createProjectInline(formData: FormData) {
   const techStack = techStackRaw ? techStackRaw.split(",").map(t => t.trim()) : [];
   
   const isFeatured = formData.get("isFeatured") === "on";
+  const thumbnailUrl = (formData.get("thumbnailUrl") as string)?.trim() || null;
+  const isPublished = formData.get("isPublished") === "true" || formData.get("isPublished") === "on";
+  const projectType = (formData.get("projectType") as string) || "SANDBOX";
+  const demoUrl = (formData.get("demoUrl") as string)?.trim() || null;
+  const demoEmail = (formData.get("demoEmail") as string)?.trim() || null;
+  const demoPassword = (formData.get("demoPassword") as string)?.trim() || null;
+  const demoRole = (formData.get("demoRole") as string)?.trim() || (projectType === "SANDBOX" ? "Admin (Test Mode)" : null);
   
   const status = (formData.get("status") as string) || "In Review";
   const statusColor = (formData.get("statusColor") as string) || "neutral";
@@ -395,14 +448,23 @@ export async function createProjectInline(formData: FormData) {
   const deadline = (startDate || endDate) ? JSON.stringify({ startDate, endDate }) : (formData.get("deadline") as string || "");
   const content = formData.get("content") as string || "";
 
-  const { resolvedClientId, resolvedClientName } = await resolveAndPromoteClient(clientIdFromForm, client);
-  client = resolvedClientName;
+  let resolvedClientId: string | null = null;
+  let resolvedClientName: string = "ABCD Agency Blueprint";
+
+  if (projectType === "CLIENT_WORK") {
+    const promo = await resolveAndPromoteClient(clientIdFromForm, client);
+    resolvedClientId = promo.resolvedClientId;
+    resolvedClientName = promo.resolvedClientName;
+    client = resolvedClientName;
+  } else {
+    client = client || "ABCD Agency Blueprint";
+  }
 
   const created = await db.project.create({
     data: {
       title,
       slug,
-      client: client || "Agency Client",
+      client: client || "ABCD Agency Blueprint",
       clientId: resolvedClientId,
       category,
       tagline,
@@ -410,6 +472,13 @@ export async function createProjectInline(formData: FormData) {
       impact,
       techStack,
       isFeatured,
+      thumbnailUrl,
+      isPublished,
+      projectType,
+      demoUrl,
+      demoEmail,
+      demoPassword,
+      demoRole,
       status,
       statusColor,
       progress,

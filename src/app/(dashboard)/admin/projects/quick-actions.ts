@@ -30,6 +30,17 @@ export async function quickUpdateProgress(id: string, progress: number) {
   revalidatePath("/admin");
 }
 
+export async function quickTogglePublish(id: string, isPublished: boolean) {
+  await db.project.update({
+    where: { id },
+    data: { isPublished },
+  });
+  
+  revalidatePath("/admin/projects");
+  revalidatePath("/work");
+  revalidatePath("/");
+}
+
 export async function deleteProject(id: string) {
   const proj = await db.project.findUnique({
     where: { id },

@@ -26,11 +26,17 @@ function createPrismaClient(): PrismaClient {
 }
 
 export function getDb(): PrismaClient {
+  const runtimeFields = (globalThis.prisma as any)?._runtimeDataModel?.models?.Project?.fields;
+  const hasThumbnail = Array.isArray(runtimeFields)
+    ? runtimeFields.some((f: any) => f.name === "thumbnailUrl")
+    : false;
+
   if (
     !globalThis.prisma ||
     !(globalThis.prisma as any).blogPost ||
     !(globalThis.prisma as any).blogCategory ||
-    !(globalThis.prisma as any).projectAgreement
+    !(globalThis.prisma as any).projectAgreement ||
+    !hasThumbnail
   ) {
     globalThis.prisma = createPrismaClient();
   }

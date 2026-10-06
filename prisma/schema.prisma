@@ -212,6 +212,17 @@ model Project {
   techStack   String[]
   content     String   @db.Text // For the deep dive page
   isFeatured  Boolean  @default(false)
+  thumbnailUrl String?
+  
+  // Public Visibility & Showcase Type
+  isPublished  Boolean  @default(true)
+  projectType  String   @default("SANDBOX") // "SANDBOX" | "CLIENT_WORK"
+  
+  // Live Sandbox Credentials (for public exploration)
+  demoUrl      String?
+  demoEmail    String?
+  demoPassword String?
+  demoRole     String?  @default("Admin (Test Mode)")
   
   // Internal Dashboard Fields
   status      String   @default("In Review")

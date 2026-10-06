@@ -1,9 +1,12 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CTASection } from "@/components/marketing/CTASection";
+import { SandboxCredentialsCard } from "@/components/marketing/SandboxCredentialsCard";
+import { Building2 } from "lucide-react";
 import { db } from "@/lib/prisma";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -28,6 +31,8 @@ export default async function CaseStudyPage({
     notFound();
   }
 
+  const isSandbox = (project as any).projectType === "SANDBOX" || Boolean((project as any).demoUrl);
+
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white transition-colors duration-200">
       {/* Case Study Hero */}
@@ -48,7 +53,20 @@ export default async function CaseStudyPage({
               <span className="text-xs font-mono uppercase tracking-widest text-[#737373] dark:text-neutral-400">
                 {project.category}
               </span>
-              <Badge variant="solid" size="sm">
+              <Badge variant="solid" size="sm" className="gap-1.5 inline-flex items-center">
+                {isSandbox ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Live Sandbox Blueprint</span>
+                  </>
+                ) : (
+                  <>
+                    <Building2 className="w-3 h-3 text-neutral-400" />
+                    <span>Client Deliverable</span>
+                  </>
+                )}
+              </Badge>
+              <Badge variant="outline" size="sm">
                 {project.impact}
               </Badge>
             </div>
@@ -81,6 +99,31 @@ export default async function CaseStudyPage({
 
       {/* Main Content Layout */}
       <section className="py-16 sm:py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+        {/* Project Banner Showcase if uploaded */}
+        {(project as any).thumbnailUrl && (
+          <div className="relative w-full h-64 sm:h-96 md:h-[460px] rounded-2xl border border-[#E5E5E5] dark:border-[#262626] overflow-hidden bg-[#0A0A0A] shadow-md">
+            <Image
+              src={(project as any).thumbnailUrl}
+              alt={project.title}
+              fill
+              sizes="(max-width: 896px) 100vw, 896px"
+              priority
+              className="object-cover object-top"
+            />
+          </div>
+        )}
+
+        {/* Interactive Sandbox Test-Drive Card */}
+        {((project as any).demoUrl || (project as any).demoEmail) && (
+          <SandboxCredentialsCard
+            title={project.title}
+            demoUrl={(project as any).demoUrl}
+            demoEmail={(project as any).demoEmail}
+            demoPassword={(project as any).demoPassword}
+            demoRole={(project as any).demoRole}
+          />
+        )}
+
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A] dark:text-white mb-4">
             Project Overview

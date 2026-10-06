@@ -2,14 +2,15 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Edit, Trash2, Eye, RotateCcw, FileText } from "lucide-react";
+import { Edit, Trash2, Eye, RotateCcw, FileText, Globe, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ProjectEditForm } from "./ProjectEditForm";
 import { ProjectViewDetails } from "./ProjectViewDetails";
 import { ProjectAgreementModal } from "./ProjectAgreementModal";
-import { quickUpdateStatus, quickUpdateProgress, deleteProject } from "@/app/(dashboard)/admin/projects/quick-actions";
+import { quickUpdateStatus, quickUpdateProgress, deleteProject, quickTogglePublish } from "@/app/(dashboard)/admin/projects/quick-actions";
 import { getProjectAgreement } from "@/app/(dashboard)/admin/projects/actions";
 import { getAgreementAmendmentStatus, coolDownAgreementNotifications } from "@/lib/agreement-defaults";
 import { Project } from "@prisma/client";
@@ -61,6 +62,12 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
         quickUpdateProgress(project.id, val);
       });
     }
+  };
+
+  const handleTogglePublish = () => {
+    startTransition(() => {
+      quickTogglePublish(project.id, !(project.isPublished !== false));
+    });
   };
 
   const handleDeleteConfirm = () => {
@@ -115,14 +122,24 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
 
       {/* Project & Client (Combined, Truncated) */}
       <td className="px-5 py-4 w-80 max-w-[20rem]">
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center min-w-0">
-            <span className="font-semibold text-[#0A0A0A] dark:text-white truncate" title={project.title}>
-              {project.title}
-            </span>
-            {project.isFeatured && (
-              <Badge variant="outline" size="sm" className="ml-2 text-[9px] shrink-0">Featured</Badge>
-            )}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {project.thumbnailUrl ? (
+            <div className="relative w-8 h-8 rounded-md border border-[#E5E5E5] dark:border-[#262626] overflow-hidden bg-black shrink-0">
+              <Image src={project.thumbnailUrl} alt="" fill sizes="32px" className="object-cover" />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#1A1A1A] flex items-center justify-center text-[#737373] text-[10px] font-mono font-bold shrink-0">
+              {project.title.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center min-w-0">
+              <span className="font-semibold text-[#0A0A0A] dark:text-white truncate" title={project.title}>
+                {project.title}
+              </span>
+              {project.isFeatured && (
+                <Badge variant="outline" size="sm" className="ml-2 text-[9px] shrink-0">Featured</Badge>
+              )}
             {agrStatus?.isPendingReconfirmation && (
               <span 
                 onClick={handleOpenAgreement}
@@ -169,9 +186,20 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
                 </span>
               </>
             )}
+            <span className="text-[#A3A3A3] dark:text-neutral-600 text-[10px] shrink-0">•</span>
+            <span
+              className={`text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0 font-medium ${
+                project.projectType === "CLIENT_WORK"
+                  ? "bg-neutral-100 dark:bg-neutral-800 text-[#0A0A0A] dark:text-neutral-300 border border-[#E5E5E5] dark:border-[#333333]"
+                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
+              }`}
+            >
+              {project.projectType === "CLIENT_WORK" ? "Client" : "Sandbox"}
+            </span>
           </div>
         </div>
-      </td>
+      </div>
+    </td>
 
       {/* Quick Status Selection */}
       <td className="px-5 py-4 text-center">
@@ -288,6 +316,26 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
             <FileText className="w-4 h-4" />
             {agrStatus?.isPendingReconfirmation && (
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            )}
+          </button>
+          <button
+            onClick={handleTogglePublish}
+            disabled={isPending}
+            className={`p-1.5 transition-colors rounded-md cursor-pointer ${
+              project.isPublished !== false
+                ? "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            }`}
+            title={
+              project.isPublished !== false
+                ? "Public on /work (Click to hide/unpublish)"
+                : "Hidden from /work (Click to publish to public showcase)"
+            }
+          >
+            {project.isPublished !== false ? (
+              <Globe className="w-4 h-4" />
+            ) : (
+              <EyeOff className="w-4 h-4" />
             )}
           </button>
           <button
