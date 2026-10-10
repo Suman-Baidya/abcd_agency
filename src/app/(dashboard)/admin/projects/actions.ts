@@ -266,7 +266,7 @@ export async function createProject(formData: FormData) {
   const content = formData.get("content") as string || "";
 
   let resolvedClientId: string | null = null;
-  let resolvedClientName: string = "ABCD Agency Blueprint";
+  let resolvedClientName: string = "ABCD Digital Hub Blueprint";
 
   if (projectType === "CLIENT_WORK") {
     const promo = await resolveAndPromoteClient(clientIdFromForm, client);
@@ -274,14 +274,14 @@ export async function createProject(formData: FormData) {
     resolvedClientName = promo.resolvedClientName;
     client = resolvedClientName;
   } else {
-    client = client || "ABCD Agency Blueprint";
+    client = client || "ABCD Digital Hub Blueprint";
   }
 
   const project = await db.project.create({
     data: {
       title,
       slug,
-      client: client || "ABCD Agency Blueprint",
+      client: client || "ABCD Digital Hub Blueprint",
       clientId: resolvedClientId,
       category,
       tagline,
@@ -358,7 +358,7 @@ export async function updateProjectFull(id: string, formData: FormData) {
   const content = formData.get("content") as string || "";
 
   let resolvedClientId: string | null = null;
-  let resolvedClientName: string = "ABCD Agency Blueprint";
+  let resolvedClientName: string = "ABCD Digital Hub Blueprint";
 
   if (projectType === "CLIENT_WORK") {
     const promo = await resolveAndPromoteClient(clientIdFromForm, client);
@@ -366,7 +366,7 @@ export async function updateProjectFull(id: string, formData: FormData) {
     resolvedClientName = promo.resolvedClientName;
     client = resolvedClientName;
   } else {
-    client = client || "ABCD Agency Blueprint";
+    client = client || "ABCD Digital Hub Blueprint";
   }
 
   const updated = await db.project.update({
@@ -374,7 +374,7 @@ export async function updateProjectFull(id: string, formData: FormData) {
     data: {
       title,
       slug,
-      client: client || "ABCD Agency Blueprint",
+      client: client || "ABCD Digital Hub Blueprint",
       clientId: resolvedClientId,
       category,
       tagline,
@@ -449,7 +449,7 @@ export async function createProjectInline(formData: FormData) {
   const content = formData.get("content") as string || "";
 
   let resolvedClientId: string | null = null;
-  let resolvedClientName: string = "ABCD Agency Blueprint";
+  let resolvedClientName: string = "ABCD Digital Hub Blueprint";
 
   if (projectType === "CLIENT_WORK") {
     const promo = await resolveAndPromoteClient(clientIdFromForm, client);
@@ -457,14 +457,14 @@ export async function createProjectInline(formData: FormData) {
     resolvedClientName = promo.resolvedClientName;
     client = resolvedClientName;
   } else {
-    client = client || "ABCD Agency Blueprint";
+    client = client || "ABCD Digital Hub Blueprint";
   }
 
   const created = await db.project.create({
     data: {
       title,
       slug,
-      client: client || "ABCD Agency Blueprint",
+      client: client || "ABCD Digital Hub Blueprint",
       clientId: resolvedClientId,
       category,
       tagline,
@@ -682,7 +682,7 @@ export async function updateProjectAgreement(data: {
         event: "SUPER_ADMIN_AMENDMENT",
         timestamp: amendmentNow.toISOString(),
         formattedTimeIST: formatISTDateTime(amendmentNow),
-        adminEmail: currentUser.email || "superadmin@abcdagency.com",
+        adminEmail: currentUser.email || "superadmin@abcddigitalhub.com",
         adminName: currentUser.name || "Super Admin",
         notes: "Agreement terms, deliverables or milestones updated by Super Admin",
       });

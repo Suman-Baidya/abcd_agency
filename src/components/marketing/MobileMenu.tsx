@@ -66,12 +66,12 @@ export function MobileMenu({ siteConfig }: { siteConfig: any }) {
             href="/"
             onClick={() => setIsOpen(false)}
             className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xs"
-            aria-label="ABCD Agency Home"
+            aria-label={`${siteConfig.agencyName || "ABCD Digital Hub"} Home`}
           >
             {/* Light Mode Logo */}
             <Image
               src={siteConfig.lightLogoUrl || "/images/Black_Logo.png"}
-              alt="ABCD Agency"
+              alt={siteConfig.agencyName || "ABCD Digital Hub"}
               width={140}
               height={34}
               className="h-7 w-auto object-contain block dark:hidden"
@@ -81,7 +81,7 @@ export function MobileMenu({ siteConfig }: { siteConfig: any }) {
             {/* Dark Mode Logo */}
             <Image
               src={siteConfig.darkLogoUrl || "/images/White_Logo.png"}
-              alt="ABCD Agency"
+              alt={siteConfig.agencyName || "ABCD Digital Hub"}
               width={140}
               height={34}
               className="h-7 w-auto object-contain hidden dark:block"

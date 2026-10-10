@@ -186,7 +186,7 @@ function getTourConfigForPath(pathname: string): { title: string; steps: StepCon
           popover: {
             title: "1. Software Catalog",
             description:
-              "Explore ready-to-deploy multi-tenant SaaS engines, AI marketing workflows, and custom digital platforms engineered by ABCD Agency.",
+              "Explore ready-to-deploy multi-tenant SaaS engines, AI marketing workflows, and custom digital platforms engineered by ABCD Digital Hub.",
             side: "bottom",
             align: "start",
           },

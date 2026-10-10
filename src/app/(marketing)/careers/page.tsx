@@ -8,9 +8,9 @@ import { Rocket, Mail, Briefcase, Sparkles, Send } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export const metadata = {
-  title: "Careers & Engineering Network — ABCD Agency",
+  title: "Careers & Engineering Network — ABCD Digital Hub",
   description:
-    "Join the ABCD Agency engineering network. We partner with senior full-stack developers, UI/UX designers, and AI specialists.",
+    "Join the ABCD Digital Hub engineering network. We partner with senior full-stack developers, UI/UX designers, and AI specialists.",
 };
 
 const roles = [
@@ -109,7 +109,7 @@ export default async function CareersPage() {
                   </div>
 
                   <Button
-                    href={`mailto:${siteConfig.contactEmail || "careers@abcdagency.com"}?subject=Application for ${encodeURIComponent(role.title)}`}
+                    href={`mailto:${siteConfig.contactEmail || "careers@abcddigitalhub.com"}?subject=Application for ${encodeURIComponent(role.title)}`}
                     variant="primary"
                     size="md"
                     className="w-full sm:w-auto shrink-0"
@@ -160,7 +160,7 @@ export default async function CareersPage() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Button
-                  href={`mailto:${siteConfig.contactEmail || "hello@abcdagency.com"}?subject=Open Talent Network Application - [Your Name]`}
+                  href={`mailto:${siteConfig.contactEmail || "hello@abcddigitalhub.com"}?subject=Open Talent Network Application - [Your Name]`}
                   variant="primary"
                   size="md"
                   className="w-full sm:w-auto flex items-center justify-center gap-2"

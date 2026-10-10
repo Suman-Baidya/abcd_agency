@@ -3,7 +3,7 @@ import { ClientManager } from "@/components/dashboard/ClientManager";
 import { getClientsWithProjectCounts } from "./actions";
 
 export const metadata = {
-  title: "Client Accounts — ABCD Agency",
+  title: "Client Accounts — ABCD Digital Hub",
 };
 
 export const dynamic = "force-dynamic";

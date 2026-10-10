@@ -19,7 +19,7 @@ export async function Footer() {
             <Link
               href="/"
               className="inline-flex items-center mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xs"
-              aria-label="ABCD Agency Home"
+              aria-label={`${siteConfig.agencyName} Home`}
             >
               {/* Light Mode Logo */}
               <Image
@@ -319,7 +319,7 @@ export async function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#737373] dark:text-[#A3A3A3]">
-          <p>© {currentYear} ABCD Agency (abcdagency.com). All rights reserved.</p>
+          <p>© {currentYear} {siteConfig.agencyName} ({siteConfig.websiteUrl?.replace(/^https?:\/\//, '') || "abcddigitalhub.com"}). All rights reserved.</p>
           <div className="flex items-center gap-6">
             {siteConfig.enablePrivacyPolicy !== false && (
               <Link href="/privacy" className="hover:text-[#0A0A0A] dark:hover:text-white transition-colors">

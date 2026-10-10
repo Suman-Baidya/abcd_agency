@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { signPasswordResetToken } from "@/lib/auth-token";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getClientIp } from "@/lib/rate-limit";
+import { siteConfig } from "@/lib/siteConfig";
 
 // Rate limiter: Max 3 password reset requests per 15 minutes per IP
 const resetLimiterMap = new Map<string, number[]>();
@@ -48,7 +49,9 @@ export async function requestPasswordReset(email: string) {
     if (user) {
       const resetToken = await signPasswordResetToken(user.id, user.email, 3600); // 1 hour
       const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-      const appUrl = rawAppUrl && rawAppUrl.startsWith("http") ? rawAppUrl : "http://localhost:3000";
+      const appUrl = rawAppUrl && rawAppUrl.startsWith("http")
+        ? rawAppUrl
+        : (process.env.NODE_ENV === "production" ? siteConfig.url : "http://localhost:3000");
       const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
       // Dispatch real email via Resend

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  NEXT_PUBLIC_APP_NAME: z.string().default("ABCD Agency"),
+  NEXT_PUBLIC_APP_NAME: z.string().default("ABCD Digital Hub"),
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
 
   // Cloudinary
@@ -13,7 +13,7 @@ const envSchema = z.object({
   // Resend Email
   DEVELOPER_EMAIL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
-  SMTP_FROM: z.string().default("ABCD Agency <onboarding@resend.dev>"),
+  SMTP_FROM: z.string().default("ABCD Digital Hub <hello@abcddigitalhub.com>"),
 
   // Auth Secret
   AUTH_SECRET: z.string().default("abcd-agency-secure-signing-secret-fallback-key-2026"),

@@ -242,17 +242,17 @@ export function coolDownAgreementNotifications(projectId?: string) {
 
 export const DEFAULT_CONTRACTOR_INFO = {
   name: "Suman Baidya",
-  brandName: "ABCD Agency",
+  brandName: "ABCD Digital Hub",
   roleTitle: "Independent Software Engineer & Product Consultant",
   phone: "+91 89448 99747",
   email: "sb.abcd321@gmail.com",
-  website: "https://abcdagency.com",
+  website: "https://abcddigitalhub.com",
   jurisdiction: "West Bengal, India",
 };
 
 export const DEFAULT_AGREEMENT_TERMS = `
 1. INDEPENDENT CONTRACTOR ENGAGEMENT & SCOPE
-The Client formally engages Suman Baidya, operating professionally under the brand name ABCD Agency ("Independent Contractor / Consultant"), to provide the bespoke software engineering, system architecture, UI/UX design, and digital consulting deliverables set forth in Section 1 (Scope of Work & Deliverables). Nothing herein shall be construed as creating an employment relationship, partnership, or corporate entity between the parties.
+The Client formally engages Suman Baidya, operating professionally under the brand name ABCD Digital Hub ("Independent Contractor / Consultant"), to provide the bespoke software engineering, system architecture, UI/UX design, and digital consulting deliverables set forth in Section 1 (Scope of Work & Deliverables). Nothing herein shall be construed as creating an employment relationship, partnership, or corporate entity between the parties.
 
 2. SCOPE OF DELIVERABLES & CHANGE ORDERS
 Work is executed in strict adherence to the agreed technical deliverables and milestones. Any additional features, scope expansion, third-party integrations, or functional changes requested outside this Statement of Work shall be quoted and scheduled as a supplementary Change Order.

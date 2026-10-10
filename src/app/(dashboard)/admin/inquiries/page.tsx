@@ -7,7 +7,7 @@ import { InquiryFilters } from "./InquiryFilters";
 import { ProjectPagination } from "@/components/dashboard/ProjectPagination";
 
 export const metadata = {
-  title: "Client Inquiries — ABCD Agency",
+  title: "Client Inquiries — ABCD Digital Hub",
 };
 
 const TAB_CONFIG = [

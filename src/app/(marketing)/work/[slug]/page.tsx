@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const project = await db.project.findUnique({ where: { slug } });
   if (!project) return { title: "Not Found" };
   return {
-    title: `${project.title} — ABCD Agency Case Study`,
+    title: `${project.title} — ABCD Digital Hub Case Study`,
     description: project.summary,
   };
 }

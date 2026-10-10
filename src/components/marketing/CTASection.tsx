@@ -21,7 +21,7 @@ export function CTASection() {
         <div className="flex justify-center mb-8">
           <Image
             src="/images/White_Logo.png"
-            alt="ABCD Agency — AI-Powered Business Consulting & Digitalization"
+            alt="ABCD Digital Hub — AI-Powered Business Consulting & Digitalization"
             width={180}
             height={50}
             className="h-12 sm:h-14 w-auto object-contain"

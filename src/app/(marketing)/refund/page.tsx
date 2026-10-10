@@ -5,12 +5,12 @@ import { getSiteConfig } from "@/lib/dbConfig";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Refund & Cancellation Policy — ABCD Agency",
+  title: "Refund & Cancellation Policy — ABCD Digital Hub",
   description: "Our milestone settlement framework, deposit guidelines, and sprint cancellation remediation terms.",
 };
 
 const DEFAULT_REFUND_CONTENT = `## 1. Milestone Settlement Model
-All engineering and consulting services provided by ABCD Agency follow milestone-based deliverable sign-offs. Payments made for verified sprint milestones are non-refundable once approved and deployed.
+All engineering and consulting services provided by ABCD Digital Hub follow milestone-based deliverable sign-offs. Payments made for verified sprint milestones are non-refundable once approved and deployed.
 
 ## 2. Deposit & Cancellation
 Initial deposits covering sprint preparation and discovery architecture may be refunded up to 70% if cancellation occurs prior to development kickoff.

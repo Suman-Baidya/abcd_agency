@@ -1,4 +1,4 @@
-# AGENTS.md — ABCD Agency (abcdagency.com)
+# AGENTS.md — ABCD Digital Hub (abcddigitalhub.com)
 
 This file defines how any AI coding agent (Claude Code, Cursor, Copilot, etc.) should work in this repository. Follow it exactly. If a request conflicts with this file, follow this file unless the human explicitly overrides it in the prompt.
 
@@ -6,12 +6,12 @@ This file defines how any AI coding agent (Claude Code, Cursor, Copilot, etc.) s
 
 ## 1. Project Overview
 
-ABCD Agency is a full-stack agency website + client management platform.
+ABCD Digital Hub is a full-stack digital agency platform + client management system.
 
 - **Frontend/Backend:** Next.js 14+ (App Router), TypeScript, Tailwind CSS
 - **Database:** Neon Serverless PostgreSQL via Prisma ORM
 - **Media/Files:** Cloudinary (or UploadThing) — free tier, no card required
-- **Email:** Resend (`onboarding@resend.dev` in dev → `hello@abcdagency.com` in prod)
+- **Email:** Resend (`hello@abcddigitalhub.com`)
 - **Auth:** Auth.js (NextAuth) with Google OAuth 2.0, external mode, callback at `/api/auth/callback/google`
 - **AI:** Google Gemini (`gemini-2.5-flash`) and/or Groq via Vercel AI SDK (`ai`)
 - **Deployment:** Vercel

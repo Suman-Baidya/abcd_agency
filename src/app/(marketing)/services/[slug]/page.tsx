@@ -22,7 +22,7 @@ export async function generateMetadata({
   const service = servicesData.find((s) => s.slug === slug);
   if (!service) return {};
   return {
-    title: `${service.title} — ABCD Agency`,
+    title: `${service.title} — ABCD Digital Hub`,
     description: service.heroDesc,
   };
 }

@@ -3,7 +3,7 @@ import { db } from "@/lib/prisma";
 import { EcoSystemManager } from "@/components/dashboard/EcoSystemManager";
 
 export const metadata = {
-  title: "EcoSystem Platforms — ABCD Agency Admin",
+  title: "EcoSystem Platforms — ABCD Digital Hub Admin",
 };
 
 export default async function AdminEcoSystemPage() {

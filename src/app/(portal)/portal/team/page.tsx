@@ -17,7 +17,7 @@ const AGENCY_TEAM = [
   {
     name: "Elena Rostova",
     role: "Lead Full-Stack Engineer",
-    email: "engineering@abcdagency.com",
+    email: "engineering@abcddigitalhub.com",
     whatsapp: "+919812345678",
     avatar: "ER",
     description: "Spearheads Next.js frontend, database optimization, and API integration sprints.",
@@ -25,7 +25,7 @@ const AGENCY_TEAM = [
   {
     name: "Marcus Vance",
     role: "Dedicated Technical Project Manager",
-    email: "marcus@abcdagency.com",
+    email: "marcus@abcddigitalhub.com",
     whatsapp: "+919845011223",
     avatar: "MV",
     description: "Maintains sprint deliverables, weekly check-in milestones, and QA acceptance testing.",
@@ -46,7 +46,7 @@ export default function PortalTeamPage() {
           </p>
         </div>
 
-        <Button variant="secondary" size="sm" href="mailto:engineering@abcdagency.com">
+        <Button variant="secondary" size="sm" href="mailto:engineering@abcddigitalhub.com">
           Team Support
         </Button>
       </div>

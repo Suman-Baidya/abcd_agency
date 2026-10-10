@@ -3,8 +3,8 @@ import { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "ABCD Agency",
-    short_name: "ABCD Agency",
+    name: "ABCD Digital Hub",
+    short_name: "ABCD Hub",
     description: "Digital Solutions, Sprint Deliverables & Client Platform",
     start_url: "/app",
     scope: "/",

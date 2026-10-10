@@ -70,7 +70,7 @@ export function Hero() {
                   <div className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5]" />
                 </div>
                 <span className="text-[11px] font-mono text-[#737373] tracking-wider">
-                  api.abcdagency.com/deploy
+                  api.abcddigitalhub.com/deploy
                 </span>
                 <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-[#0A0A0A] text-white">
                   LIVE

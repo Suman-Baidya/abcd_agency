@@ -205,6 +205,15 @@ export async function submitRevisionRequest(data: {
     `Submitted revision request: "${data.title}"`
   );
 
+  // Dispatch background push alert to Admins
+  const { sendPushToRole } = await import("@/lib/push-notifications");
+  sendPushToRole("ADMIN", {
+    title: `Client Revision: ${data.title}`,
+    body: `Priority: ${data.priority || "Medium"} • Client: ${user.name}`,
+    url: "/admin/projects",
+    tag: `revision-${revision.id}`,
+  }).catch(() => {});
+
   revalidatePath("/portal/revisions");
   revalidatePath("/portal/projects");
   revalidatePath("/admin/projects");
@@ -282,6 +291,15 @@ export async function scheduleMeeting(data: {
     "MEETING_SCHEDULED",
     `Booked meeting: "${data.title}" for ${data.date} at ${data.time}`
   );
+
+  // Dispatch background push alert to Admins
+  const { sendPushToRole } = await import("@/lib/push-notifications");
+  sendPushToRole("ADMIN", {
+    title: `Meeting Booked: ${user.name}`,
+    body: `"${data.title}" scheduled for ${data.date} at ${data.time}`,
+    url: "/admin/clients",
+    tag: `meeting-${meeting.id}`,
+  }).catch(() => {});
 
   revalidatePath("/portal/meetings");
   return meeting;

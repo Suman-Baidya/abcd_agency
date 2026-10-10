@@ -32,7 +32,7 @@ interface TopbarProps {
 export function Topbar({ 
   lightLogoUrl, 
   darkLogoUrl, 
-  agencyName = "ABCD Agency", 
+  agencyName = "ABCD Digital Hub", 
   userName,
   userRole,
   notifications = [],

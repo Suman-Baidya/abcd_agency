@@ -37,7 +37,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Our Services & Packages — Client Portal | ABCD Agency",
+  title: "Our Services & Packages — Client Portal | ABCD Digital Hub",
   description: "Explore our fixed-scope delivery packages, core engineering capabilities, and production technology standards.",
 };
 

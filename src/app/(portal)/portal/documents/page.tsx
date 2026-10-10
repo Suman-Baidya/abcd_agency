@@ -238,7 +238,7 @@ export default function PortalDocumentsPage() {
           </p>
         </div>
 
-        <Button id="documents-request-btn" variant="secondary" size="sm" href="mailto:support@abcdagency.com">
+        <Button id="documents-request-btn" variant="secondary" size="sm" href="mailto:support@abcddigitalhub.com">
           Request File Access
         </Button>
       </div>
@@ -263,7 +263,7 @@ export default function PortalDocumentsPage() {
                 Statement of Work Re-Confirmation Required
               </h3>
               <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
-                ABCD Agency has amended the agreement for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
+                ABCD Digital Hub has amended the agreement for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
               </p>
             </div>
           </div>

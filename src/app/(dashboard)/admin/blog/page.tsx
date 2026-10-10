@@ -5,7 +5,7 @@ import { BlogManager } from "@/components/dashboard/BlogManager";
 import { getBlogCategories } from "@/app/(dashboard)/admin/settings/blogActions";
 
 export const metadata = {
-  title: "Blog Articles — ABCD Agency",
+  title: "Blog Articles — ABCD Digital Hub",
 };
 
 export const dynamic = "force-dynamic";

@@ -328,7 +328,7 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
             {/* URL Address Bar */}
             <div className="flex-1 max-w-xs mx-auto px-3 py-0.5 rounded-md bg-[#0A0A0A] border border-[#262626] flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 truncate">
               <Lock className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-              <span className="truncate">https://{platform.slug}.abcdagency.com</span>
+              <span className="truncate">https://{platform.slug}.abcddigitalhub.com</span>
             </div>
 
             {/* Live Status Pill */}
@@ -422,7 +422,7 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-neutral-500 pt-3 border-t border-neutral-900">
                   <span>PRODUCTION READY</span>
-                  <span>ABCD AGENCY ECOSYSTEM</span>
+                  <span>ABCD DIGITAL HUB ECOSYSTEM</span>
                 </div>
               </div>
             )}

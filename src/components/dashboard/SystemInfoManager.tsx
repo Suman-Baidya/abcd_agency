@@ -207,7 +207,7 @@ const GLOSSARY_ITEMS: GlossaryItem[] = [
     term: "Disk & Cloud Storage",
     plainTitle: "Decoupled Cloud Storage Architecture (Serverless)",
     analogy: "Instead of keeping all company records in one single fragile cabinet, photos live in a managed asset vault (Cloudinary), database records in an encrypted bank safe (Neon Postgres), and the server keeps a small scratchpad on its desk (/tmp).",
-    meaning: "On Vercel serverless production, ABCD Agency uses a decoupled cloud architecture. Persistent assets live on Cloudinary (25 GB CDN) and Neon PostgreSQL (database records), while serverless execution functions use an isolated 512 MB ephemeral scratch memory buffer (/tmp) for transient tasks.",
+    meaning: "On Vercel serverless production, ABCD Digital Hub uses a decoupled cloud architecture. Persistent assets live on Cloudinary (25 GB CDN) and Neon PostgreSQL (database records), while serverless execution functions use an isolated 512 MB ephemeral scratch memory buffer (/tmp) for transient tasks.",
     goodState: "Serverless ephemeral scratch > 50% free, and cloud storage quotas safely within plan limits.",
     warningState: "Serverless scratch < 15% free or Neon DB nearing plan quota.",
     criticalState: "Serverless scratch < 5% free or physical disk < 15% free.",
@@ -306,6 +306,7 @@ export function SystemInfoManager() {
   const [clearingCache, setClearingCache] = useState(false);
   const [triggeringAlert, setTriggeringAlert] = useState(false);
   const [downloadingLogs, setDownloadingLogs] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   const fetchHealth = useCallback(async (showToast = false, fresh = false) => {
     try {
@@ -462,6 +463,25 @@ export function SystemInfoManager() {
       toast.error(err.message || "Failed to export audit logs.");
     } finally {
       setDownloadingLogs(false);
+    }
+  };
+
+  // Quick Action 4: Send Test Diagnostic Email via Resend
+  const handleSendTestEmail = async () => {
+    try {
+      setSendingTestEmail(true);
+      const res = await fetch("/api/system/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test-email" }),
+      });
+      const resJson = await res.json();
+      if (!res.ok) throw new Error(resJson.error || "Failed to dispatch test email");
+      toast.success(resJson.message || "Diagnostic test email dispatched! Check your inbox.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to dispatch test email.");
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
@@ -836,7 +856,7 @@ export function SystemInfoManager() {
                         </span>
                       </div>
                       <p className="text-xs text-[#737373] dark:text-neutral-300 leading-relaxed">
-                        <strong>Production Architecture:</strong> On Vercel serverless, ABCD Agency does not rely on a single physical hard drive that risks filling up and crashing the server. Storage is split by concern across <strong>Cloudinary CDN (25 GB media)</strong>, <strong>Neon Serverless PostgreSQL (database)</strong>, and <strong>Vercel 512 MB ephemeral scratch (/tmp)</strong>.
+                        <strong>Production Architecture:</strong> On Vercel serverless, ABCD Digital Hub does not rely on a single physical hard drive that risks filling up and crashing the server. Storage is split by concern across <strong>Cloudinary CDN (25 GB media)</strong>, <strong>Neon Serverless PostgreSQL (database)</strong>, and <strong>Vercel 512 MB ephemeral scratch (/tmp)</strong>.
                       </p>
                       <div className="p-2.5 rounded bg-[#F8F8F8] dark:bg-[#202020] border border-[#EBEBEB] dark:border-[#2A2A2A] text-xs text-[#0A0A0A] dark:text-white space-y-1">
                         <p className="font-semibold text-emerald-700 dark:text-emerald-400">✅ Action to take:</p>
@@ -988,7 +1008,7 @@ export function SystemInfoManager() {
             {/* Modal Content */}
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
-                💡 <strong>Why Production Uses Decoupled Cloud Storage:</strong> ABCD Agency is deployed on <strong>Vercel Serverless</strong>. Modern serverless applications do not use a single fragile physical hard drive that risks filling up and crashing the entire website. Instead, storage is decoupled across 3 specialized cloud services.
+                💡 <strong>Why Production Uses Decoupled Cloud Storage:</strong> ABCD Digital Hub is deployed on <strong>Vercel Serverless</strong>. Modern serverless applications do not use a single fragile physical hard drive that risks filling up and crashing the entire website. Instead, storage is decoupled across 3 specialized cloud services.
               </div>
 
               {/* 3 Cloud Storage Layers */}
@@ -1833,6 +1853,19 @@ export function SystemInfoManager() {
                 <span className="text-[#737373] dark:text-neutral-400">Dispatched Triggers</span>
                 <span className="font-mono text-[#0A0A0A] dark:text-white">OTP, Inquiries, Milestone Agreements</span>
               </div>
+            </div>
+
+            <div className="pt-2 border-t border-[#F0F0F0] dark:border-[#1E1E1E]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSendTestEmail}
+                disabled={sendingTestEmail}
+                className="w-full text-xs font-semibold justify-center gap-1.5 min-h-[34px]"
+              >
+                <Mail className={`w-3.5 h-3.5 ${sendingTestEmail ? "animate-bounce" : ""}`} />
+                <span>{sendingTestEmail ? "Dispatching via Resend..." : "Dispatch Test Email (Verify DKIM)"}</span>
+              </Button>
             </div>
           </Card>
         </div>

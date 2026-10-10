@@ -375,12 +375,12 @@ export function PWAInstallBanner() {
           <div className="bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] border border-[#262626] dark:border-[#E5E5E5] p-4 rounded-2xl shadow-2xl flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
               <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 border border-neutral-700/60 dark:border-neutral-200/60 bg-[#0A0A0A] flex items-center justify-center">
-                <img src="/images/abcd_square_logo.png" alt="ABCD Agency App" className="w-full h-full object-cover" />
+                <img src="/images/abcd_square_logo.png" alt="ABCD Digital Hub App" className="w-full h-full object-cover" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-xs font-bold tracking-tight truncate">
-                    Install ABCD App
+                    Install ABCD Hub App
                   </h4>
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/15 dark:bg-black/10 text-neutral-300 dark:text-neutral-700">
                     PWA
@@ -429,11 +429,11 @@ export function PWAInstallBanner() {
             <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3.5">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 border border-[#E5E5E5] dark:border-[#262626] bg-[#0A0A0A] flex items-center justify-center">
-                  <img src="/images/abcd_square_logo.png" alt="ABCD Agency" className="w-full h-full object-cover" />
+                  <img src="/images/abcd_square_logo.png" alt="ABCD Digital Hub" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold tracking-tight">
-                    Install ABCD Agency App
+                    Install ABCD Digital Hub App
                   </h3>
                   <p className="text-[11px] text-[#737373] dark:text-neutral-400">
                     Fast launch, standalone window & offline support
@@ -527,7 +527,7 @@ export function PWAInstallBanner() {
                     <div className="space-y-1">
                       <span className="font-bold block">Or Open Browser Menu (⋮)</span>
                       <p className="text-[#737373] dark:text-neutral-400 text-[11px] leading-relaxed">
-                        Click the 3 dots in the top right → select <strong className="text-black dark:text-white font-bold">&quot;Save and share&quot;</strong> or <strong className="text-black dark:text-white font-bold">&quot;Install ABCD Agency&quot;</strong>.
+                        Click the 3 dots in the top right → select <strong className="text-black dark:text-white font-bold">&quot;Save and share&quot;</strong> or <strong className="text-black dark:text-white font-bold">&quot;Install ABCD Digital Hub&quot;</strong>.
                       </p>
                     </div>
                   </div>

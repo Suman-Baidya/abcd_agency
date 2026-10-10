@@ -10,7 +10,7 @@ import { CTASection } from "@/components/marketing/CTASection";
 import { ContactSection } from "@/components/marketing/ContactSection";
 
 export const metadata = {
-  title: "ABCD Agency — Software Development & Digital Consulting",
+  title: "ABCD Digital Hub — Software Development & Digital Consulting",
   description:
     "Full-stack software engineering partner for ambitious brands. We build high-performance web apps, SaaS architectures, and automated business systems.",
 };

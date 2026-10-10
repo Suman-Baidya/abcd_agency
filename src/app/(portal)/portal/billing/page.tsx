@@ -142,7 +142,7 @@ export default function PortalBillingPage() {
           </p>
         </div>
 
-        <Button id="billing-support-btn" variant="secondary" size="sm" href="mailto:billing@abcdagency.com">
+        <Button id="billing-support-btn" variant="secondary" size="sm" href="mailto:billing@abcddigitalhub.com">
           Billing Support
         </Button>
       </div>

@@ -73,14 +73,14 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: "welcome-1",
     sender: "bot",
-    text: "Hello! I'm the ABCD Agency Intelligent Assistant. How can I help you today? Ask me about our core packages, software services, custom quotes, or technical consulting.",
+    text: "Hello! I'm the ABCD Digital Hub Intelligent Assistant. How can I help you today? Ask me about our core packages, software services, custom quotes, or technical consulting.",
     actions: [
       { label: "Pricing & Packages", actionType: "pricing", icon: "package" },
       { label: "Our Services", actionType: "services", icon: "layers" },
       { label: "Direct Contact", actionType: "contact", icon: "phone" },
       {
         label: "Chat on WhatsApp",
-        href: "https://wa.me/918167685731?text=Hi%20ABCD%20Agency,%20I%20would%20like%20to%20discuss%20a%20project.",
+        href: "https://wa.me/918167685731?text=Hi%20ABCD%20Digital%20Hub,%20I%20would%20like%20to%20discuss%20a%20project.",
         icon: "whatsapp",
       },
     ],
@@ -156,7 +156,7 @@ export function SmartChatbot() {
       q.includes("react")
     ) {
       return {
-        text: "ABCD Agency specializes in full-stack software development and business digitalization:\n\n• Web & SaaS Applications: Scalable architectures built on Next.js, React, TypeScript, and Neon PostgreSQL.\n• AI Workflows & Automation: Custom LLM workflows, intelligent agent systems, and automated pipelines.\n• Mobile & Progressive Web Apps: High-performance PWAs and native-quality mobile solutions.\n• UI/UX & Product Design: Minimalist, black-and-white high-conversion design systems.\n• Cloud & DevOps: Serverless deployments on Vercel and AWS with 99.9% uptime SLA.",
+        text: "ABCD Digital Hub specializes in full-stack software development and business digitalization:\n\n• Web & SaaS Applications: Scalable architectures built on Next.js, React, TypeScript, and Neon PostgreSQL.\n• AI Workflows & Automation: Custom LLM workflows, intelligent agent systems, and automated pipelines.\n• Mobile & Progressive Web Apps: High-performance PWAs and native-quality mobile solutions.\n• UI/UX & Product Design: Minimalist, black-and-white high-conversion design systems.\n• Cloud & DevOps: Serverless deployments on Vercel and AWS with 99.9% uptime SLA.",
         actions: [
           { label: "Explore All Services", href: "/services", icon: "layers" },
           { label: "View Client Case Studies", href: "/work", icon: "file" },
@@ -223,7 +223,7 @@ export function SmartChatbot() {
 
     // Default intelligent response
     return {
-      text: "Thanks for reaching out! ABCD Agency is a full-stack digital product agency. We engineer high-performance web applications, AI automation tools, and scalable SaaS platforms.\n\nWould you like to review our pricing packages, check out our engineering services, or speak directly with our team on WhatsApp?",
+      text: "Thanks for reaching out! ABCD Digital Hub is a full-stack digital product agency. We engineer high-performance web applications, AI automation tools, and scalable SaaS platforms.\n\nWould you like to review our pricing packages, check out our engineering services, or speak directly with our team on WhatsApp?",
       actions: [
         { label: "View Pricing Packages", href: "/pricing", icon: "package" },
         { label: "Explore Services", href: "/services", icon: "layers" },

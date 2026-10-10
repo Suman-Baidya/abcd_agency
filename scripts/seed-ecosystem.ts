@@ -14,7 +14,7 @@ async function main() {
           category: "EdTech SaaS",
           status: "Enterprise Ready",
           statusColor: "emerald",
-          appUrl: "https://eduexam.abcdagency.com",
+          appUrl: "https://eduexam.abcddigitalhub.com",
           features: [
             "Multi-tenant architecture (isolated school & branch tenancies)",
             "Anti-cheat proctoring with tab-switch detection & timer locks",
@@ -37,7 +37,7 @@ async function main() {
           category: "AI Automation",
           status: "Live Platform",
           statusColor: "emerald",
-          appUrl: "https://growth.abcdagency.com",
+          appUrl: "https://growth.abcddigitalhub.com",
           features: [
             "Instant 60-second AI WhatsApp & email personalized follow-ups",
             "Intelligent lead qualification and ICP scoring with Google Gemini",

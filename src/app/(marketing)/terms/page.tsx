@@ -4,12 +4,12 @@ import { FileCheck, Calendar, ShieldCheck } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export const metadata = {
-  title: "Terms of Service — ABCD Agency",
+  title: "Terms of Service — ABCD Digital Hub",
   description: "Our mutual terms of service, intellectual property ownership guarantees, and professional engineering engagement standards.",
 };
 
 const DEFAULT_TERMS_CONTENT = `## 1. Engagement Scope
-All software engineering, design, and consulting engagements conducted by ABCD Agency are governed by formal Statement of Work (SOW) documents outlining explicit deliverables, milestones, sprint cycles, and acceptance criteria.
+All software engineering, design, and consulting engagements conducted by ABCD Digital Hub are governed by formal Statement of Work (SOW) documents outlining explicit deliverables, milestones, sprint cycles, and acceptance criteria.
 
 ## 2. Intellectual Property (IP) Ownership
 Upon receipt of full payment for agreed milestones, 100% of all intellectual property, source code, database architectures, and graphical assets created specifically for the client are irrevocably transferred to the client.
@@ -24,7 +24,7 @@ Invoices are issued on a milestone or sprint basis as defined in the project sco
 Both parties agree to protect and maintain the confidentiality of all proprietary technical, financial, and strategic information exchanged throughout the lifecycle of the engagement.
 
 ## 6. Inquiries
-For legal and contractual questions, reach out directly to legal@abcdagency.com.`;
+For legal and contractual questions, reach out directly to legal@abcddigitalhub.com.`;
 
 function renderLegalBody(content: string) {
   const sections = content.split(/(?=^##\s+)/m).filter(Boolean);

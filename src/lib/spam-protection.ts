@@ -1,4 +1,4 @@
-// Centralized Anti-Bot & Anti-Spam Shield for ABCD Agency
+// Centralized Anti-Bot & Anti-Spam Shield for ABCD Digital Hub
 
 export const DISPOSABLE_EMAIL_DOMAINS = new Set([
   "mailinator.com",

@@ -109,12 +109,12 @@ export function EcoSystemBlueprintModal({
                 <div className="min-w-0 pr-2">
                   <p className="text-[10px] font-mono text-[#737373] uppercase">Test Login</p>
                   <p className="text-xs font-mono font-semibold text-[#0A0A0A] dark:text-white truncate">
-                    {platform.demoEmail || "demo@abcdagency.com"}
+                    {platform.demoEmail || "demo@abcddigitalhub.com"}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(platform.demoEmail || "demo@abcdagency.com", "email")}
+                  onClick={() => copyToClipboard(platform.demoEmail || "demo@abcddigitalhub.com", "email")}
                   className="p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 text-[#737373] hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
                   title="Copy email"
                 >

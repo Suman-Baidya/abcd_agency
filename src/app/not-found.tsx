@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "404 — Page Not Found | ABCD Agency",
+  title: "404 — Page Not Found | ABCD Digital Hub",
   description: "The page you are looking for does not exist or has been moved.",
 };
 
@@ -129,7 +129,7 @@ export default function NotFound() {
           {/* System Terminal Ping */}
           <div className="inline-flex items-center gap-2 font-mono text-[10px] text-[#737373] dark:text-neutral-500 pt-4">
             <Terminal className="w-3 h-3" />
-            <span>STATUS: 404 // HOST: abcdagency.com // ALL SERVICES OPERATIONAL</span>
+            <span>STATUS: 404 // HOST: abcddigitalhub.com // ALL SERVICES OPERATIONAL</span>
           </div>
         </div>
       </main>

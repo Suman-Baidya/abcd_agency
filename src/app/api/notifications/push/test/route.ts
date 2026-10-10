@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser().catch(() => null);
 
     const payload = {
-      title: "ABCD Agency — Push Alert",
+      title: "ABCD Digital Hub — Push Alert",
       body: `Live push notification successfully delivered to your device! [${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}]`,
       icon: "/images/abcd_square_logo.png",
       badge: "/favicon.ico",

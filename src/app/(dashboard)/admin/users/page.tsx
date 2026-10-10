@@ -3,7 +3,7 @@ import { UserManager } from "@/components/dashboard/UserManager";
 import { getUsersList } from "./actions";
 
 export const metadata = {
-  title: "Users & Activity CRM — ABCD Agency",
+  title: "Users & Activity CRM — ABCD Digital Hub",
 };
 
 export const dynamic = "force-dynamic";

@@ -39,7 +39,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
 
   // Find initial client
   const initialClientId = project?.clientId || (clients.find(c => c.name.toLowerCase() === (project?.client || "").toLowerCase())?.id) || "";
-  const initialClientName = project?.client || (clients.find(c => c.id === initialClientId)?.name) || (projectType === "SANDBOX" ? "ABCD Agency Blueprint" : "");
+  const initialClientName = project?.client || (clients.find(c => c.id === initialClientId)?.name) || (projectType === "SANDBOX" ? "ABCD Digital Hub Blueprint" : "");
 
   const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId);
   const [clientName, setClientName] = useState<string>(initialClientName);
@@ -100,7 +100,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
     formData.set("projectType", projectType);
     formData.set("isPublished", isPublished ? "true" : "false");
     if (projectType === "SANDBOX" && !clientName.trim()) {
-      formData.set("client", "ABCD Agency Blueprint");
+      formData.set("client", "ABCD Digital Hub Blueprint");
     }
 
     startTransition(async () => {
@@ -165,7 +165,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
               onClick={() => {
                 setProjectType("SANDBOX");
                 if (!clientName || clientName === "Agency Client") {
-                  setClientName("ABCD Agency Blueprint");
+                  setClientName("ABCD Digital Hub Blueprint");
                 }
               }}
               className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
@@ -192,7 +192,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
               type="button"
               onClick={() => {
                 setProjectType("CLIENT_WORK");
-                if (clientName === "ABCD Agency Blueprint") {
+                if (clientName === "ABCD Digital Hub Blueprint") {
                   setClientName("");
                   setSelectedClientId("");
                 }
@@ -241,7 +241,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
                   type="url"
                   name="demoUrl"
                   defaultValue={project?.demoUrl || ""}
-                  placeholder="https://crm.abcdagency.com or https://your-app.vercel.app"
+                  placeholder="https://crm.abcddigitalhub.com or https://your-app.vercel.app"
                   className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
                 />
               </div>
@@ -254,7 +254,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
                   type="text"
                   name="demoEmail"
                   defaultValue={project?.demoEmail || ""}
-                  placeholder="demo@abcdagency.com"
+                  placeholder="demo@abcddigitalhub.com"
                   className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white outline-none"
                 />
               </div>
@@ -324,7 +324,7 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
                 Client / Account {projectType === "CLIENT_WORK" ? <span className="text-red-500">*</span> : <span className="text-[#737373] text-xs font-normal">(Optional)</span>}
               </label>
               <span className="text-[11px] text-[#737373] dark:text-neutral-400">
-                {projectType === "SANDBOX" ? "Defaults to ABCD Agency Blueprint" : "Select client account"}
+                {projectType === "SANDBOX" ? "Defaults to ABCD Digital Hub Blueprint" : "Select client account"}
               </span>
             </div>
 

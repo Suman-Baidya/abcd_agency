@@ -5,7 +5,7 @@ import { ShieldCheck, Send } from "lucide-react";
 import { EcoSystemCard } from "@/components/marketing/EcoSystemCard";
 
 export const metadata = {
-  title: "Apps & Software Systems — ABCD Agency Portal",
+  title: "Apps & Software Systems — ABCD Digital Hub Portal",
   description: "Explore our proprietary multi-tenant SaaS engines and AI marketing automations ready for enterprise deployment.",
 };
 
@@ -56,7 +56,7 @@ export default async function PortalEcoSystemPage() {
           Ecosys Platforms
         </h1>
         <p className="text-xs sm:text-sm text-[#737373] dark:text-neutral-400 mt-1">
-          Explore ready-to-deploy platforms and autonomous AI systems built by ABCD Agency for instant client adoption.
+          Explore ready-to-deploy platforms and autonomous AI systems built by ABCD Digital Hub for instant client adoption.
         </p>
       </div>
 

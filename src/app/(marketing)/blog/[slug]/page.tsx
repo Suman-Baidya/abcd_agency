@@ -26,12 +26,12 @@ export async function generateMetadata({
 
   if (!post) {
     return {
-      title: "Article Not Found — ABCD Agency",
+      title: "Article Not Found — ABCD Digital Hub",
     };
   }
 
   return {
-    title: `${post.title} — ABCD Agency Blog`,
+    title: `${post.title} — ABCD Digital Hub Blog`,
     description: post.summary,
     openGraph: {
       title: post.title,
@@ -220,7 +220,7 @@ export default async function BlogPostPage({
             Back to All Articles
           </Link>
           <span className="text-xs font-mono text-[#737373]">
-            ABCD Agency Engineering
+            ABCD Digital Hub Engineering
           </span>
         </div>
       </article>

@@ -5,9 +5,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { MessageSquare } from "lucide-react";
 
 export const metadata = {
-  title: "Contact ABCD Agency — Start Your Project",
+  title: "Contact ABCD Digital Hub — Start Your Project",
   description:
-    "Get in touch with ABCD Agency for custom web application development, SaaS engineering, and AI digital transformation.",
+    "Get in touch with ABCD Digital Hub for custom web application development, SaaS engineering, and AI digital transformation.",
 };
 
 export default function ContactPage() {

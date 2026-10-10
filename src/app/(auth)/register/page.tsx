@@ -238,7 +238,7 @@ export default function RegisterPage() {
           Create Your Account
         </h1>
         <p className="mt-1.5 text-xs sm:text-sm text-[#737373] dark:text-neutral-400">
-          Join ABCD Agency to access your client portal and projects.
+          Join ABCD Digital Hub to access your client portal and projects.
         </p>
       </div>
 

@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 const DEFAULT_PRIVACY_POLICY = `## 1. Overview & Commitment
-ABCD Agency ("we," "our," or "us") is committed to protecting client confidential data, codebase integrity, and personal information. We strictly limit data collection to what is strictly necessary to deliver high-quality software engineering and consulting services.
+ABCD Digital Hub ("we," "our," or "us") is committed to protecting client confidential data, codebase integrity, and personal information. We strictly limit data collection to what is strictly necessary to deliver high-quality software engineering and consulting services.
 
 ## 2. Information We Collect
 When you submit an inquiry or partner with us, we may collect:
@@ -30,16 +30,16 @@ When you submit an inquiry or partner with us, we may collect:
 - Operational and telemetry data necessary for deployment support.
 
 ## 3. Mutual NDA & Code Confidentiality
-All proprietary project information, algorithms, credentials, and business logic shared with ABCD Agency are treated with strict confidentiality under enforceable mutual Non-Disclosure Agreements (NDAs). We never share, sell, or disclose client source code to third parties.
+All proprietary project information, algorithms, credentials, and business logic shared with ABCD Digital Hub are treated with strict confidentiality under enforceable mutual Non-Disclosure Agreements (NDAs). We never share, sell, or disclose client source code to third parties.
 
 ## 4. Security & Data Storage
 All databases, media assets, and codebase repositories utilize industry-standard TLS 1.3 encryption in transit and AES-256 at rest. Access is strictly role-gated to authorized engineering staff.
 
 ## 5. Contact Us
-For privacy-related inquiries or data deletion requests, contact our data protection team directly at privacy@abcdagency.com.`;
+For privacy-related inquiries or data deletion requests, contact our data protection team directly at privacy@abcddigitalhub.com.`;
 
 const DEFAULT_TERMS_OF_SERVICE = `## 1. Engagement Scope
-All software engineering, design, and consulting engagements conducted by ABCD Agency are governed by formal Statement of Work (SOW) documents outlining explicit deliverables, milestones, sprint cycles, and acceptance criteria.
+All software engineering, design, and consulting engagements conducted by ABCD Digital Hub are governed by formal Statement of Work (SOW) documents outlining explicit deliverables, milestones, sprint cycles, and acceptance criteria.
 
 ## 2. Intellectual Property (IP) Ownership
 Upon receipt of full payment for agreed milestones, 100% of all intellectual property, source code, database architectures, and graphical assets created specifically for the client are irrevocably transferred to the client.
@@ -54,10 +54,10 @@ Invoices are issued on a milestone or sprint basis as defined in the project sco
 Both parties agree to protect and maintain the confidentiality of all proprietary technical, financial, and strategic information exchanged throughout the lifecycle of the engagement.
 
 ## 6. Inquiries
-For legal and contractual questions, reach out directly to legal@abcdagency.com.`;
+For legal and contractual questions, reach out directly to legal@abcddigitalhub.com.`;
 
 const DEFAULT_REFUND_POLICY = `## 1. Milestone Settlement Model
-All engineering and consulting services provided by ABCD Agency follow milestone-based deliverable sign-offs. Payments made for verified sprint milestones are non-refundable once approved and deployed.
+All engineering and consulting services provided by ABCD Digital Hub follow milestone-based deliverable sign-offs. Payments made for verified sprint milestones are non-refundable once approved and deployed.
 
 ## 2. Deposit & Cancellation
 Initial deposits covering sprint sprint preparation and discovery architecture may be refunded up to 70% if cancellation occurs prior to development kickoff.
@@ -66,7 +66,7 @@ Initial deposits covering sprint sprint preparation and discovery architecture m
 Fixed-scope engagements include a 30-day warranty. In the event of code deviations from the agreed SOW, our team remediates issues with maximum priority without additional charge.`;
 
 const DEFAULT_COOKIE_POLICY = `## 1. Essential Cookies Only
-ABCD Agency strictly utilizes functional and session cookies required for authentication, user session persistence, and portal navigation.
+ABCD Digital Hub strictly utilizes functional and session cookies required for authentication, user session persistence, and portal navigation.
 
 ## 2. No Third-Party Tracking
 We do not sell personal browsing behavior or telemetry to third-party ad networks. Analytics are aggregated and anonymized strictly to measure platform performance.`;

@@ -653,7 +653,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                               )}
 
                               <a
-                                href={`mailto:${user.email}?subject=Touching base regarding ABCD Agency partnership`}
+                                href={`mailto:${user.email}?subject=Touching base regarding ABCD Digital Hub partnership`}
                                 onClick={() => setOpenContactDropdownId(null)}
                                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors"
                               >

@@ -20,6 +20,7 @@ import { getSiteConfig } from "@/lib/dbConfig";
 import { Toaster } from "react-hot-toast";
 import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
 import { NavigationProgressBar } from "@/components/ui/NavigationProgressBar";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const viewport: Viewport = {
   themeColor: "#0A0A0A",
@@ -32,15 +33,20 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();
   const favicon = config.faviconUrl?.trim() || "/images/abcd_square_logo.png";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://abcddigitalhub.com";
   
   return {
-    title: `${config.agencyName} — Software Development & Digital Consulting`,
-    description: "Full-stack agency building modern web applications, SaaS products, and digital systems for high-growth businesses.",
+    metadataBase: new URL(appUrl),
+    title: {
+      default: `${config.agencyName} — Software Development & Digital Consulting`,
+      template: `%s | ${config.agencyName}`,
+    },
+    description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
     manifest: "/manifest.webmanifest",
     appleWebApp: {
       capable: true,
       statusBarStyle: "black-translucent",
-      title: config.agencyName || "ABCD Agency",
+      title: config.agencyName || "ABCD Digital Hub",
     },
     icons: {
       icon: [
@@ -50,6 +56,39 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
       shortcut: favicon,
       apple: "/images/abcd_square_logo.png",
+    },
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      url: appUrl,
+      siteName: config.agencyName || "ABCD Digital Hub",
+      title: `${config.agencyName} — Software Development & Digital Consulting`,
+      description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
+      images: [
+        {
+          url: "/images/abcd_square_logo.png",
+          width: 512,
+          height: 512,
+          alt: config.agencyName || "ABCD Digital Hub",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${config.agencyName} — Software Development & Digital Consulting`,
+      description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
+      images: ["/images/abcd_square_logo.png"],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
   };
 }
@@ -74,6 +113,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#0A0A0A" />
+        <JsonLd />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -1,13 +1,13 @@
 /**
- * ABCD Agency - Centralised Site Configuration
+ * ABCD Digital Hub - Centralised Site Configuration
  * Single source of truth for all contact details, social-media URLs, and brand constants.
  * To update any detail: change it ONLY here. Never hardcode contact info in components.
  */
 
 export const siteConfig = {
-  name: "ABCD Agency",
-  domain: "abcdagency.com",
-  url: "https://abcdagency.com",
+  name: "ABCD Digital Hub",
+  domain: "abcddigitalhub.com",
+  url: "https://abcddigitalhub.com",
 
   // Contact
   contact: {

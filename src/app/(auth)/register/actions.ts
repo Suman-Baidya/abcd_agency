@@ -7,6 +7,7 @@ import { registerLimiter, otpVerifyLimiter, otpResendLimiter, getClientIp } from
 import { checkSpamShield, isDisposableEmail } from "@/lib/spam-protection";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { sendVerificationOtpEmail } from "@/lib/email";
 
 export interface RegisterInput {
   companyName: string;
@@ -214,7 +215,14 @@ export async function registerUser(data: RegisterInput) {
       `New user account registered for company "${cleanCompany}"`
     );
 
-    if (requireOtp) {
+    if (requireOtp && otpCode) {
+      // Dispatch 6-digit verification code to user email via Resend
+      sendVerificationOtpEmail({
+        to: cleanEmail,
+        otpCode,
+        userName: cleanContactPerson,
+      }).catch((err) => console.error("[Registration OTP Email Error]:", err));
+
       return {
         success: true,
         requiresVerification: true,
@@ -357,6 +365,13 @@ export async function resendOtpCode(userId: string) {
         otpExpiresAt: expiry,
       },
     });
+
+    // Dispatch fresh 6-digit OTP email via Resend
+    sendVerificationOtpEmail({
+      to: user.email,
+      otpCode: newCode,
+      userName: user.name,
+    }).catch((err) => console.error("[Resend OTP Email Error]:", err));
 
     console.log(`[Resent OTP] New verification code for ${user.email}: ${newCode}`);
     await logUserActivity(user.id, "OTP_RESENT", "User requested a new verification OTP");

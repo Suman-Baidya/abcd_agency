@@ -49,11 +49,11 @@ async function ensureImagesLoaded(element: HTMLElement) {
 
 export const DEFAULT_CONTRACTOR_INFO = {
   name: "Suman Baidya",
-  brandName: "ABCD Agency",
+  brandName: "ABCD Digital Hub",
   roleTitle: "Independent Software Engineer & Product Consultant",
   phone: "+91 89448 99747",
   email: "sb.abcd321@gmail.com",
-  website: "https://abcdagency.com",
+  website: "https://abcddigitalhub.com",
   jurisdiction: "West Bengal, India",
 };
 
@@ -644,7 +644,7 @@ export function AgreementDocumentPaper({
                     {/* Left: Brand & Document Identity */}
                     <div className="flex items-center gap-2">
                       <span className="font-black text-xs tracking-wider text-[#0A0A0A] uppercase">
-                        {agencyInfo.brandName || "ABCD Agency"}
+                        {agencyInfo.brandName || "ABCD Digital Hub"}
                       </span>
                       <span className="h-3 w-px bg-[#D4D4D4] inline-block"></span>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#525252]">
@@ -793,7 +793,7 @@ export function AgreementDocumentPaper({
               {/* Left: Brand & Document Identity */}
               <div className="flex items-center gap-2">
                 <span className="font-black text-xs tracking-wider text-[#0A0A0A] uppercase">
-                  {agencyInfo.brandName || "ABCD Agency"}
+                  {agencyInfo.brandName || "ABCD Digital Hub"}
                 </span>
                 <span className="h-3 w-px bg-[#D4D4D4] inline-block"></span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#525252]">
@@ -2301,7 +2301,7 @@ export function ProjectAgreementModal({
               <div>
                 <span className="font-bold block text-[#0A0A0A] dark:text-white">Notice of Variation: Re-Confirmation Required</span>
                 <span className="text-[11px] text-[#525252] dark:text-neutral-300 block">
-                  ABCD Agency has published revisions for this Statement of Work. Please review and re-confirm the amendment.
+                  ABCD Digital Hub has published revisions for this Statement of Work. Please review and re-confirm the amendment.
                 </span>
               </div>
             </div>

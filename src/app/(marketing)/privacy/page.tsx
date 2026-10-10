@@ -4,12 +4,12 @@ import { Shield, Calendar, Lock } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export const metadata = {
-  title: "Privacy Policy — ABCD Agency",
+  title: "Privacy Policy — ABCD Digital Hub",
   description: "Our data governance, client codebase confidentiality, and privacy compliance standards for all software engineering and consulting engagements.",
 };
 
 const DEFAULT_PRIVACY_CONTENT = `## 1. Overview & Commitment
-ABCD Agency ("we," "our," or "us") is committed to protecting client confidential data, codebase integrity, and personal information. We strictly limit data collection to what is strictly necessary to deliver high-quality software engineering and consulting services.
+ABCD Digital Hub ("we," "our," or "us") is committed to protecting client confidential data, codebase integrity, and personal information. We strictly limit data collection to what is strictly necessary to deliver high-quality software engineering and consulting services.
 
 ## 2. Information We Collect
 When you submit an inquiry or partner with us, we may collect:
@@ -18,13 +18,13 @@ When you submit an inquiry or partner with us, we may collect:
 - Operational and telemetry data necessary for deployment support.
 
 ## 3. Mutual NDA & Code Confidentiality
-All proprietary project information, algorithms, credentials, and business logic shared with ABCD Agency are treated with strict confidentiality under enforceable mutual Non-Disclosure Agreements (NDAs). We never share, sell, or disclose client source code to third parties.
+All proprietary project information, algorithms, credentials, and business logic shared with ABCD Digital Hub are treated with strict confidentiality under enforceable mutual Non-Disclosure Agreements (NDAs). We never share, sell, or disclose client source code to third parties.
 
 ## 4. Security & Data Storage
 All databases, media assets, and codebase repositories utilize industry-standard TLS 1.3 encryption in transit and AES-256 at rest. Access is strictly role-gated to authorized engineering staff.
 
 ## 5. Contact Us
-For privacy-related inquiries or data deletion requests, contact our data protection team directly at privacy@abcdagency.com.`;
+For privacy-related inquiries or data deletion requests, contact our data protection team directly at privacy@abcddigitalhub.com.`;
 
 function renderLegalBody(content: string) {
   const sections = content.split(/(?=^##\s+)/m).filter(Boolean);

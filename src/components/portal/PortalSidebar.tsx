@@ -43,7 +43,7 @@ export function PortalSidebar({
   user, 
   lightLogoUrl, 
   darkLogoUrl, 
-  agencyName = "ABCD Agency",
+  agencyName = "ABCD Digital Hub",
   repliedRevisionsCount = 0,
   repliedRevisionIds = [],
   pendingAgreementsCount = 0,

@@ -22,7 +22,7 @@ export async function Navbar() {
             <Link
               href="/"
               className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] dark:focus-visible:ring-white rounded-xs"
-              aria-label="ABCD Agency Home"
+              aria-label={`${siteConfig.agencyName || "ABCD Digital Hub"} Home`}
             >
               {/* Light Mode Logo */}
               <Image

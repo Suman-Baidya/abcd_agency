@@ -15,7 +15,7 @@ export default function AuthLayout({
         <Link href="/" className="flex items-center group pointer-events-auto">
           <Image
             src="/images/Black_Logo.png"
-            alt="ABCD Agency Logo"
+            alt="ABCD Digital Hub Logo"
             width={120}
             height={40}
             className="h-8 w-auto block dark:hidden transition-opacity group-hover:opacity-80"
@@ -23,7 +23,7 @@ export default function AuthLayout({
           />
           <Image
             src="/images/White_Logo.png"
-            alt="ABCD Agency Logo"
+            alt="ABCD Digital Hub Logo"
             width={120}
             height={40}
             className="h-8 w-auto hidden dark:block transition-opacity group-hover:opacity-80"

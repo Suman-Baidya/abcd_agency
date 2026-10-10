@@ -74,7 +74,7 @@ export function SandboxCredentialsCard({
           </span>
           <div className="flex items-center justify-between gap-2">
             <code className="text-xs font-mono font-semibold text-[#0A0A0A] dark:text-white truncate">
-              {demoEmail || "demo@abcdagency.com"}
+              {demoEmail || "demo@abcddigitalhub.com"}
             </code>
             {demoEmail && (
               <button

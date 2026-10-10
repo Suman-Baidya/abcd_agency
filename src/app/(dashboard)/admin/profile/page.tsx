@@ -191,7 +191,7 @@ export default function ProfilePage() {
                   </label>
                   <textarea
                     rows={3}
-                    defaultValue="Founder & CEO at ABCD Agency. Passionate about building premium digital experiences with AI-powered solutions."
+                    defaultValue="Founder & CEO at ABCD Digital Hub. Passionate about building premium digital experiences with AI-powered solutions."
                     className="w-full px-3 py-2.5 text-sm border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A] dark:focus:ring-white resize-none"
                   />
                 </div>

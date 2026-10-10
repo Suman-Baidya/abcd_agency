@@ -596,7 +596,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
                 name="appUrl"
                 value={appUrl}
                 onChange={(e) => setAppUrl(e.target.value)}
-                placeholder="https://eduexam.abcdagency.com or https://your-app.vercel.app"
+                placeholder="https://eduexam.abcddigitalhub.com or https://your-app.vercel.app"
                 className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
               />
             </div>

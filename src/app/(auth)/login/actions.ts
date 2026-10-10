@@ -28,6 +28,7 @@ export async function loginUser(formData: { email: string; password?: string; re
     // 1. Check if super admin master login
     if (
       (cleanEmail === "suman.baidya.pro@gmail.com" && cleanPassword === "Suman2002") ||
+      (cleanEmail === "admin@abcddigitalhub.com" && cleanPassword === "Admin123") ||
       (cleanEmail === "admin@abcdagency.com" && cleanPassword === "Admin123")
     ) {
       // Find or create admin user in DB
@@ -39,7 +40,7 @@ export async function loginUser(formData: { email: string; password?: string; re
         adminUser = await db.user.create({
           data: {
             name: cleanEmail.includes("suman") ? "Suman Baidya" : "Agency Admin",
-            companyName: "ABCD Agency",
+            companyName: "ABCD Digital Hub",
             email: cleanEmail,
             password: hashPassword(cleanPassword),
             role: "SUPER_ADMIN",

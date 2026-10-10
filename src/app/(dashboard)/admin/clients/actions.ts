@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logUserActivity, hashPassword } from "@/lib/auth-session";
+import { sendClientWelcomeEmail } from "@/lib/email";
 
 export interface ClientInput {
   name: string;
@@ -446,6 +447,13 @@ export async function createClient(data: ClientInput) {
           },
         });
       }
+
+      // Dispatch welcome email with credentials to the newly provisioned client
+      sendClientWelcomeEmail({
+        to: data.email.trim(),
+        clientName: data.contactPerson?.trim() || data.name.trim(),
+        tempPassword: rawPassword,
+      }).catch((err) => console.error("[Client Welcome Email Error]:", err));
     } catch (userSyncErr) {
       console.warn("Failed to auto-sync user for new client:", userSyncErr);
     }

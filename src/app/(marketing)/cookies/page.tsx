@@ -5,12 +5,12 @@ import { getSiteConfig } from "@/lib/dbConfig";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Cookie Policy — ABCD Agency",
+  title: "Cookie Policy — ABCD Digital Hub",
   description: "Essential telemetry, zero third-party data tracking, and browser session persistence policies.",
 };
 
 const DEFAULT_COOKIE_CONTENT = `## 1. Essential Cookies Only
-ABCD Agency strictly utilizes functional and session cookies required for authentication, user session persistence, and portal navigation.
+ABCD Digital Hub strictly utilizes functional and session cookies required for authentication, user session persistence, and portal navigation.
 
 ## 2. No Third-Party Tracking
 We do not sell personal browsing behavior or telemetry to third-party ad networks. Analytics are aggregated and anonymized strictly to measure platform performance.

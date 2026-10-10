@@ -6,6 +6,7 @@ import { contactFormSchema, type ContactFormData } from "@/lib/validations/conta
 import { inquiryLimiter, getClientIp } from "@/lib/rate-limit";
 import { checkSpamShield } from "@/lib/spam-protection";
 import { sendPushToRole } from "@/lib/push-notifications";
+import { sendInquiryAcknowledgementEmail, sendInquiryAdminAlertEmail } from "@/lib/email";
 
 export async function submitInquiry(data: ContactFormData) {
   try {
@@ -75,6 +76,26 @@ export async function submitInquiry(data: ContactFormData) {
       url: "/admin/inquiries",
       tag: `inquiry-${inquiry.id}`,
     }).catch(() => {});
+
+    // Dispatch branded email acknowledgement to client via Resend
+    sendInquiryAcknowledgementEmail({
+      to: parsedData.email,
+      clientName: parsedData.name,
+      projectType: parsedData.projectType,
+    }).catch((err) => console.error("[Inquiry Email Error]:", err));
+
+    // Dispatch instant lead notification email to admin/owner
+    sendInquiryAdminAlertEmail({
+      name: parsedData.name,
+      email: parsedData.email,
+      phone: parsedData.mobile,
+      whatsapp: parsedData.isWhatsappSame ? parsedData.mobile : parsedData.whatsapp,
+      businessType: parsedData.businessType,
+      services: parsedData.services,
+      projectType: parsedData.projectType,
+      budget: parsedData.budget,
+      message: parsedData.message,
+    }).catch((err) => console.error("[Admin Alert Email Error]:", err));
 
     return { success: true, inquiryId: inquiry.id };
   } catch (error) {

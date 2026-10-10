@@ -6,7 +6,7 @@ export function FloatingWhatsApp() {
   const [hovered, setHovered] = useState(false);
   const whatsappNumber = "918167685731";
   const defaultMessage = encodeURIComponent(
-    "Hi ABCD Agency, I would like to discuss a project."
+    "Hi ABCD Digital Hub, I would like to discuss a project."
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${defaultMessage}`;
 
@@ -28,7 +28,7 @@ export function FloatingWhatsApp() {
         rel="noopener noreferrer"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        aria-label="Direct WhatsApp Chat with ABCD Agency"
+        aria-label="Direct WhatsApp Chat with ABCD Digital Hub"
         className="relative group w-12 h-12 rounded-full border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white hover:bg-[#0A0A0A] hover:text-white hover:border-[#0A0A0A] dark:hover:bg-white dark:hover:text-[#0A0A0A] dark:hover:border-white shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
         {/* Pulsing Active Online Indicator */}

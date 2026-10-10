@@ -11,13 +11,13 @@ model SiteConfig {
   id              String   @id @default("1")
   
   // General
-  agencyName      String   @default("ABCD Agency")
+  agencyName      String   @default("ABCD Digital Hub")
   lightLogoUrl    String?
   darkLogoUrl     String?
   faviconUrl      String?
-  contactEmail    String   @default("hello@abcdagency.com")
-  contactPhone    String   @default("+1 234 567 890")
-  websiteUrl      String   @default("https://abcdagency.com")
+  contactEmail    String   @default("hello@abcddigitalhub.com")
+  contactPhone    String   @default("+91 89448 99747")
+  websiteUrl      String   @default("https://abcddigitalhub.com")
   address         String   @default("Tripura, India")
   
   // Social Links

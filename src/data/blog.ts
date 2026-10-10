@@ -20,7 +20,7 @@ export const blogPosts: BlogPost[] = [
     date: "Aug 2026",
     author: "ABCD Engineering Team",
     content: `
-When building production SaaS products with Next.js 15, performance and database connection management are paramount. In this article, we break down the exact patterns we deploy across client systems at ABCD Agency.
+When building production SaaS products with Next.js 15, performance and database connection management are paramount. In this article, we break down the exact patterns we deploy across client systems at ABCD Digital Hub.
 
 ### 1. Connection Pooling with Neon Serverless Postgres
 Traditional node servers maintain long-lived connection pools. In serverless and edge environments, spontaneous spikes can exhaust connection limits. By deploying Neon's serverless WebSocket connection pooler with Prisma, we achieve zero cold starts and unlimited concurrent query throughput.

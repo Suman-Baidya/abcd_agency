@@ -55,7 +55,7 @@ export function InstallAppButton({
         onClick={handleClick}
         className={`w-9 h-9 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] flex items-center justify-center transition-colors cursor-pointer ${className}`}
         title="Install Web App"
-        aria-label="Install ABCD Agency Web App"
+        aria-label="Install ABCD Digital Hub Web App"
       >
         <Download className="w-4 h-4" />
       </button>
@@ -81,7 +81,7 @@ export function InstallAppButton({
         type="button"
         onClick={handleClick}
         className={`inline-flex items-center gap-1.5 text-xs text-[#737373] hover:text-[#0A0A0A] dark:hover:text-white transition-colors cursor-pointer ${className}`}
-        title="Install ABCD Agency Web App"
+        title="Install ABCD Digital Hub Web App"
       >
         <Download className="w-3.5 h-3.5" />
         <span>{label}</span>

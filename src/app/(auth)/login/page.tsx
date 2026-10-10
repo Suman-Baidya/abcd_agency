@@ -125,7 +125,7 @@ function LoginForm() {
           Welcome back
         </h1>
         <p className="mt-2 text-sm text-[#737373] dark:text-neutral-400">
-          Enter your credentials to access the ABCD Agency portal.
+          Enter your credentials to access the ABCD Digital Hub portal.
         </p>
       </div>
 
@@ -274,7 +274,7 @@ function LoginForm() {
         <div className="mt-8 pt-6 border-t border-[#E5E5E5] dark:border-[#262626] space-y-3">
           <div className="p-3.5 bg-[#F9F9F9] dark:bg-[#151515] border border-[#EBEBEB] dark:border-[#262626] rounded-xl flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-[#0A0A0A] dark:text-white">New to ABCD Agency?</p>
+              <p className="text-xs font-bold text-[#0A0A0A] dark:text-white">New to ABCD Digital Hub?</p>
               <p className="text-[11px] text-[#737373] dark:text-neutral-400">Register your company to collaborate.</p>
             </div>
             <Link

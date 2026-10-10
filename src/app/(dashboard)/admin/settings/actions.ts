@@ -5,10 +5,10 @@ import { revalidatePath } from "next/cache";
 
 const defaultSiteConfig = {
   id: "1",
-  agencyName: "ABCD Agency",
-  contactEmail: "hello@abcdagency.com",
-  contactPhone: "+1 234 567 890",
-  websiteUrl: "https://abcdagency.com",
+  agencyName: "ABCD Digital Hub",
+  contactEmail: "hello@abcddigitalhub.com",
+  contactPhone: "+91 89448 99747",
+  websiteUrl: "https://abcddigitalhub.com",
   address: "Tripura, India",
 };
 

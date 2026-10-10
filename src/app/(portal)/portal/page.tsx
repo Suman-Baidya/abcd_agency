@@ -390,7 +390,7 @@ export default async function PortalDashboardPage() {
                     Agreement Re-Confirmation Required
                   </h3>
                   <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
-                    ABCD Agency has amended the Statement of Work for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
+                    ABCD Digital Hub has amended the Statement of Work for <span className="font-semibold text-amber-950 dark:text-white">{pendingReconfirmationProject.title}</span>. Please review and re-confirm the amendment.
                   </p>
                 </div>
               </div>

@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth-session";
 import { db } from "@/lib/prisma";
 
 export const metadata = {
-  title: "Admin Dashboard — ABCD Agency",
+  title: "Admin Dashboard — ABCD Digital Hub",
 };
 
 export const dynamic = "force-dynamic";

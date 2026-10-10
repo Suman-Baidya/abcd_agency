@@ -105,7 +105,7 @@ export function PortalTour({ isProspect = false }: PortalTourProps) {
               popover: {
                 title: "Install Web App",
                 description:
-                  "Add ABCD Agency to your Windows Start Menu, macOS Dock, or Mobile Home Screen.",
+                  "Add ABCD Digital Hub to your Windows Start Menu, macOS Dock, or Mobile Home Screen.",
                 side: "top",
                 align: "center",
               },

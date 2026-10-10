@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logUserActivity } from "@/lib/auth-session";
 import { formatNumberToINR } from "@/lib/sync-financials";
+import { sendClientWelcomeEmail } from "@/lib/email";
 
 export interface UserItem {
   id: string;
@@ -219,6 +220,12 @@ export async function convertUserToClient(userId: string) {
       "CONVERTED_TO_CLIENT",
       `User was officially verified and converted to Client account by Super Admin`
     );
+
+    // Dispatch welcome notification to the user informing them of Client Portal access
+    sendClientWelcomeEmail({
+      to: user.email,
+      clientName: user.name,
+    }).catch((err) => console.error("[Client Welcome Email Error]:", err));
 
     revalidatePath("/admin/users");
     revalidatePath("/admin/clients");

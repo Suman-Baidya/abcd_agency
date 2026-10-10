@@ -6,7 +6,7 @@ import { IndianRupee, Check } from "lucide-react";
 import { db } from "@/lib/prisma";
 
 export const metadata = {
-  title: "Pricing | ABCD Agency",
+  title: "Pricing | ABCD Digital Hub",
   description: "Transparent, flexible pricing for high-converting websites, web apps, and digital marketing services.",
 };
 

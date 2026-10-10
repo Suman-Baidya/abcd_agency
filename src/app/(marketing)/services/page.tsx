@@ -11,7 +11,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Layers } from "lucide-react";
 
 export const metadata = {
-  title: "Engineering Services & Capabilities — ABCD Agency",
+  title: "Engineering Services & Capabilities — ABCD Digital Hub",
   description:
     "Explore our full-stack software development services: Web & SaaS development, business digitalization, UI/UX design systems, and AI integration.",
 };

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Dynamically resolve base URL based on host header (supports localhost, vercel.app, and abcdagency.com)
+  // Dynamically resolve base URL based on host header (supports localhost, vercel.app, and abcddigitalhub.com)
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
   const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
   const baseUrl = `${proto}://${host}`;

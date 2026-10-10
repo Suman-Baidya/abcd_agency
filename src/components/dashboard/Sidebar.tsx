@@ -26,7 +26,7 @@ export function Sidebar({
   user,
   lightLogoUrl, 
   darkLogoUrl, 
-  agencyName = "ABCD Agency", 
+  agencyName = "ABCD Digital Hub", 
   unreadInquiriesCount = 0,
   newUsersCount = 0,
   pendingRevisionsCount = 0,
@@ -37,7 +37,7 @@ export function Sidebar({
   const [isSmartMenuOpen, setIsSmartMenuOpen] = useState(false);
 
   const displayName = user?.name || "Admin Workspace";
-  const displayEmail = user?.email || "admin@abcdagency.com";
+  const displayEmail = user?.email || "admin@abcddigitalhub.com";
   const initials = displayName
     .split(" ")
     .filter(Boolean)

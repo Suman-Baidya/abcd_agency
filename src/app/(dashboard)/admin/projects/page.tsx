@@ -15,7 +15,7 @@ import { parseCurrencyToNumber } from "@/lib/sync-financials";
 import { AdminProjectViewSwitcher } from "@/components/dashboard/AdminProjectViewSwitcher";
 
 export const metadata = {
-  title: "Project Deliverables — ABCD Agency",
+  title: "Project Deliverables — ABCD Digital Hub",
 };
 
 export default async function ProjectsPage({

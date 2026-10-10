@@ -3,7 +3,7 @@ import { FinanceManager } from "@/components/dashboard/FinanceManager";
 import { getFinanceTransactions, getFinanceClientsAndProjects } from "./actions";
 
 export const metadata = {
-  title: "Finance & Accounting — ABCD Agency",
+  title: "Finance & Accounting — ABCD Digital Hub",
   description: "Track revenues, client invoices, contractor expenses, and agency cash flows.",
 };
 

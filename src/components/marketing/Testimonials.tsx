@@ -13,7 +13,7 @@ interface TestimonialItem {
 const testimonials: TestimonialItem[] = [
   {
     quote:
-      "ABCD Agency transformed our entire student verification workflow. What used to take days of manual spreadsheet verification across 50 branches now happens instantaneously.",
+      "ABCD Digital Hub transformed our entire student verification workflow. What used to take days of manual spreadsheet verification across 50 branches now happens instantaneously.",
     author: "Rajesh Sharma",
     role: "Director of Operations",
     company: "RGYCSP National Network",
@@ -46,7 +46,7 @@ export function Testimonials() {
           <SectionHeader
             subtitle="Client Feedback"
             title="Trusted by founders and operators."
-            description="Here is what leaders say about partnering with ABCD Agency for critical engineering sprints."
+            description="Here is what leaders say about partnering with ABCD Digital Hub for critical engineering sprints."
             align="center"
           />
         </div>
