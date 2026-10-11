@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/auth-session";
@@ -10,6 +11,14 @@ import { ScrollProgressBar } from "@/components/ui/ScrollProgressBar";
 import { getAgreementAmendmentStatus } from "@/lib/agreement-defaults";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s",
+    default: "Client Portal — ABCD Digital Hub | Project & Sprint Dashboard",
+  },
+  description: "Secure client management portal for ABCD Digital Hub. Monitor development progress, milestone deliverables, test environments, and executed service agreements in real time.",
+};
 
 export default async function PortalLayout({
   children,

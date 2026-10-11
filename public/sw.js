@@ -1,4 +1,4 @@
-// Service Worker for ABCD Agency PWA (v1.5 - Push Notifications Enabled)
+// Service Worker for ABCD Digital Hub PWA (v1.5 - Push Notifications Enabled)
 const CACHE_NAME = "abcd-agency-cache-v1.5";
 const STATIC_ASSETS = [
   "/",
@@ -97,11 +97,11 @@ self.addEventListener("push", (event) => {
     try {
       data = event.data.json();
     } catch (e) {
-      data = { title: "ABCD Agency", body: event.data.text() };
+      data = { title: "ABCD Digital Hub", body: event.data.text() };
     }
   }
 
-  const title = data.title || "ABCD Agency Alert";
+  const title = data.title || "ABCD Digital Hub Alert";
   const options = {
     body: data.body || "New update in your project dashboard.",
     icon: data.icon || "/images/abcd_square_logo.png",

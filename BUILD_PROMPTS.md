@@ -1,4 +1,4 @@
-# BUILD_PROMPTS.md — ABCD Agency Landing Page & Core Pages
+# BUILD_PROMPTS.md — ABCD Digital Hub Landing Page & Core Pages
 
 Copy-paste these prompts one at a time into Claude Code / Cursor. They assume `AGENTS.md` already exists in the repo root — reference it explicitly so the agent inherits the design system and rules instead of guessing.
 
@@ -13,7 +13,7 @@ Read AGENTS.md in the repo root and follow it strictly for every task in this
 project — design system, folder structure, performance rules, and mobile
 rules are non-negotiable.
 
-We are now building the homepage of abcdagency.com component by component.
+We are now building the homepage of abcddigitalhub.com component by component.
 Each section will be its own React Server Component in
 components/marketing/, composed together in app/(marketing)/page.tsx.
 
@@ -33,7 +33,7 @@ Requirements:
   1px gray-200 bottom border on scroll (use a small client-side scroll
   listener, keep the rest of the navbar a Server Component by isolating
   the scroll logic in a tiny "use client" wrapper).
-- Left: ABCD Agency wordmark/logo (black, bold, tracking-tight).
+- Left: ABCD Digital Hub wordmark/logo (black, bold, tracking-tight).
 - Center or right: nav links — Services, Work, Pricing, About, Blog, Contact.
 - Far right: a solid black "Book a Call" or "Get Started" button (primary
   CTA per design system).
@@ -54,7 +54,7 @@ Build components/marketing/Hero.tsx per AGENTS.md's design system.
 Requirements:
 - Full-width, generous vertical padding (py-24 md:py-32), white background.
 - Large headline (text-4xl md:text-6xl, font-bold, tracking-tight, black)
-  positioning ABCD Agency as a software development & digital consulting
+  positioning ABCD Digital Hub as a software development & digital consulting
   partner. Subheadline in gray-500, max-w-2xl, explaining what we build
   (web apps, SaaS products, business digitalization) for Indian
   businesses/startups.

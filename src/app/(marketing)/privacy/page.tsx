@@ -4,7 +4,7 @@ import { Shield, Calendar, Lock } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export const metadata = {
-  title: "Privacy Policy — ABCD Digital Hub",
+  title: "Privacy Policy",
   description: "Our data governance, client codebase confidentiality, and privacy compliance standards for all software engineering and consulting engagements.",
 };
 

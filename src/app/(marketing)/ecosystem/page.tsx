@@ -6,7 +6,7 @@ import { EcoSystemGallery } from "@/components/marketing/EcoSystemGallery";
 import { db } from "@/lib/prisma";
 
 export const metadata = {
-  title: "EcoSystem & Proprietary Platforms — ABCD Digital Hub",
+  title: "EcoSystem & Proprietary Platforms",
   description:
     "Explore our ecosystem of proprietary multi-tenant web applications, AI-powered automation workflows, and specialized business platforms.",
 };

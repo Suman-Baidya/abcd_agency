@@ -1,7 +1,16 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s",
+    default: "Client Access — ABCD Digital Hub",
+  },
+  description: "Secure authentication portal for ABCD Digital Hub clients, partners, and administrators.",
+};
 
 export default function AuthLayout({
   children,

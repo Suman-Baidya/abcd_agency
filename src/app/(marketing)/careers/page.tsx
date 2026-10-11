@@ -8,7 +8,7 @@ import { Rocket, Mail, Briefcase, Sparkles, Send } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export const metadata = {
-  title: "Careers & Engineering Network — ABCD Digital Hub",
+  title: "Careers & Engineering Network",
   description:
     "Join the ABCD Digital Hub engineering network. We partner with senior full-stack developers, UI/UX designers, and AI specialists.",
 };

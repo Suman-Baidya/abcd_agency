@@ -5,7 +5,7 @@ import { getSiteConfig } from "@/lib/dbConfig";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Cookie Policy — ABCD Digital Hub",
+  title: "Cookie Policy",
   description: "Essential telemetry, zero third-party data tracking, and browser session persistence policies.",
 };
 

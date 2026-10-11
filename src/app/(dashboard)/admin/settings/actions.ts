@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 const defaultSiteConfig = {
   id: "1",
@@ -27,6 +27,7 @@ export async function updateBrandingSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData }
     });
     
+    updateTag("site-config");
     revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
   } catch (e: any) {
@@ -67,6 +68,7 @@ export async function updateContactAndSocialSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData }
     });
     
+    updateTag("site-config");
     revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
   } catch (e: any) {
@@ -85,6 +87,7 @@ export async function updateWidgetSettings(formData: FormData) {
       create: { ...defaultSiteConfig, enableWhatsappWidget }
     });
     
+    updateTag("site-config");
     revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
   } catch (e: any) {
@@ -103,6 +106,7 @@ export async function updateAuthSettings(formData: FormData) {
       create: { ...defaultSiteConfig, requireEmailVerification }
     });
     
+    updateTag("site-config");
     revalidatePath("/admin/settings");
     revalidatePath("/", "layout");
   } catch (e: any) {
@@ -234,6 +238,7 @@ export async function updateCareersSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
+    updateTag("site-config");
     revalidatePath("/admin/settings");
     revalidatePath("/careers");
     revalidatePath("/", "layout");
@@ -294,6 +299,7 @@ export async function updateLegalSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
+    updateTag("site-config");
     revalidatePath("/admin/settings");
     revalidatePath("/privacy");
     revalidatePath("/terms");

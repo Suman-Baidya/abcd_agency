@@ -4,7 +4,7 @@ import { FileCheck, Calendar, ShieldCheck } from "lucide-react";
 import { getSiteConfig } from "@/lib/dbConfig";
 
 export const metadata = {
-  title: "Terms of Service — ABCD Digital Hub",
+  title: "Terms of Service",
   description: "Our mutual terms of service, intellectual property ownership guarantees, and professional engineering engagement standards.",
 };
 

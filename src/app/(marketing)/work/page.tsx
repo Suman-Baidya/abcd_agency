@@ -6,7 +6,7 @@ import { WorkGallery, WorkGallerySkeleton, SerializedProject } from "@/component
 import { db } from "@/lib/prisma";
 
 export const metadata = {
-  title: "Case Studies & Work — ABCD Digital Hub",
+  title: "Case Studies & Work",
   description:
     "Explore our portfolio of web applications, SaaS dashboards, and automated business systems engineered for measurable growth.",
 };

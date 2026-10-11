@@ -10,7 +10,7 @@ export function JsonLd() {
     "@type": "ProfessionalService",
     "@id": `${baseUrl}/#organization`,
     name: siteConfig.name,
-    alternateName: ["ABCD Digital Hub", "ABCD Digital", "ABCD Hub", "ABCD Agency", "ABCD"],
+    alternateName: ["ABCD Digital Hub", "ABCD Digital", "ABCD Hub", "ABCD"],
     url: baseUrl,
     logo: {
       "@type": "ImageObject",

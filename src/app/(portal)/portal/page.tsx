@@ -30,6 +30,11 @@ import { getAgreementAmendmentStatus } from "@/lib/agreement-defaults";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Client Portal — ABCD Digital Hub | Project & Sprint Dashboard",
+  description: "Real-time client management portal for ABCD Digital Hub. Monitor active development progress, milestone deliverables, test environments, and executed service agreements.",
+};
+
 export default async function PortalDashboardPage() {
   const data = await getPortalData();
   if (!data || !data.user) return null;

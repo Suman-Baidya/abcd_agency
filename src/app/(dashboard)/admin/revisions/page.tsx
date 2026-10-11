@@ -3,7 +3,7 @@ import { RevisionManager } from "@/components/dashboard/RevisionManager";
 import { getAdminRevisionsData } from "./actions";
 
 export const metadata = {
-  title: "Revision Requests & Feedback — Super Admin",
+  title: "Revision Requests & Feedback — ABCD Digital Hub",
 };
 
 export const dynamic = "force-dynamic";

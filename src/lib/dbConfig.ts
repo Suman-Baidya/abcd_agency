@@ -87,6 +87,6 @@ export const getSiteConfig = unstable_cache(
       };
     }
   },
-  ["site-config"],
+  ["site-config-v2"],
   { tags: ["site-config"], revalidate: 3600 }
 );

@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-session";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -8,6 +9,14 @@ import { getSiteConfig } from "@/lib/dbConfig";
 import { db } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s",
+    default: "Admin Dashboard — ABCD Digital Hub | Operations & Management Console",
+  },
+  description: "Administrative console and operations hub for ABCD Digital Hub.",
+};
 
 export default async function DashboardLayout({
   children,

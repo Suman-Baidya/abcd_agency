@@ -5,7 +5,7 @@ import { getSiteConfig } from "@/lib/dbConfig";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Refund & Cancellation Policy — ABCD Digital Hub",
+  title: "Refund & Cancellation Policy",
   description: "Our milestone settlement framework, deposit guidelines, and sprint cancellation remediation terms.",
 };
 

@@ -8,7 +8,7 @@ import { blogPosts as fallbackPosts } from "@/data/blog";
 import { format } from "date-fns";
 
 export const metadata = {
-  title: "Engineering Blog & Architecture Insights — ABCD Digital Hub",
+  title: "Engineering Blog & Architecture Insights",
   description:
     "Technical articles, architecture deep dives, and lessons learned building scalable web systems and AI automations.",
 };
