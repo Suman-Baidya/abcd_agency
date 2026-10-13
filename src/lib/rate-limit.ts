@@ -139,8 +139,8 @@ export const inquiryLimiter = new SlidingWindowRateLimiter({
   maxRequests: 4,
 });
 
-// 6. Media / Cloudinary upload limiter: Max 10 uploads per 10 minutes per user/IP
+// 6. Media / Cloudinary upload limiter: Max 50 uploads per 10 minutes per user/IP (allows batch image uploads)
 export const uploadLimiter = new SlidingWindowRateLimiter({
   windowMs: 10 * 60 * 1000,
-  maxRequests: 10,
+  maxRequests: 50,
 });

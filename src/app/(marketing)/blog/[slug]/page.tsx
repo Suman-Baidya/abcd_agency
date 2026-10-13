@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { CTASection } from "@/components/marketing/CTASection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { BlogShareBar } from "@/components/marketing/BlogShareBar";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { db } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-session";
 import { format } from "date-fns";
@@ -199,9 +200,9 @@ export default async function BlogPostPage({
             {post.summary}
           </p>
 
-          {/* Formatted Content */}
-          <div className="whitespace-pre-line text-sm sm:text-base leading-relaxed text-[#262626] dark:text-neutral-200">
-            {post.content.trim()}
+          {/* Formatted Markdown Content */}
+          <div className="pt-2">
+            <MarkdownRenderer content={post.content.trim()} />
           </div>
         </div>
 

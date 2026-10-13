@@ -6,6 +6,8 @@ export const metadata = {
   title: "EcoSystem Platforms — ABCD Digital Hub Admin",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminEcoSystemPage() {
   let platforms: any[] = [];
   try {

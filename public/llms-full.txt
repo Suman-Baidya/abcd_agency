@@ -1,0 +1,60 @@
+# ABCD Digital Hub — Technical Knowledge Base & AI Overview
+
+## Entity Identity
+- **Legal / Brand Name**: ABCD Digital Hub
+- **Canonical URL**: https://abcddigitalhub.com
+- **Founder & Lead Architect**: Suman Baidya
+- **Entity Type**: Full-Stack Software Engineering Studio & Digital Consulting Agency
+- **Primary Domain Authority**: Custom Full-Stack Web Application Development, Multi-Tenant SaaS Systems, Cloud Architecture, Artificial Intelligence Integrations
+
+## Technical Specifications & Engineering Standards
+
+### 1. Architectural Philosophy
+- **Server Components by Default**: Zero unnecessary JavaScript sent to the client, maximizing Core Web Vitals and initial render speeds.
+- **Strict TypeScript & Schema Validation**: Strict mode enabled across all layers with runtime Zod validation for client inputs and server actions.
+- **Serverless PostgreSQL Database**: High-concurrency relational data models managed via Prisma ORM on Neon Serverless with connection pooling and query optimization.
+- **Edge Deployment**: Static content globally cached across edge nodes with dynamic routes executing near the user on Vercel.
+
+### 2. Service Matrix
+
+#### Full-Stack Web Application Development
+- Architecture planning, data modeling, wireframing, and interactive prototyping.
+- Production development utilizing Next.js 15, React 19, TypeScript, and modern CSS primitives.
+- Integrations with Stripe/PayPal payments, Resend transactional emails, Cloudinary media CDN, and OAuth 2.0 authentication.
+- Enterprise-grade administrative control panels, client portals, real-time analytics, and role-based permissions.
+
+#### SaaS Product Engineering & White-Label Licensing
+- Multi-tenant tenant schema isolation with tenant-isolated database records.
+- Role-based access control (RBAC), encrypted user sessions, and signed API requests.
+- Integrated digital contractor agreements, milestone review windows, and formal audit ledgers.
+- Turnkey deployment models allowing enterprise clients to license and customize proprietary software.
+
+#### Generative AI & Automation Engineering
+- Integration of state-of-the-art models including Google Gemini (gemini-2.5-flash) and Groq ultra-fast inference.
+- Structured JSON extraction from unstructured documents (PDFs, receipts, educational test papers).
+- Real-time AI chat streams, anti-cheat video/audio proctoring, and automated evaluation engines.
+
+### 3. Proprietary Ecosystem Platforms
+
+#### ABCD Exam Hub
+- Multi-tenant educational examination platform.
+- Capabilities:
+  1. AI-powered question generator from curriculum text.
+  2. Automatic grading of multiple-choice and descriptive submissions.
+  3. Real-time anti-cheat browser monitoring, focus-loss tracking, and WebRTC proctoring.
+  4. Separate authenticated portals for school admins, teachers, and examinees.
+  5. Bulk Excel roster onboarding and instant result card publishing.
+
+#### AutomateGrowth AI
+- Autonomous multi-channel marketing and conversion telemetry engine.
+- Capabilities:
+  1. Inbound lead capture and algorithmic scoring based on intent telemetry.
+  2. Automated multi-step email drip sequences and WhatsApp Cloud API automations.
+  3. Dynamic personalization with AI copy optimization.
+  4. Visual funnel analytics and conversion pipeline tracking.
+
+## Commercial Engagements & Client Onboarding
+- **Turnaround Time**: Standard MVP delivery within 2–4 weeks; enterprise custom platforms within 4–8 weeks.
+- **Pricing Framework**: Transparent fixed-scope milestone billing with 50/50 or milestone phased payments; dedicated monthly full-stack retainers available.
+- **Client Portal**: Dedicated authenticated workspace (/portal) for clients to track active milestones, review deliverables, download invoices, and test sandbox staging environments.
+- **Inquiry Channel**: https://abcddigitalhub.com/contact (Direct response within 24 business hours).

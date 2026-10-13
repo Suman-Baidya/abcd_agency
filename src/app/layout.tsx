@@ -38,10 +38,20 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(appUrl),
     title: {
-      default: `${config.agencyName} — Software Development & Digital Consulting`,
+      default: `${config.agencyName} — Full-Stack Web Application Development & SaaS Studio`,
       template: `%s | ${config.agencyName}`,
     },
-    description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
+    description: "High-performance software engineering studio specializing in custom full-stack web application development, scalable multi-tenant SaaS architectures, and autonomous AI automation systems.",
+    keywords: [
+      "Full-Stack Web Application Development",
+      "Custom Web Application Development",
+      "Next.js SaaS Development Studio",
+      "Full-Stack Software Engineering Company",
+      "AI Workflow Automation Agency",
+      "TypeScript Web Application Architecture",
+      "Multi-Tenant SaaS Development",
+      "ABCD Digital Hub",
+    ],
     manifest: "/manifest.webmanifest",
     appleWebApp: {
       capable: true,
@@ -62,8 +72,8 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: "en_US",
       url: appUrl,
       siteName: config.agencyName || "ABCD Digital Hub",
-      title: `${config.agencyName} — Software Development & Digital Consulting`,
-      description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
+      title: `${config.agencyName} — Full-Stack Web Application Development & SaaS Studio`,
+      description: "High-performance software engineering studio specializing in custom full-stack web application development, scalable multi-tenant SaaS architectures, and autonomous AI automation systems.",
       images: [
         {
           url: "/images/abcd_square_logo.png",
@@ -75,8 +85,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: `${config.agencyName} — Software Development & Digital Consulting`,
-      description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
+      title: `${config.agencyName} — Full-Stack Web Application Development & SaaS Studio`,
+      description: "High-performance software engineering studio specializing in custom full-stack web application development, scalable multi-tenant SaaS architectures, and autonomous AI automation systems.",
       images: ["/images/abcd_square_logo.png"],
     },
     robots: {
@@ -89,6 +99,10 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-image-preview": "large",
         "max-snippet": -1,
       },
+    },
+    verification: {
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+      yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || undefined,
     },
   };
 }

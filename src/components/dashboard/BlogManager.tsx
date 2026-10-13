@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useTransition } from "react";
+import React, { useState, useMemo, useTransition, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
@@ -8,6 +8,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { slugify } from "@/lib/slugify";
 import {
   createBlogPost,
@@ -33,6 +34,7 @@ import {
   Sparkles,
   Eye,
   FileText,
+  Upload,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { BlogCategoryManager, BlogCategoryItem } from "@/components/dashboard/BlogCategoryManager";
@@ -162,6 +164,36 @@ export function BlogManager({
       const mins = Math.max(1, Math.ceil(words / 200));
       setReadTime(`${mins} min read`);
     }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        handleContentChange(text);
+
+        // Auto-extract first # heading as title if title is empty
+        if (!title.trim()) {
+          const match = text.match(/^#\s+(.+)$/m);
+          if (match && match[1]) {
+            handleTitleChange(match[1].trim());
+          }
+        }
+
+        toast.success(`Imported "${file.name}" successfully!`, { duration: 3500 });
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Failed to read markdown file.");
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   // Submit Handler
@@ -887,33 +919,59 @@ export function BlogManager({
 
               {/* Content with Markdown Preview */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#0A0A0A] dark:text-white">
-                    Article Body (Markdown Supported) *
-                  </label>
-                  <div className="flex items-center rounded-md border border-[#E5E5E5] dark:border-[#262626] p-0.5 bg-[#F5F5F5] dark:bg-[#1A1A1A]">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".md,.markdown,text/markdown,text/plain"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#0A0A0A] dark:text-white">
+                      Article Body (Markdown Supported) *
+                    </label>
+                    <span className="text-[11px] text-[#737373] hidden sm:inline">
+                      Supports headings (###), images (![alt](url)), lists & tables
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setIsPreviewMode(false)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                        !isPreviewMode
-                          ? "bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white shadow-xs"
-                          : "text-[#737373]"
-                      }`}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer"
+                      title="Upload a .md or text file"
                     >
-                      Write
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Import .md</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsPreviewMode(true)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                        isPreviewMode
-                          ? "bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white shadow-xs"
-                          : "text-[#737373]"
-                      }`}
-                    >
-                      Preview
-                    </button>
+
+                    <div className="flex items-center rounded-md border border-[#E5E5E5] dark:border-[#262626] p-0.5 bg-[#F5F5F5] dark:bg-[#1A1A1A]">
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewMode(false)}
+                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                          !isPreviewMode
+                            ? "bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white shadow-xs"
+                            : "text-[#737373]"
+                        }`}
+                      >
+                        Write
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewMode(true)}
+                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                          isPreviewMode
+                            ? "bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-white shadow-xs"
+                            : "text-[#737373]"
+                        }`}
+                      >
+                        Preview
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -923,12 +981,20 @@ export function BlogManager({
                     rows={12}
                     value={content}
                     onChange={(e) => handleContentChange(e.target.value)}
-                    placeholder="Write article in markdown format using headings (###), bullet lists, and code blocks..."
+                    placeholder="Write or paste markdown content here:
+# Heading 1
+### Key Takeaways
+- Bullet points
+![Image Caption](https://example.com/image.jpg)"
                     className="w-full px-3.5 py-2.5 text-sm font-mono leading-relaxed rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] text-[#0A0A0A] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] dark:focus:ring-white"
                   />
                 ) : (
-                  <div className="w-full min-h-[250px] p-5 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] text-sm text-[#0A0A0A] dark:text-neutral-200 whitespace-pre-line leading-relaxed overflow-y-auto max-h-[350px]">
-                    {content ? content : <span className="text-[#737373] italic">No content written yet.</span>}
+                  <div className="w-full min-h-[250px] p-6 rounded-lg border border-[#E5E5E5] dark:border-[#262626] bg-[#FBFBFB] dark:bg-[#111111] overflow-y-auto max-h-[420px]">
+                    {content.trim() ? (
+                      <MarkdownRenderer content={content.trim()} />
+                    ) : (
+                      <span className="text-[#737373] italic text-sm">No content written yet. Switch to Write tab or import a .md file.</span>
+                    )}
                   </div>
                 )}
               </div>

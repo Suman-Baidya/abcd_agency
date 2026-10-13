@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -8,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { toast } from "react-hot-toast";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
+import { MultiImageUploadInput } from "@/components/ui/MultiImageUploadInput";
 import {
   createEcoSystemPlatform,
   updateEcoSystemPlatform,
@@ -27,6 +29,7 @@ import {
   CheckCircle2,
   Users,
   Cpu,
+  KeyRound,
 } from "lucide-react";
 
 interface PlatformItem {
@@ -58,6 +61,13 @@ interface EcoSystemManagerProps {
 }
 
 export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
+  const router = useRouter();
+  const [platforms, setPlatforms] = useState<PlatformItem[]>(initialPlatforms);
+
+  useEffect(() => {
+    setPlatforms(initialPlatforms);
+  }, [initialPlatforms]);
+
   const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -78,7 +88,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
   const [demoEmail, setDemoEmail] = useState("");
   const [demoPassword, setDemoPassword] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [screenshotsText, setScreenshotsText] = useState("");
+  const [screenshots, setScreenshots] = useState<string[]>([]);
   const [targetAudience, setTargetAudience] = useState("");
   const [pricingModel, setPricingModel] = useState("SaaS & Custom White-Label Licensing");
   const [featuresText, setFeaturesText] = useState("");
@@ -91,17 +101,17 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
     setSlug("");
     setTagline("");
     setDescription("");
-    setCategory("AI Automation");
+    setCategory("EdTech SaaS");
     setStatus("Live Platform");
     setAppUrl("");
     setDemoEmail("");
     setDemoPassword("");
     setThumbnailUrl("");
-    setScreenshotsText("");
-    setTargetAudience("");
+    setScreenshots([]);
+    setTargetAudience("Schools, Universities, Coaching Centers, Online Academies");
     setPricingModel("SaaS & Custom White-Label Licensing");
     setFeaturesText("");
-    setTechStackText("Next.js, PostgreSQL, Tailwind CSS");
+    setTechStackText("Next.js 15, PostgreSQL, Google Gemini AI, Tailwind CSS");
     setIsPublished(true);
     setIsModalOpen(true);
   };
@@ -118,7 +128,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
     setDemoEmail(p.demoEmail || "");
     setDemoPassword(p.demoPassword || "");
     setThumbnailUrl(p.thumbnailUrl || "");
-    setScreenshotsText((p.screenshots || []).join("\n"));
+    setScreenshots(Array.isArray(p.screenshots) ? p.screenshots : []);
     setTargetAudience(p.targetAudience || "");
     setPricingModel(p.pricingModel || "SaaS & Custom White-Label Licensing");
     setFeaturesText((p.features || []).join("\n"));
@@ -131,6 +141,13 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     formData.set("isPublished", isPublished ? "true" : "false");
+    formData.set("screenshots", screenshots.join("\n"));
+
+    // If thumbnail is empty but we have screenshots, use the first screenshot
+    const formThumbnail = (formData.get("thumbnailUrl") as string)?.trim();
+    if (!formThumbnail && screenshots.length > 0) {
+      formData.set("thumbnailUrl", screenshots[0]);
+    }
 
     startTransition(async () => {
       try {
@@ -142,6 +159,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
           toast.success("Platform created successfully", { duration: 3500 });
         }
         setIsModalOpen(false);
+        router.refresh();
       } catch (err: any) {
         toast.error(err?.message || "Failed to save platform", { duration: 4000 });
       }
@@ -149,30 +167,48 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
   };
 
   const handleDelete = (id: string) => {
+    // Optimistic removal
+    setPlatforms((prev) => prev.filter((p) => p.id !== id));
     startTransition(async () => {
       try {
         await deleteEcoSystemPlatform(id);
         setDeleteConfirmId(null);
         toast.success("Platform deleted successfully", { duration: 3500 });
+        router.refresh();
       } catch (err: any) {
+        setPlatforms(initialPlatforms);
         toast.error(err?.message || "Failed to delete platform", { duration: 4000 });
       }
     });
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
+    const nextPublished = !current;
+    // Immediate optimistic update so button toggle reflects right away
+    setPlatforms((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isPublished: nextPublished } : p))
+    );
+
     startTransition(async () => {
       try {
-        await toggleEcoSystemPublish(id, !current);
-        toast.success(current ? "Platform hidden from showcase" : "Platform published to showcase", { duration: 3000 });
+        await toggleEcoSystemPublish(id, nextPublished);
+        router.refresh();
+        toast.success(
+          nextPublished ? "Platform published to public showcase" : "Platform set to Draft (hidden from showcase)",
+          { duration: 3000 }
+        );
       } catch (err: any) {
+        // Rollback state if server action fails
+        setPlatforms((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, isPublished: current } : p))
+        );
         toast.error(err?.message || "Failed to update platform visibility", { duration: 4000 });
       }
     });
   };
 
-  // Filtered platforms
-  const filtered = initialPlatforms.filter((p) => {
+  // Filtered platforms from reactive state
+  const filtered = platforms.filter((p) => {
     const matchesCategory =
       selectedCategory === "All" || p.category === selectedCategory;
     const q = searchQuery.toLowerCase().trim();
@@ -219,7 +255,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
             Total Platforms
           </p>
           <p className="text-2xl font-bold text-[#0A0A0A] dark:text-white mt-1">
-            {initialPlatforms.length}
+            {platforms.length}
           </p>
         </div>
         <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111]">
@@ -227,7 +263,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
             Live Public Apps
           </p>
           <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-            {initialPlatforms.filter((p) => p.isPublished).length}
+            {platforms.filter((p) => p.isPublished).length}
           </p>
         </div>
         <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111]">
@@ -235,7 +271,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
             AI Automations
           </p>
           <p className="text-2xl font-bold text-[#0A0A0A] dark:text-white mt-1">
-            {initialPlatforms.filter((p) => p.category.includes("AI")).length}
+            {platforms.filter((p) => p.category.includes("AI")).length}
           </p>
         </div>
         <div className="p-4 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-white dark:bg-[#111111]">
@@ -243,7 +279,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
             Draft / Staging
           </p>
           <p className="text-2xl font-bold text-[#737373] dark:text-neutral-400 mt-1">
-            {initialPlatforms.filter((p) => !p.isPublished).length}
+            {platforms.filter((p) => !p.isPublished).length}
           </p>
         </div>
       </div>
@@ -317,6 +353,11 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
                           <p className="text-[11px] text-[#737373] dark:text-neutral-400 truncate">
                             {item.tagline}
                           </p>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono text-[#737373]">
+                            <span>📷 {item.screenshots?.length || (item.thumbnailUrl ? 1 : 0)} slides</span>
+                            <span>·</span>
+                            <span>✓ {item.features?.length || 0} features</span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -436,7 +477,7 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
                         {item.name}
                       </p>
                       <p className="text-[10px] font-mono text-[#737373] dark:text-neutral-400 truncate">
-                        {item.category}
+                        {item.category} · 📷 {item.screenshots?.length || (item.thumbnailUrl ? 1 : 0)} slides · ✓ {item.features?.length || 0} feats
                       </p>
                     </div>
                   </div>
@@ -556,9 +597,10 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
                 className="w-full text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
               >
                 <option value="EdTech SaaS">EdTech SaaS</option>
+                <option value="Marketing Automation">Marketing Automation</option>
                 <option value="AI Automation">AI Automation</option>
-                <option value="Marketing Engine">Marketing Engine</option>
                 <option value="Enterprise Software">Enterprise Software</option>
+                <option value="FinTech Engine">FinTech Engine</option>
               </select>
             </div>
 
@@ -579,18 +621,43 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
               </select>
             </div>
 
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
-                Target Audience (e.g. Schools, E-commerce, Real Estate)
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white flex items-center justify-between">
+                <span>Target Audience & Category List (Comma-separated)</span>
+                <span className="text-[10px] font-mono text-[#737373]">Shown as tags on card</span>
               </label>
               <input
                 type="text"
                 name="targetAudience"
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
-                placeholder="e.g. Schools, Colleges & Coaching Centers"
+                placeholder="Schools, Universities, Coaching Centers, Online Academies"
                 className="w-full text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
               />
+              <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                <span className="text-[#737373]">Presets:</span>
+                <button
+                  type="button"
+                  onClick={() => setTargetAudience("Schools, Universities, Coaching Centers, Online Academies")}
+                  className="px-2 py-0.5 rounded border border-[#E5E5E5] dark:border-[#262626] hover:bg-[#F5F5F5] dark:hover:bg-[#262626] cursor-pointer"
+                >
+                  EdTech
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTargetAudience("Digital Agencies, E-Commerce Brands, B2B Sales Teams")}
+                  className="px-2 py-0.5 rounded border border-[#E5E5E5] dark:border-[#262626] hover:bg-[#F5F5F5] dark:hover:bg-[#262626] cursor-pointer"
+                >
+                  Marketing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTargetAudience("Manufacturers, Wholesale Distributors, Logistics Chains")}
+                  className="px-2 py-0.5 rounded border border-[#E5E5E5] dark:border-[#262626] hover:bg-[#F5F5F5] dark:hover:bg-[#262626] cursor-pointer"
+                >
+                  Enterprise ERP
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1 sm:col-span-2">
@@ -607,44 +674,91 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
               />
             </div>
 
+            {/* Sandbox Credentials Control Section */}
+            <div className="sm:col-span-2 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                  <span className="text-xs font-bold font-mono uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
+                    Live Interactive Sandbox Credentials
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-200/60 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200">
+                  Controls Blueprint Modal & Cards
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 leading-relaxed">
+                Provide test/demo login credentials so visitors can test drive this platform. These credentials appear in the Interactive Blueprint modal with 1-click copy buttons.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#0A0A0A] dark:text-white">
+                    Test Login / Email
+                  </label>
+                  <input
+                    type="text"
+                    name="demoEmail"
+                    value={demoEmail}
+                    onChange={(e) => setDemoEmail(e.target.value)}
+                    placeholder="e.g. demo@abcd-exam-hub.com"
+                    className="w-full text-xs font-mono border border-emerald-300 dark:border-emerald-800 rounded-md bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-600"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#0A0A0A] dark:text-white">
+                    Test Password
+                  </label>
+                  <input
+                    type="text"
+                    name="demoPassword"
+                    value={demoPassword}
+                    onChange={(e) => setDemoPassword(e.target.value)}
+                    placeholder="e.g. demo123"
+                    className="w-full text-xs font-mono border border-emerald-300 dark:border-emerald-800 rounded-md bg-white dark:bg-[#111111] text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-600"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Thumbnail Upload */}
             <div className="sm:col-span-2 p-3.5 border border-[#E5E5E5] dark:border-[#262626] rounded-xl bg-[#FAFAFA] dark:bg-[#141414]">
               <ImageUploadInput
                 name="thumbnailUrl"
-                label="Primary Platform Thumbnail / Banner"
+                label="Primary Platform Thumbnail / Banner (Slide #1 Cover)"
                 defaultValue={thumbnailUrl}
                 folder="abcd_agency/ecosystem"
               />
             </div>
 
             {/* Multiple Showcase Screenshots for Image Slider */}
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white flex items-center justify-between">
-                <span>Multi-Image Slider Screenshots (One URL per line)</span>
-                <span className="text-[10px] font-mono text-[#737373]">Optional carousel slides</span>
-              </label>
-              <textarea
+            <div className="sm:col-span-2 p-3.5 border border-[#E5E5E5] dark:border-[#262626] rounded-xl bg-[#FAFAFA] dark:bg-[#141414]">
+              <MultiImageUploadInput
                 name="screenshots"
-                rows={3}
-                value={screenshotsText}
-                onChange={(e) => setScreenshotsText(e.target.value)}
-                placeholder="/images/ecosystem/eduexam_1.jpg&#10;/images/ecosystem/eduexam_2.jpg"
-                className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+                label="Multi-Image Slider Carousel Screenshots"
+                initialImages={screenshots}
+                onChange={setScreenshots}
+                folder="abcd_agency/ecosystem"
               />
             </div>
 
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white">
-                Core Capabilities & Features (One per line)
+              <label className="text-xs font-semibold text-[#0A0A0A] dark:text-white flex items-center justify-between">
+                <span>Core Capabilities & Feature Checklist (One per line)</span>
+                <span className="text-[10px] font-mono text-[#737373]">
+                  {featuresText.split("\n").filter(Boolean).length} capabilities added
+                </span>
               </label>
               <textarea
                 name="features"
-                rows={3}
+                rows={4}
                 value={featuresText}
                 onChange={(e) => setFeaturesText(e.target.value)}
-                placeholder="Multi-tenant architecture&#10;Anti-cheat proctoring&#10;Automated grade distribution"
-                className="w-full text-xs border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+                placeholder="AI-Powered Question Generator & Automatic Grading&#10;Real-Time Anti-Cheat Camera & Screen Proctoring&#10;Multi-Tenant School, Teacher & Student Portals&#10;Instant Result Publishing & Granular Performance Analytics&#10;Secure Encrypted Question Banks & Bulk Excel Onboarding"
+                className="w-full text-xs font-mono border border-[#E5E5E5] dark:border-[#262626] rounded-md bg-transparent text-[#0A0A0A] dark:text-white px-3 py-2 outline-none focus:ring-1 focus:ring-black dark:focus:ring-white leading-relaxed"
               />
+              <p className="text-[10px] text-[#737373] dark:text-neutral-400">
+                Tip: Each line appears with a checkmark in the public Ecosys card capabilities list.
+              </p>
             </div>
 
             <div className="space-y-1 sm:col-span-2">

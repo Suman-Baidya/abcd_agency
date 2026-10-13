@@ -158,13 +158,13 @@ export async function deleteEcoSystemPlatform(id: string) {
   revalidatePath("/portal/ecosystem");
 }
 
-export async function toggleEcoSystemPublish(id: string, currentState: boolean) {
+export async function toggleEcoSystemPublish(id: string, publishState: boolean) {
   const user = await getCurrentUser();
   ensureAdmin(user);
 
   await db.ecoSystemPlatform.update({
     where: { id },
-    data: { isPublished: !currentState },
+    data: { isPublished: publishState },
   });
 
   revalidatePath("/ecosystem");

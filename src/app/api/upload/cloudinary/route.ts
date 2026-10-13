@@ -19,6 +19,7 @@ const ALLOWED_FOLDERS = new Set([
   "abcd_agency/projects",
   "abcd_agency/documents",
   "abcd_agency/clients",
+  "abcd_agency/ecosystem",
 ]);
 
 export async function POST(req: NextRequest) {

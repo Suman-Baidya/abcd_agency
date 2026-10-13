@@ -108,17 +108,22 @@ export function BlogGallery({
             >
               {/* Cover Image or Editorial Banner (Reduced height for sleek proportion) */}
               {post.coverImage ? (
-                <div className="relative w-full aspect-[2/1] overflow-hidden bg-neutral-100 dark:bg-neutral-900 border-b border-[#E5E5E5] dark:border-[#262626]">
+                <div className="relative w-full aspect-[2/1] overflow-hidden bg-[#0A0A0A] border-b border-[#E5E5E5] dark:border-[#262626]">
                   <Image
                     src={post.coverImage}
                     alt={post.title}
                     fill
-                    className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                    className="object-cover object-center transition-all duration-500 ease-out grayscale contrast-[1.1] brightness-75 group-hover:grayscale-0 group-hover:brightness-100 group-hover:contrast-100 group-hover:scale-105"
                     sizes="(max-width: 768px) 100vw, 50vw"
                   />
+                  {/* Black type layer that dissolves on hover */}
+                  <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] group-hover:opacity-0 transition-opacity duration-500 pointer-events-none" />
+                  {/* Top gradient scrim for badge legibility */}
+                  <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+
                   {post.featured && (
-                    <div className="absolute top-3 left-3">
-                      <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[#0A0A0A]/90 dark:bg-white/90 text-white dark:text-[#0A0A0A] backdrop-blur-xs">
+                    <div className="absolute top-3 left-3 z-10">
+                      <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[#0A0A0A]/90 dark:bg-white/90 text-white dark:text-[#0A0A0A] backdrop-blur-xs shadow-xs">
                         Featured
                       </span>
                     </div>
