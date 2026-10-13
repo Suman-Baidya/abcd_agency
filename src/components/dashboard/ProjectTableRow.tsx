@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Edit, Trash2, Eye, RotateCcw, FileText, Globe, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { toast } from "react-hot-toast";
 import { ProjectEditForm } from "./ProjectEditForm";
 import { ProjectViewDetails } from "./ProjectViewDetails";
 import { ProjectAgreementModal } from "./ProjectAgreementModal";
@@ -50,34 +52,52 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    startTransition(() => {
-      quickUpdateStatus(project.id, e.target.value);
+    const newStatus = e.target.value;
+    startTransition(async () => {
+      try {
+        await quickUpdateStatus(project.id, newStatus);
+        toast.success(`Status updated to ${newStatus}`, { duration: 3000 });
+      } catch (err: any) {
+        toast.error("Failed to update status", { duration: 3500 });
+      }
     });
   };
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
     if (!isNaN(val)) {
-      startTransition(() => {
-        quickUpdateProgress(project.id, val);
+      startTransition(async () => {
+        try {
+          await quickUpdateProgress(project.id, val);
+        } catch (err: any) {
+          toast.error("Failed to update progress", { duration: 3500 });
+        }
       });
     }
   };
 
   const handleTogglePublish = () => {
-    startTransition(() => {
-      quickTogglePublish(project.id, !(project.isPublished !== false));
+    const nextState = !(project.isPublished !== false);
+    startTransition(async () => {
+      try {
+        await quickTogglePublish(project.id, nextState);
+        toast.success(nextState ? "Project published to portfolio" : "Project hidden from portfolio", { duration: 3000 });
+      } catch (err) {
+        toast.error("Failed to update publish state", { duration: 3500 });
+      }
     });
   };
 
   const handleDeleteConfirm = () => {
-    startTransition(() => {
+    setIsDeleteOpen(false);
+    const toastId = toast.loading(`Deleting "${project.title}"...`);
+    startTransition(async () => {
       try {
-        deleteProject(project.id);
-      } catch (err) {
-        console.error("Failed to delete project", err);
+        await deleteProject(project.id);
+        toast.success(`Project "${project.title}" deleted`, { id: toastId, duration: 3500 });
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete project", { id: toastId, duration: 4000 });
       }
-      setIsDeleteOpen(false);
     });
   };
 
@@ -424,28 +444,26 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
       />
     </Modal>
 
-    {/* Delete Confirmation Modal */}
-    <Modal
+    {/* Delete Confirmation Alert Modal */}
+    <ConfirmModal
       isOpen={isDeleteOpen}
-      onClose={() => setIsDeleteOpen(false)}
+      onClose={() => !isPending && setIsDeleteOpen(false)}
+      onConfirm={handleDeleteConfirm}
       title="Delete Project"
-      variant="centered"
-    >
-      <div className="space-y-6">
-        <p className="text-[#737373] dark:text-neutral-300">
-          Are you sure you want to completely delete <strong>{project.title}</strong>? 
-          This action is permanent and cannot be undone.
-        </p>
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#E5E5E5] dark:border-[#262626]">
-          <Button variant="secondary" onClick={() => setIsDeleteOpen(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleDeleteConfirm}>
-            Yes, Delete Project
-          </Button>
-        </div>
-      </div>
-    </Modal>
+      description={
+        <span>
+          Are you sure you want to completely delete{" "}
+          <strong className="text-[#0A0A0A] dark:text-white font-semibold">
+            &ldquo;{project.title}&rdquo;
+          </strong>
+          ? This action is permanent and cannot be undone.
+        </span>
+      }
+      confirmLabel="Delete Project"
+      cancelLabel="Cancel"
+      variant="danger"
+      isLoading={isPending}
+    />
 
     {/* Official Project Agreement Modal */}
     {isAgreementOpen && agreementData && (

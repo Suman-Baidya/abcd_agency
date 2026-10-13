@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const [publishedPosts, publishedProjects] = await Promise.all([
       db.blogPost.findMany({
-        where: { isPublished: true },
+        where: { published: true },
         select: { slug: true, updatedAt: true },
       }),
       db.project.findMany({

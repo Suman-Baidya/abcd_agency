@@ -1118,10 +1118,13 @@ export async function getCategories() {
 
 export async function createCategory(name: string) {
   try {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return { success: false, error: "Category name is required." };
+    }
     const category = await db.category.create({
-      data: { name: name.trim() }
+      data: { name: trimmed }
     });
-    revalidatePath("/admin/projects");
     return { success: true, category };
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -1133,11 +1136,14 @@ export async function createCategory(name: string) {
 
 export async function updateCategory(id: string, newName: string) {
   try {
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      return { success: false, error: "Category name is required." };
+    }
     const category = await db.category.update({
       where: { id },
-      data: { name: newName.trim() }
+      data: { name: trimmed }
     });
-    revalidatePath("/admin/projects");
     return { success: true, category };
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -1152,7 +1158,6 @@ export async function deleteCategory(id: string) {
     await db.category.delete({
       where: { id }
     });
-    revalidatePath("/admin/projects");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: "Failed to delete category." };

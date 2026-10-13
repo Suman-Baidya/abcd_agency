@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { toast } from "react-hot-toast";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
 import {
   createEcoSystemPlatform,
@@ -134,12 +136,14 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
       try {
         if (editingPlatform) {
           await updateEcoSystemPlatform(editingPlatform.id, formData);
+          toast.success("Platform updated successfully", { duration: 3500 });
         } else {
           await createEcoSystemPlatform(formData);
+          toast.success("Platform created successfully", { duration: 3500 });
         }
         setIsModalOpen(false);
       } catch (err: any) {
-        alert(err?.message || "Failed to save platform.");
+        toast.error(err?.message || "Failed to save platform", { duration: 4000 });
       }
     });
   };
@@ -149,8 +153,9 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
       try {
         await deleteEcoSystemPlatform(id);
         setDeleteConfirmId(null);
+        toast.success("Platform deleted successfully", { duration: 3500 });
       } catch (err: any) {
-        alert(err?.message || "Failed to delete platform.");
+        toast.error(err?.message || "Failed to delete platform", { duration: 4000 });
       }
     });
   };
@@ -159,8 +164,9 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
     startTransition(async () => {
       try {
         await toggleEcoSystemPublish(id, !current);
+        toast.success(current ? "Platform hidden from showcase" : "Platform published to showcase", { duration: 3000 });
       } catch (err: any) {
-        alert(err?.message || "Failed to update platform visibility.");
+        toast.error(err?.message || "Failed to update platform visibility", { duration: 4000 });
       }
     });
   };
@@ -707,31 +713,28 @@ export function EcoSystemManager({ initialPlatforms }: EcoSystemManagerProps) {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      {/* Delete Confirmation Modal using ConfirmModal */}
+      <ConfirmModal
         isOpen={Boolean(deleteConfirmId)}
-        onClose={() => setDeleteConfirmId(null)}
+        onClose={() => !isPending && setDeleteConfirmId(null)}
+        onConfirm={() => deleteConfirmId && handleDelete(deleteConfirmId)}
         title="Delete Platform"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-[#737373] dark:text-neutral-400">
-            Are you sure you want to delete this platform? This will remove it from the public showcase and client portals.
-          </p>
-          <div className="flex items-center justify-end gap-2.5">
-            <Button variant="secondary" size="sm" onClick={() => setDeleteConfirmId(null)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={isPending}
-              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-              className="bg-red-600 hover:bg-red-700 text-white border-red-600"
-            >
-              {isPending ? "Deleting..." : "Confirm Delete"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        description={
+          deleteConfirmId ? (
+            <span>
+              Are you sure you want to delete{" "}
+              <strong className="text-[#0A0A0A] dark:text-white font-semibold">
+                &ldquo;{initialPlatforms.find((p) => p.id === deleteConfirmId)?.name || "this platform"}&rdquo;
+              </strong>
+              ? This will remove it from the public showcase and client portals.
+            </span>
+          ) : null
+        }
+        confirmLabel="Delete Platform"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isPending}
+      />
     </div>
   );
 }

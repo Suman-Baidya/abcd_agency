@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Button } from "@/components/ui/Button";
 import { Plus, Edit, Trash2, X, Check, Tag, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -32,6 +33,7 @@ export function BlogCategoryManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<BlogCategoryItem | null>(null);
 
   // Sync prop changes
   React.useEffect(() => {
@@ -40,7 +42,10 @@ export function BlogCategoryManager({
 
   const handleCreate = () => {
     const trimmed = newCategoryName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      toast.error("Please enter a category name", { duration: 3000 });
+      return;
+    }
     setError(null);
 
     startTransition(async () => {
@@ -50,18 +55,21 @@ export function BlogCategoryManager({
         setCategoryList(updated);
         onCategoriesChange?.(updated);
         setNewCategoryName("");
-        toast.success(`Category "${trimmed}" created!`);
+        toast.success(`Category "${trimmed}" created!`, { duration: 3500 });
       } else {
         const msg = res.error || "Failed to create category";
         setError(msg);
-        toast.error(msg);
+        toast.error(msg, { duration: 4000 });
       }
     });
   };
 
   const handleUpdate = (id: string) => {
     const trimmed = editName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      toast.error("Category name cannot be empty", { duration: 3000 });
+      return;
+    }
     setError(null);
 
     startTransition(async () => {
@@ -73,28 +81,31 @@ export function BlogCategoryManager({
         setCategoryList(updated);
         onCategoriesChange?.(updated);
         setEditingId(null);
-        toast.success("Category updated!");
+        toast.success("Category updated!", { duration: 3500 });
       } else {
         const msg = res.error || "Failed to update category";
         setError(msg);
-        toast.error(msg);
+        toast.error(msg, { duration: 4000 });
       }
     });
   };
 
-  const handleDelete = (id: string, name: string) => {
+  const handleConfirmDelete = () => {
+    if (!categoryToDelete) return;
+    const cat = categoryToDelete;
     setError(null);
     startTransition(async () => {
-      const res = await deleteBlogCategory(id);
+      const res = await deleteBlogCategory(cat.id);
       if (res.success) {
-        const updated = categoryList.filter((c) => c.id !== id);
+        const updated = categoryList.filter((c) => c.id !== cat.id);
         setCategoryList(updated);
         onCategoriesChange?.(updated);
-        toast.success(`Category "${name}" removed`);
+        setCategoryToDelete(null);
+        toast.success(`Category "${cat.name}" removed`, { duration: 3500 });
       } else {
         const msg = res.error || "Failed to delete category";
         setError(msg);
-        toast.error(msg);
+        toast.error(msg, { duration: 4000 });
       }
     });
   };
@@ -235,7 +246,7 @@ export function BlogCategoryManager({
                               <Edit className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDelete(cat.id, cat.name)}
+                              onClick={() => setCategoryToDelete(cat)}
                               disabled={isPending}
                               className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors cursor-pointer"
                               title="Delete Category"
@@ -259,6 +270,29 @@ export function BlogCategoryManager({
           </div>
         </div>
       </Modal>
+
+      {/* Standalone Custom Confirmation Alert for Blog Category Deletion */}
+      <ConfirmModal
+        isOpen={Boolean(categoryToDelete)}
+        onClose={() => !isPending && setCategoryToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Blog Category"
+        description={
+          categoryToDelete ? (
+            <span>
+              Are you sure you want to delete{" "}
+              <strong className="text-[#0A0A0A] dark:text-white font-semibold">
+                &ldquo;{categoryToDelete.name}&rdquo;
+              </strong>
+              ? This action cannot be undone.
+            </span>
+          ) : null
+        }
+        confirmLabel="Delete Category"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isPending}
+      />
     </>
   );
 }

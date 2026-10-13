@@ -32,6 +32,7 @@ import {
 } from "@/app/(dashboard)/admin/projects/kanban-actions";
 import { ProjectSelectDropdown } from "@/components/ui/ProjectSelectDropdown";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import toast from "react-hot-toast";
 import { formatProjectDeadline, evaluateTaskUrgency } from "@/lib/formatDate";
 
@@ -320,15 +321,28 @@ export function AdminKanbanManager({
     setIsSyncing(false);
   };
 
-  // Delete Task
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm("Are you sure you want to delete this task?")) return;
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    const res = await deleteProjectTask(taskId);
-    if (res.success) {
-      toast.success("Task removed");
-    } else {
-      toast.error(res.error || "Failed to delete task");
+  // Delete Task state and confirmation
+  const [taskToDelete, setTaskToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
+
+  const handleConfirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+    const { id, title } = taskToDelete;
+    setIsDeletingTask(true);
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const toastId = toast.loading(`Deleting "${title}"...`);
+    try {
+      const res = await deleteProjectTask(id);
+      if (res.success) {
+        setTaskToDelete(null);
+        toast.success(`Task "${title}" removed`, { id: toastId, duration: 3500 });
+      } else {
+        toast.error(res.error || "Failed to delete task", { id: toastId, duration: 4000 });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete task", { id: toastId, duration: 4000 });
+    } finally {
+      setIsDeletingTask(false);
     }
   };
 
@@ -659,7 +673,7 @@ export function AdminKanbanManager({
                               </button>
                               {/* Delete Button */}
                               <button
-                                onClick={() => handleDeleteTask(task.id)}
+                                onClick={() => setTaskToDelete({ id: task.id, title: task.title })}
                                 className="p-1 text-[#737373] hover:text-rose-600 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                                 title="Delete Task"
                               >
@@ -996,11 +1010,11 @@ export function AdminKanbanManager({
             <div className="flex items-center justify-between pt-3 border-t border-[#E5E5E5] dark:border-[#262626]">
               <button
                 onClick={() => {
-                  const idToDelete = selectedTaskDetail.id;
+                  const task = selectedTaskDetail;
                   setSelectedTaskDetail(null);
-                  handleDeleteTask(idToDelete);
+                  setTaskToDelete({ id: task.id, title: task.title });
                 }}
-                className="text-xs text-rose-600 hover:underline font-semibold"
+                className="text-xs text-rose-600 hover:underline font-semibold cursor-pointer"
               >
                 Delete Task
               </button>
@@ -1156,6 +1170,29 @@ export function AdminKanbanManager({
           </div>
         </div>
       )}
+
+      {/* Custom Confirmation Alert Modal for Task Deletion */}
+      <ConfirmModal
+        isOpen={Boolean(taskToDelete)}
+        onClose={() => !isDeletingTask && setTaskToDelete(null)}
+        onConfirm={handleConfirmDeleteTask}
+        title="Delete Task"
+        description={
+          taskToDelete ? (
+            <span>
+              Are you sure you want to delete{" "}
+              <strong className="text-[#0A0A0A] dark:text-white font-semibold">
+                &ldquo;{taskToDelete.title}&rdquo;
+              </strong>
+              ? This action cannot be undone.
+            </span>
+          ) : null
+        }
+        confirmLabel="Delete Task"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isDeletingTask}
+      />
     </div>
   );
 }
