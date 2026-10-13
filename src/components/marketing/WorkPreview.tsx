@@ -18,6 +18,12 @@ export async function WorkPreview() {
       summary: true,
       impact: true,
       techStack: true,
+      thumbnailUrl: true,
+      projectType: true,
+      demoUrl: true,
+      demoEmail: true,
+      demoPassword: true,
+      demoRole: true,
     }
   });
 

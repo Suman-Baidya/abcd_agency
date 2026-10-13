@@ -49,8 +49,10 @@ export function ProjectCard({ project, hrefPrefix = "/work/" }: ProjectCardProps
               alt={project.title}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
+              className="object-cover object-top transition-all duration-500 ease-out grayscale contrast-[1.05] brightness-90 group-hover:grayscale-0 group-hover:brightness-100 group-hover:scale-105"
             />
+            {/* Subtle dark tint layer that lifts on hover */}
+            <div className="absolute inset-0 bg-black/25 group-hover:bg-transparent transition-colors duration-500 pointer-events-none" />
             {/* Scrim Gradients for Badge Legibility */}
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
