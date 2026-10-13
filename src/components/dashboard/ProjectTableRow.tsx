@@ -435,13 +435,15 @@ export function ProjectTableRow({ project, serialNumber, categories, clients = [
       title="Edit Project"
       variant="slide-over"
     >
-      <ProjectEditForm 
-        project={project} 
-        categories={categories}
-        clients={clients}
-        onSuccess={() => setIsEditOpen(false)} 
-        onCancel={() => setIsEditOpen(false)} 
-      />
+      {isEditOpen && (
+        <ProjectEditForm 
+          project={project} 
+          categories={categories}
+          clients={clients}
+          onSuccess={() => setIsEditOpen(false)} 
+          onCancel={() => setIsEditOpen(false)} 
+        />
+      )}
     </Modal>
 
     {/* Delete Confirmation Alert Modal */}

@@ -12,25 +12,47 @@ interface NewProjectButtonProps {
 
 export function NewProjectButton({ categories, clients = [] }: NewProjectButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+
+  const handleOpen = () => {
+    // Generate new key so ProjectEditForm completely resets to blank initial state
+    setFormKey((prev) => prev + 1);
+    setIsOpen(true);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
   return (
     <>
-      <Button variant="primary" size="sm" onClick={() => setIsOpen(true)} className="w-full sm:w-auto text-xs justify-center">
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={handleOpen}
+        className="w-full sm:w-auto text-xs justify-center cursor-pointer"
+      >
         New Project
       </Button>
 
       <Modal
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        onClose={handleClose}
         title="Create New Project"
         variant="slide-over"
       >
-        <ProjectEditForm
-          categories={categories}
-          clients={clients}
-          onSuccess={() => setIsOpen(false)}
-          onCancel={() => setIsOpen(false)}
-        />
+        {isOpen && (
+          <ProjectEditForm
+            key={`new-project-${formKey}`}
+            categories={categories}
+            clients={clients}
+            onSuccess={() => {
+              setIsOpen(false);
+              setFormKey((prev) => prev + 1);
+            }}
+            onCancel={handleClose}
+          />
+        )}
       </Modal>
     </>
   );

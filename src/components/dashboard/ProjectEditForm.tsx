@@ -7,6 +7,7 @@ import { Search, Check, ChevronsUpDown, Building2, X, Globe, KeyRound, ShieldChe
 import { updateProjectFull, createProjectInline } from "@/app/(dashboard)/admin/projects/actions";
 import { slugify } from "@/lib/slugify";
 import { ImageUploadInput } from "@/components/ui/ImageUploadInput";
+import { toast } from "react-hot-toast";
 
 interface ProjectEditFormProps {
   project?: any;
@@ -103,17 +104,30 @@ export function ProjectEditForm({ project, categories, clients = [], onSuccess, 
       formData.set("client", "ABCD Digital Hub Blueprint");
     }
 
+    const isEditing = Boolean(project);
+    const toastId = toast.loading(isEditing ? "Saving project changes..." : "Creating new project...");
+
     startTransition(async () => {
       try {
         if (project) {
           await updateProjectFull(project.id, formData);
+          toast.success(`Project "${title || project.title}" updated!`, {
+            id: toastId,
+            duration: 3500,
+          });
         } else {
           await createProjectInline(formData);
+          toast.success(`Project "${title || "New Project"}" created!`, {
+            id: toastId,
+            duration: 3500,
+          });
         }
         onSuccess();
       } catch (err: any) {
         console.error("Failed to save project:", err);
-        setFormError(err?.message || "Failed to save project. Please check fields and try again.");
+        const errMsg = err?.message || "Failed to save project. Please check fields and try again.";
+        setFormError(errMsg);
+        toast.error(errMsg, { id: toastId, duration: 4000 });
       }
     });
   };
