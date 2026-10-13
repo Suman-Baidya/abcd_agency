@@ -22,10 +22,9 @@ import {
   SlidersHorizontal, 
   Terminal,
   Maximize2,
-  Eye,
-  EyeOff,
   X
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { EcoSystemBlueprintModal } from "./EcoSystemBlueprintModal";
 
 export interface EcoSystemPlatformData {
@@ -164,11 +163,13 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(false);
   const [activeTab, setActiveTab] = useState<"capabilities" | "stack" | "sandbox">("capabilities");
   const [isBlueprintOpen, setIsBlueprintOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  const displayUrl = platform.appUrl || `https://${platform.slug}.abcddigitalhub.com`;
 
   // Auto-slide every 5.5 seconds, paused on hover
   useEffect(() => {
@@ -187,6 +188,14 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
   const nextSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const copyDisplayUrl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(displayUrl);
+    setCopiedUrl(true);
+    toast.success("Platform URL copied to clipboard!");
+    setTimeout(() => setCopiedUrl(false), 2000);
   };
 
   const copyCredentials = (e: React.MouseEvent) => {
@@ -426,46 +435,51 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
           className="w-full lg:w-1/2 rounded-xl border border-[#E5E5E5] dark:border-[#262626] bg-[#0E0E0E] overflow-hidden shadow-lg select-none group/frame"
         >
           {/* Top Browser Chassis Chrome */}
-          <div className="px-3.5 py-2.5 bg-[#141414] border-b border-[#262626] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5">
+          <div className="px-3.5 py-2.5 bg-[#141414] border-b border-[#262626] flex items-center justify-between gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-1.5 shrink-0">
               <span className="w-2.5 h-2.5 rounded-full bg-[#262626]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#262626]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#262626]" />
             </div>
 
-            {/* URL Address Bar */}
-            <div className="flex-1 max-w-xs mx-auto px-3 py-0.5 rounded-md bg-[#0A0A0A] border border-[#262626] flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 truncate">
-              <Lock className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-              <span className="truncate">https://{platform.slug}.abcddigitalhub.com</span>
-            </div>
-
-            {/* Live Status Pill & Reveal / Zoom triggers */}
-            <div className="flex items-center gap-2">
+            {/* URL Address Bar with Copy Icon */}
+            <div className="flex-1 max-w-sm mx-auto px-2.5 py-1 rounded-md bg-[#0A0A0A] border border-[#262626] flex items-center justify-between gap-1.5 text-[11px] font-mono text-neutral-400 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                <Lock className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                <span className="truncate select-all text-neutral-300" title={displayUrl}>
+                  {displayUrl}
+                </span>
+              </div>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsRevealed((prev) => !prev);
-                }}
-                title={isRevealed ? "Cover interface (black layer)" : "Reveal full interface"}
-                className={`p-1 rounded transition-colors cursor-pointer ${
-                  isRevealed ? "text-emerald-400 hover:text-emerald-300" : "text-neutral-400 hover:text-white"
-                }`}
+                onClick={copyDisplayUrl}
+                title="Copy URL"
+                className="p-1 -mr-1 rounded hover:bg-[#1C1C1C] text-neutral-400 hover:text-white transition-colors shrink-0 cursor-pointer"
+                aria-label="Copy website URL"
               >
-                {isRevealed ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {copiedUrl ? (
+                  <Check className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
               </button>
+            </div>
+
+            {/* Fullscreen Trigger & Live Status Pill */}
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsLightboxOpen(true);
                 }}
-                title="Inspect full-resolution screenshot"
-                className="text-neutral-400 hover:text-white p-0.5 rounded cursor-pointer transition-colors"
+                title="Inspect full-resolution screenshot slider"
+                className="text-neutral-400 hover:text-white p-1 rounded hover:bg-[#1C1C1C] cursor-pointer transition-colors"
+                aria-label="Open fullscreen screenshot gallery"
               >
-                <Maximize2 className="w-3 h-3" />
+                <Maximize2 className="w-3.5 h-3.5" />
               </button>
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-400">
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-neutral-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>99.9%</span>
               </div>
@@ -474,48 +488,33 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
 
           {/* Screenshot Display Screen */}
           <div 
-            onClick={() => setIsRevealed((prev) => !prev)}
-            className="relative aspect-[16/10] bg-black overflow-hidden cursor-pointer"
+            onClick={() => setIsLightboxOpen(true)}
+            className="relative aspect-[16/10] bg-black overflow-hidden cursor-zoom-in"
+            title="Click to expand fullscreen screenshot slider"
           >
             {slides.length > 0 ? (
               <>
-                {slides.map((imgSrc, sIdx) => {
-                  const isVisible = isHovered || isRevealed;
-                  return (
-                    <div
-                      key={sIdx}
-                      className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                        sIdx === activeSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-                      }`}
-                    >
-                      <Image
-                        src={imgSrc}
-                        alt={`${platform.name} preview screen ${sIdx + 1}`}
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 50vw"
-                        className={`object-cover object-top transition-all duration-700 ease-out ${
-                          isVisible
-                            ? "grayscale-0 contrast-100 brightness-100 scale-[1.02]"
-                            : "grayscale contrast-[1.15] brightness-[0.60] scale-100"
-                        }`}
-                        priority={index === 0 && sIdx === 0}
-                      />
-                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
-                    </div>
-                  );
-                })}
-
-                {/* Black Type Layer / Shroud: Fades out on hover or click */}
-                <div 
-                  className={`absolute inset-0 z-15 bg-black/60 backdrop-blur-[1px] transition-all duration-500 flex flex-col items-center justify-center pointer-events-none ${
-                    isHovered || isRevealed ? "opacity-0 invisible" : "opacity-100 visible"
-                  }`}
-                >
-                  <div className="px-3.5 py-1.5 rounded-full border border-white/20 bg-black/85 text-white text-[11px] font-mono flex items-center gap-2 shadow-2xl backdrop-blur-md transform transition-transform group-hover/frame:scale-105">
-                    <Eye className="w-3.5 h-3.5 text-neutral-300 animate-pulse" />
-                    <span>Hover or click to reveal</span>
+                {slides.map((imgSrc, sIdx) => (
+                  <div
+                    key={sIdx}
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                      sIdx === activeSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                    }`}
+                  >
+                    <Image
+                      src={imgSrc}
+                      alt={`${platform.name} preview screen ${sIdx + 1}`}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      className="object-cover object-top transition-all duration-500 ease-out grayscale contrast-[1.1] brightness-75 group-hover/frame:grayscale-0 group-hover/frame:brightness-100 group-hover/frame:contrast-100 group-hover/frame:scale-[1.02]"
+                      priority={index === 0 && sIdx === 0}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
                   </div>
-                </div>
+                ))}
+
+                {/* Black Shroud / Layer: Exactly like blog page thumbnail, dissolves on hover */}
+                <div className="absolute inset-0 z-15 bg-black/55 backdrop-blur-[1px] group-hover/frame:opacity-0 transition-opacity duration-500 pointer-events-none" />
 
                 {/* Navigation Arrows */}
                 {slides.length > 1 && (
@@ -524,7 +523,7 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
                       type="button"
                       onClick={prevSlide}
                       aria-label="Previous preview"
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/frame:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -533,7 +532,7 @@ export function EcoSystemCard({ platform, index = 0 }: EcoSystemCardProps) {
                       type="button"
                       onClick={nextSlide}
                       aria-label="Next preview"
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/frame:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
