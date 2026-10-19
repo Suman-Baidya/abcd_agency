@@ -48,7 +48,7 @@ export async function Footer() {
             <div className="flex items-center flex-wrap gap-4 mt-2">
               
               {/* Facebook */}
-              {siteConfig.facebookUrl && (
+              {siteConfig.facebookUrl && siteConfig.enableFacebook !== false && (
                 <a
                   href={siteConfig.facebookUrl}
                   target="_blank"
@@ -63,7 +63,7 @@ export async function Footer() {
               )}
 
               {/* Instagram */}
-              {siteConfig.instagramUrl && (
+              {siteConfig.instagramUrl && siteConfig.enableInstagram !== false && (
                 <a
                   href={siteConfig.instagramUrl}
                   target="_blank"
@@ -78,7 +78,7 @@ export async function Footer() {
               )}
 
               {/* Behance */}
-              {siteConfig.behanceUrl && (
+              {siteConfig.behanceUrl && siteConfig.enableBehance !== false && (
                 <a
                   href={siteConfig.behanceUrl}
                   target="_blank"
@@ -93,7 +93,7 @@ export async function Footer() {
               )}
 
               {/* YouTube */}
-              {siteConfig.youtubeUrl && (
+              {siteConfig.youtubeUrl && siteConfig.enableYoutube !== false && (
                 <a
                   href={siteConfig.youtubeUrl}
                   target="_blank"
@@ -107,10 +107,8 @@ export async function Footer() {
                 </a>
               )}
 
-
-
               {/* LinkedIn */}
-              {siteConfig.linkedinUrl && (
+              {siteConfig.linkedinUrl && siteConfig.enableLinkedin !== false && (
                 <a
                   href={siteConfig.linkedinUrl}
                   target="_blank"
@@ -125,7 +123,7 @@ export async function Footer() {
               )}
 
               {/* X (Twitter) */}
-              {siteConfig.twitterUrl && (
+              {siteConfig.twitterUrl && siteConfig.enableTwitter !== false && (
                 <a
                   href={siteConfig.twitterUrl}
                   target="_blank"
@@ -140,7 +138,7 @@ export async function Footer() {
               )}
 
               {/* WhatsApp */}
-              {siteConfig.whatsappNumber && (
+              {siteConfig.whatsappNumber && siteConfig.enableWhatsappSocial !== false && (
                 <a
                   href={`https://wa.me/${siteConfig.whatsappNumber.replace(/[^0-9]/g, "")}`}
                   target="_blank"

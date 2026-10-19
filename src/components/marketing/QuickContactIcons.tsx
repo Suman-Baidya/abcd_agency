@@ -17,7 +17,7 @@ export function QuickContactIcons({ siteConfig }: { siteConfig: any }) {
       )}
 
       {/* WhatsApp */}
-      {siteConfig.whatsappNumber && (
+      {siteConfig.whatsappNumber && siteConfig.enableWhatsappSocial !== false && (
         <a
           href={`https://wa.me/${siteConfig.whatsappNumber.replace(/[^0-9]/g, "")}`}
           target="_blank"

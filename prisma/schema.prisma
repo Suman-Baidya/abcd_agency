@@ -29,6 +29,15 @@ model SiteConfig {
   behanceUrl      String?
   whatsappNumber  String?
   
+  // Social Links Visibility & Active States
+  enableLinkedin       Boolean @default(true)
+  enableFacebook       Boolean @default(true)
+  enableInstagram      Boolean @default(true)
+  enableYoutube        Boolean @default(true)
+  enableTwitter        Boolean @default(true)
+  enableBehance        Boolean @default(true)
+  enableWhatsappSocial Boolean @default(true)
+  
   // Settings
   enableWhatsappWidget Boolean @default(true)
   requireEmailVerification Boolean @default(false)

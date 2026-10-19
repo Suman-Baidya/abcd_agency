@@ -1,34 +1,36 @@
 import React from "react";
-import { siteConfig } from "@/lib/siteConfig";
+import { siteConfig as staticConfig } from "@/lib/siteConfig";
+import { getSiteConfig } from "@/lib/dbConfig";
 
-export function JsonLd() {
-  const baseUrl = siteConfig.url || "https://abcddigitalhub.com";
-  const logoUrl = `${baseUrl}/images/abcd_square_logo.png`;
+export async function JsonLd() {
+  const config = await getSiteConfig();
+  const baseUrl = config.websiteUrl || staticConfig.url || "https://abcddigitalhub.com";
+  const logoUrl = config.lightLogoUrl || `${baseUrl}/images/abcd_square_logo.png`;
 
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
     "@id": `${baseUrl}/#organization`,
-    name: siteConfig.name,
+    name: config.agencyName || staticConfig.name,
     alternateName: ["ABCD Digital Hub", "ABCD Digital", "ABCD Hub", "ABCD"],
     url: baseUrl,
     logo: {
       "@type": "ImageObject",
       url: logoUrl,
-      caption: siteConfig.name,
+      caption: config.agencyName || staticConfig.name,
     },
     image: logoUrl,
     description:
       "ABCD Digital Hub is a high-performance software engineering studio specializing in custom full-stack web application development, scalable multi-tenant SaaS platforms, and autonomous AI automation systems.",
-    email: `hello@${siteConfig.domain}`,
-    telephone: siteConfig.contact.mobile,
+    email: config.contactEmail || `hello@${staticConfig.domain}`,
+    telephone: config.contactPhone || staticConfig.contact.mobile,
     founder: {
       "@type": "Person",
       name: "Suman Baidya",
       jobTitle: "Founder & Lead Software Architect",
       sameAs: [
-        siteConfig.social.linkedin,
-        siteConfig.social.x,
+        config.enableLinkedin !== false ? (config.linkedinUrl || staticConfig.social.linkedin) : null,
+        config.enableTwitter !== false ? (config.twitterUrl || staticConfig.social.x) : null,
       ].filter(Boolean),
     },
     address: {
@@ -38,9 +40,9 @@ export function JsonLd() {
     contactPoint: [
       {
         "@type": "ContactPoint",
-        telephone: siteConfig.contact.mobile,
+        telephone: config.contactPhone || staticConfig.contact.mobile,
         contactType: "customer support",
-        email: `hello@${siteConfig.domain}`,
+        email: config.contactEmail || `hello@${staticConfig.domain}`,
         availableLanguage: ["English", "Bengali", "Hindi"],
       },
     ],
@@ -94,11 +96,12 @@ export function JsonLd() {
       ],
     },
     sameAs: [
-      siteConfig.social.facebook,
-      siteConfig.social.instagram,
-      siteConfig.social.linkedin,
-      siteConfig.social.youtube,
-      siteConfig.social.x,
+      config.enableFacebook !== false ? (config.facebookUrl || staticConfig.social.facebook) : null,
+      config.enableInstagram !== false ? (config.instagramUrl || staticConfig.social.instagram) : null,
+      config.enableLinkedin !== false ? (config.linkedinUrl || staticConfig.social.linkedin) : null,
+      config.enableYoutube !== false ? (config.youtubeUrl || staticConfig.social.youtube) : null,
+      config.enableTwitter !== false ? (config.twitterUrl || staticConfig.social.x) : null,
+      config.enableBehance !== false ? config.behanceUrl : null,
     ].filter(Boolean),
     priceRange: "$$",
   };
@@ -108,7 +111,7 @@ export function JsonLd() {
     "@type": "WebSite",
     "@id": `${baseUrl}/#website`,
     url: baseUrl,
-    name: siteConfig.name,
+    name: config.agencyName || staticConfig.name,
     description: "Full-stack software engineering partner and digital consulting hub building modern web applications, scalable SaaS products, and automated business workflows.",
     publisher: {
       "@id": `${baseUrl}/#organization`,

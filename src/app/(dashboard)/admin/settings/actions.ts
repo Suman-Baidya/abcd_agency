@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 
 const defaultSiteConfig = {
   id: "1",
@@ -11,6 +11,15 @@ const defaultSiteConfig = {
   websiteUrl: "https://abcddigitalhub.com",
   address: "Tripura, India",
 };
+
+export async function revalidateSiteConfig() {
+  try {
+    updateTag("site-config");
+  } catch {}
+  try {
+    revalidateTag("site-config", { expire: 0 });
+  } catch {}
+}
 
 export async function updateBrandingSettings(formData: FormData) {
   try {
@@ -27,7 +36,7 @@ export async function updateBrandingSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData }
     });
     
-    updateTag("site-config");
+    await revalidateSiteConfig();
     revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
   } catch (e: any) {
@@ -36,30 +45,71 @@ export async function updateBrandingSettings(formData: FormData) {
   }
 }
 
-export async function updateContactAndSocialSettings(formData: FormData) {
+export async function updateContactSettings(formData: FormData) {
   try {
-    const contactEmail = formData.get("contactEmail") as string;
-    const contactPhone = formData.get("contactPhone") as string;
+    const contactEmail = (formData.get("contactEmail") as string)?.trim() || defaultSiteConfig.contactEmail;
+    const contactPhone = (formData.get("contactPhone") as string)?.trim() || defaultSiteConfig.contactPhone;
     const rawWhatsappNumber = formData.get("whatsappNumber") as string;
     const whatsappNumber = rawWhatsappNumber ? rawWhatsappNumber.replace(/[^0-9]/g, "") : "";
+    const address = formData.get("address") ? (formData.get("address") as string).trim() : undefined;
+    const websiteUrl = formData.get("websiteUrl") ? (formData.get("websiteUrl") as string).trim() : undefined;
     
-    const linkedinUrl = formData.get("linkedinUrl") as string;
-    const facebookUrl = formData.get("facebookUrl") as string;
-    const instagramUrl = formData.get("instagramUrl") as string;
-    const youtubeUrl = formData.get("youtubeUrl") as string;
-    const twitterUrl = formData.get("twitterUrl") as string;
-    const behanceUrl = formData.get("behanceUrl") as string;
-    
-    const updateData = {
+    const updateData: Record<string, any> = {
       contactEmail,
       contactPhone,
       whatsappNumber,
+    };
+    if (address !== undefined) updateData.address = address;
+    if (websiteUrl !== undefined) updateData.websiteUrl = websiteUrl;
+    
+    await db.siteConfig.upsert({
+      where: { id: "1" },
+      update: updateData,
+      create: { ...defaultSiteConfig, ...updateData }
+    });
+    
+    await revalidateSiteConfig();
+    revalidatePath("/", "layout");
+    revalidatePath("/contact");
+    revalidatePath("/admin/settings");
+    return { success: true };
+  } catch (e: any) {
+    console.error("Failed to update contact settings", e);
+    throw new Error(e?.message || "Failed to update contact settings");
+  }
+}
+
+export async function updateSocialSettings(formData: FormData) {
+  try {
+    const linkedinUrl = ((formData.get("linkedinUrl") as string)?.trim()) || null;
+    const facebookUrl = ((formData.get("facebookUrl") as string)?.trim()) || null;
+    const instagramUrl = ((formData.get("instagramUrl") as string)?.trim()) || null;
+    const youtubeUrl = ((formData.get("youtubeUrl") as string)?.trim()) || null;
+    const twitterUrl = ((formData.get("twitterUrl") as string)?.trim()) || null;
+    const behanceUrl = ((formData.get("behanceUrl") as string)?.trim()) || null;
+
+    const enableLinkedin = formData.get("enableLinkedin") === "on" || formData.get("enableLinkedin") === "true";
+    const enableFacebook = formData.get("enableFacebook") === "on" || formData.get("enableFacebook") === "true";
+    const enableInstagram = formData.get("enableInstagram") === "on" || formData.get("enableInstagram") === "true";
+    const enableYoutube = formData.get("enableYoutube") === "on" || formData.get("enableYoutube") === "true";
+    const enableTwitter = formData.get("enableTwitter") === "on" || formData.get("enableTwitter") === "true";
+    const enableBehance = formData.get("enableBehance") === "on" || formData.get("enableBehance") === "true";
+    const enableWhatsappSocial = formData.get("enableWhatsappSocial") === "on" || formData.get("enableWhatsappSocial") === "true";
+    
+    const updateData = {
       linkedinUrl,
       facebookUrl,
       instagramUrl,
       youtubeUrl,
       twitterUrl,
-      behanceUrl
+      behanceUrl,
+      enableLinkedin,
+      enableFacebook,
+      enableInstagram,
+      enableYoutube,
+      enableTwitter,
+      enableBehance,
+      enableWhatsappSocial,
     };
     
     await db.siteConfig.upsert({
@@ -68,14 +118,83 @@ export async function updateContactAndSocialSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData }
     });
     
-    updateTag("site-config");
+    await revalidateSiteConfig();
     revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
+    return { success: true };
   } catch (e: any) {
-    console.error("Failed to update contact and social settings", e);
-    throw new Error(e?.message || "Failed to update contact and social settings");
+    console.error("Failed to update social settings", e);
+    throw new Error(e?.message || "Failed to update social settings");
   }
 }
+
+export async function updateContactAndSocialSettings(formData: FormData) {
+  try {
+    const updateData: Record<string, any> = {};
+
+    if (formData.has("contactEmail")) {
+      const email = (formData.get("contactEmail") as string)?.trim();
+      if (email) updateData.contactEmail = email;
+    }
+    if (formData.has("contactPhone")) {
+      const phone = (formData.get("contactPhone") as string)?.trim();
+      if (phone) updateData.contactPhone = phone;
+    }
+    if (formData.has("whatsappNumber")) {
+      const raw = formData.get("whatsappNumber") as string;
+      updateData.whatsappNumber = raw ? raw.replace(/[^0-9]/g, "") : "";
+    }
+    if (formData.has("address")) {
+      updateData.address = (formData.get("address") as string)?.trim();
+    }
+    if (formData.has("websiteUrl")) {
+      updateData.websiteUrl = (formData.get("websiteUrl") as string)?.trim();
+    }
+
+    if (formData.has("linkedinUrl")) {
+      updateData.linkedinUrl = ((formData.get("linkedinUrl") as string)?.trim()) || null;
+      updateData.enableLinkedin = formData.get("enableLinkedin") === "on" || formData.get("enableLinkedin") === "true";
+    }
+    if (formData.has("facebookUrl")) {
+      updateData.facebookUrl = ((formData.get("facebookUrl") as string)?.trim()) || null;
+      updateData.enableFacebook = formData.get("enableFacebook") === "on" || formData.get("enableFacebook") === "true";
+    }
+    if (formData.has("instagramUrl")) {
+      updateData.instagramUrl = ((formData.get("instagramUrl") as string)?.trim()) || null;
+      updateData.enableInstagram = formData.get("enableInstagram") === "on" || formData.get("enableInstagram") === "true";
+    }
+    if (formData.has("youtubeUrl")) {
+      updateData.youtubeUrl = ((formData.get("youtubeUrl") as string)?.trim()) || null;
+      updateData.enableYoutube = formData.get("enableYoutube") === "on" || formData.get("enableYoutube") === "true";
+    }
+    if (formData.has("twitterUrl")) {
+      updateData.twitterUrl = ((formData.get("twitterUrl") as string)?.trim()) || null;
+      updateData.enableTwitter = formData.get("enableTwitter") === "on" || formData.get("enableTwitter") === "true";
+    }
+    if (formData.has("behanceUrl")) {
+      updateData.behanceUrl = ((formData.get("behanceUrl") as string)?.trim()) || null;
+      updateData.enableBehance = formData.get("enableBehance") === "on" || formData.get("enableBehance") === "true";
+    }
+    if (formData.has("enableWhatsappSocial")) {
+      updateData.enableWhatsappSocial = formData.get("enableWhatsappSocial") === "on" || formData.get("enableWhatsappSocial") === "true";
+    }
+
+    await db.siteConfig.upsert({
+      where: { id: "1" },
+      update: updateData,
+      create: { ...defaultSiteConfig, ...updateData }
+    });
+    
+    await revalidateSiteConfig();
+    revalidatePath("/", "layout");
+    revalidatePath("/admin/settings");
+    return { success: true };
+  } catch (e: any) {
+    console.error("Failed to update settings", e);
+    throw new Error(e?.message || "Failed to update settings");
+  }
+}
+
 
 export async function updateWidgetSettings(formData: FormData) {
   try {
@@ -87,7 +206,7 @@ export async function updateWidgetSettings(formData: FormData) {
       create: { ...defaultSiteConfig, enableWhatsappWidget }
     });
     
-    updateTag("site-config");
+    await revalidateSiteConfig();
     revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
   } catch (e: any) {
@@ -106,7 +225,7 @@ export async function updateAuthSettings(formData: FormData) {
       create: { ...defaultSiteConfig, requireEmailVerification }
     });
     
-    updateTag("site-config");
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/", "layout");
   } catch (e: any) {
@@ -238,7 +357,7 @@ export async function updateCareersSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
-    updateTag("site-config");
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/careers");
     revalidatePath("/", "layout");
@@ -299,7 +418,7 @@ export async function updateLegalSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
-    updateTag("site-config");
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/privacy");
     revalidatePath("/terms");
@@ -331,6 +450,7 @@ export async function updatePrivacyPolicySettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/privacy");
     revalidatePath("/", "layout");
@@ -359,6 +479,7 @@ export async function updateTermsOfServiceSettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/terms");
     revalidatePath("/", "layout");
@@ -387,6 +508,7 @@ export async function updateRefundPolicySettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/refund");
     revalidatePath("/", "layout");
@@ -415,6 +537,7 @@ export async function updateCookiePolicySettings(formData: FormData) {
       create: { ...defaultSiteConfig, ...updateData },
     });
 
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/cookies");
     revalidatePath("/", "layout");
@@ -446,6 +569,7 @@ export async function toggleLegalPageVisibility(
       create: { ...defaultSiteConfig, [fieldName]: enabled },
     });
 
+    await revalidateSiteConfig();
     revalidatePath("/admin/settings");
     revalidatePath("/privacy");
     revalidatePath("/terms");

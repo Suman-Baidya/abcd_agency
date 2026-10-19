@@ -2,13 +2,16 @@
 
 import React, { useState } from "react";
 
-export function FloatingWhatsApp() {
+export function FloatingWhatsApp({ whatsappNumber = "918167685731" }: { whatsappNumber?: string }) {
   const [hovered, setHovered] = useState(false);
-  const whatsappNumber = "918167685731";
+  const cleanNumber = whatsappNumber ? whatsappNumber.replace(/[^0-9]/g, "") : "918167685731";
+  const displayFormatted = cleanNumber.startsWith("91") && cleanNumber.length === 12
+    ? `+91 ${cleanNumber.slice(2, 7)} ${cleanNumber.slice(7)}`
+    : `+${cleanNumber}`;
   const defaultMessage = encodeURIComponent(
     "Hi ABCD Digital Hub, I would like to discuss a project."
   );
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${defaultMessage}`;
+  const whatsappUrl = `https://wa.me/${cleanNumber}?text=${defaultMessage}`;
 
   return (
     <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 select-none">
@@ -18,7 +21,7 @@ export function FloatingWhatsApp() {
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
         }`}
       >
-        <span>Chat on WhatsApp (+91 81676 85731)</span>
+        <span>Chat on WhatsApp ({displayFormatted})</span>
       </div>
 
       {/* WhatsApp Button */}
